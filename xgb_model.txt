@@ -1,0 +1,2760 @@
+booster[0]:
+0:[RiskH.office.id&importer.id<0.5] yes=1,no=2,missing=1
+	1:[RiskH.HS6&country<0.5] yes=3,no=4,missing=3
+		3:[RiskH.office.id&HS6<0.5] yes=7,no=8,missing=7
+			7:[RiskH.importer.id<0.5] yes=15,no=16,missing=15
+				15:leaf=-0.57347405
+				16:leaf=-0.376076579
+			8:[RiskH.importer.id<0.5] yes=17,no=18,missing=17
+				17:leaf=-0.295238107
+				18:leaf=0.252336472
+		4:[tariff.code<8.70322176e+09] yes=9,no=10,missing=9
+			9:[gross.weight<192917.5] yes=19,no=20,missing=19
+				19:leaf=0.51921463
+				20:leaf=-0.0545454584
+			10:[RiskH.importer.id<0.5] yes=21,no=22,missing=21
+				21:leaf=-0.329692841
+				22:leaf=0.257142872
+	2:[tariff.code<8.51698483e+09] yes=5,no=6,missing=5
+		5:[gross.weight<178808] yes=11,no=12,missing=11
+			11:[quantity<8227] yes=23,no=24,missing=23
+				23:leaf=0.557292402
+				24:leaf=0.171428591
+			12:[RiskH.quantity<0.5] yes=25,no=26,missing=25
+				25:leaf=-0.0206896551
+				26:leaf=0.461538494
+		6:[RiskH.quantity<0.5] yes=13,no=14,missing=13
+			13:[RiskH.office.id&HS6<0.5] yes=27,no=28,missing=27
+				27:leaf=-0.12778905
+				28:leaf=0.559090912
+			14:[gross.weight<277220.5] yes=29,no=30,missing=29
+				29:leaf=0.480000019
+				30:leaf=-0.150000006
+booster[1]:
+0:[RiskH.office.id&importer.id<0.5] yes=1,no=2,missing=1
+	1:[RiskH.HS6&country<0.5] yes=3,no=4,missing=3
+		3:[RiskH.office.id&HS6<0.5] yes=7,no=8,missing=7
+			7:[RiskH.quantity<0.5] yes=15,no=16,missing=15
+				15:leaf=-0.44898811
+				16:leaf=-0.370668858
+			8:[RiskH.quantity<0.5] yes=17,no=18,missing=17
+				17:leaf=-0.290479362
+				18:leaf=0.0486008301
+		4:[tariff.code<8.70322176e+09] yes=9,no=10,missing=9
+			9:[gross.weight<341229] yes=19,no=20,missing=19
+				19:leaf=0.384377331
+				20:leaf=-0.371583372
+			10:[RiskH.quantity<0.5] yes=21,no=22,missing=21
+				21:leaf=-0.296056807
+				22:leaf=0.0386361629
+	2:[gross.weight<230791.5] yes=5,no=6,missing=5
+		5:[tariff.code<8.51698483e+09] yes=11,no=12,missing=11
+			11:[RiskH.office.id&HS6<0.5] yes=23,no=24,missing=23
+				23:leaf=0.378360718
+				24:leaf=0.465651929
+			12:[tariff.code<8.704e+09] yes=25,no=26,missing=25
+				25:leaf=0.089246057
+				26:leaf=0.426254719
+		6:[tariff.code<8.45604966e+09] yes=13,no=14,missing=13
+			13:[gross.weight<276487.5] yes=27,no=28,missing=27
+				27:leaf=0.00689275423
+				28:leaf=0.349122852
+			14:[gross.weight<288184.5] yes=29,no=30,missing=29
+				29:leaf=-0.104613505
+				30:leaf=-0.402588785
+booster[2]:
+0:[RiskH.office.id&importer.id<0.5] yes=1,no=2,missing=1
+	1:[RiskH.HS6&country<0.5] yes=3,no=4,missing=3
+		3:[RiskH.importer.id<0.5] yes=7,no=8,missing=7
+			7:[RiskH.office.id&HS6<0.5] yes=15,no=16,missing=15
+				15:leaf=-0.375627965
+				16:leaf=-0.167054638
+			8:[RiskH.office.id&country<0.5] yes=17,no=18,missing=17
+				17:leaf=-0.201448306
+				18:leaf=0.433695525
+		4:[tariff.code<8.70200115e+09] yes=9,no=10,missing=9
+			9:[gross.weight<192917.5] yes=19,no=20,missing=19
+				19:leaf=0.33046788
+				20:leaf=-0.0958074257
+			10:[gross.weight<1032.5] yes=21,no=22,missing=21
+				21:leaf=0.180695087
+				22:leaf=-0.20004867
+	2:[tariff.code<8.70200115e+09] yes=5,no=6,missing=5
+		5:[RiskH.HS6&country<0.5] yes=11,no=12,missing=11
+			11:[RiskH.office.id&HS6<0.5] yes=23,no=24,missing=23
+				23:leaf=0.196141317
+				24:leaf=0.398974091
+			12:leaf=0.417849213
+		6:[RiskH.quantity<0.5] yes=13,no=14,missing=13
+			13:[tariff.code<8.7046103e+09] yes=25,no=26,missing=25
+				25:leaf=-0.134670347
+				26:leaf=0.387686938
+			14:[SGD.DayofYear<30.5] yes=27,no=28,missing=27
+				27:leaf=0.054127153
+				28:leaf=0.325358123
+booster[3]:
+0:[RiskH.office.id&importer.id<0.5] yes=1,no=2,missing=1
+	1:[RiskH.HS6&country<0.5] yes=3,no=4,missing=3
+		3:[RiskH.quantity<0.5] yes=7,no=8,missing=7
+			7:[RiskH.office.id&country<0.5] yes=15,no=16,missing=15
+				15:leaf=-0.345122069
+				16:leaf=-0.169986218
+			8:[quantity<2616.5] yes=17,no=18,missing=17
+				17:leaf=-0.256203711
+				18:leaf=0.458028644
+		4:[tariff.code<8.70322176e+09] yes=9,no=10,missing=9
+			9:[RiskH.quantity<0.5] yes=19,no=20,missing=19
+				19:leaf=0.139926851
+				20:leaf=0.337678254
+			10:[RiskH.office.id&country<0.5] yes=21,no=22,missing=21
+				21:leaf=-0.173875421
+				22:leaf=0.16974017
+	2:[tariff.code<8.51698483e+09] yes=5,no=6,missing=5
+		5:[gross.weight<129042] yes=11,no=12,missing=11
+			11:[RiskH.HS6&country<0.5] yes=23,no=24,missing=23
+				23:leaf=0.284962445
+				24:leaf=0.370409548
+			12:[RiskH.quantity<0.5] yes=25,no=26,missing=25
+				25:leaf=-0.108383574
+				26:leaf=0.285698444
+		6:[RiskH.office.id&HS6<0.5] yes=13,no=14,missing=13
+			13:[RiskH.HS6&country<0.5] yes=27,no=28,missing=27
+				27:leaf=-0.0488565378
+				28:leaf=0.459210575
+			14:[gross.weight<195953.5] yes=29,no=30,missing=29
+				29:leaf=0.396580249
+				30:leaf=0.112515338
+booster[4]:
+0:[RiskH.office.id&importer.id<0.5] yes=1,no=2,missing=1
+	1:[RiskH.importer.id<0.5] yes=3,no=4,missing=3
+		3:[RiskH.HS6&country<0.5] yes=7,no=8,missing=7
+			7:[RiskH.office.id&HS6<0.5] yes=15,no=16,missing=15
+				15:leaf=-0.304088533
+				16:leaf=-0.0476099066
+			8:[tariff.code<8.70200115e+09] yes=17,no=18,missing=17
+				17:leaf=0.181472391
+				18:leaf=-0.124570757
+		4:[RiskH.quantity<0.5] yes=9,no=10,missing=9
+			9:[RiskH.office.id&country<0.5] yes=19,no=20,missing=19
+				19:leaf=-0.158057883
+				20:leaf=0.225573495
+			10:[quantity<135] yes=21,no=22,missing=21
+				21:leaf=0.0988707319
+				22:leaf=0.477295071
+	2:[RiskH.quantity<0.5] yes=5,no=6,missing=5
+		5:[RiskH.HS6&country<0.5] yes=11,no=12,missing=11
+			11:[RiskH.office.id&HS6<0.5] yes=23,no=24,missing=23
+				23:leaf=-0.100699283
+				24:leaf=0.324403614
+			12:leaf=0.37347284
+		6:[gross.weight<329768] yes=13,no=14,missing=13
+			13:[RiskH.office.id&HS6<0.5] yes=25,no=26,missing=25
+				25:leaf=0.262439609
+				26:leaf=0.351599604
+			14:[gross.weight<432926] yes=27,no=28,missing=27
+				27:leaf=-0.236324057
+				28:leaf=0.105864495
+booster[5]:
+0:[RiskH.office.id&importer.id<0.5] yes=1,no=2,missing=1
+	1:[RiskH.quantity<0.5] yes=3,no=4,missing=3
+		3:[RiskH.declarant.id<0.5] yes=7,no=8,missing=7
+			7:[RiskH.office.id&country<0.5] yes=13,no=14,missing=13
+				13:leaf=-0.293738544
+				14:leaf=-0.0780663937
+			8:[RiskH.tariff.code<0.5] yes=15,no=16,missing=15
+				15:leaf=-0.0400921963
+				16:leaf=0.520343781
+		4:[quantity<382.5] yes=9,no=10,missing=9
+			9:[RiskH.office.id&country<0.5] yes=17,no=18,missing=17
+				17:leaf=-0.204658657
+				18:leaf=0.228611931
+			10:[quantity<4661] yes=19,no=20,missing=19
+				19:leaf=0.0831520259
+				20:leaf=0.515142441
+	2:[RiskH.office.id&HS6<0.5] yes=5,no=6,missing=5
+		5:[RiskH.HS6&country<0.5] yes=11,no=12,missing=11
+			11:[RiskH.office.id&country<0.5] yes=21,no=22,missing=21
+				21:leaf=-0.0331786238
+				22:leaf=0.364043266
+			12:leaf=0.342668056
+		6:leaf=0.328679293
+booster[6]:
+0:[RiskH.importer.id<0.5] yes=1,no=2,missing=1
+	1:[RiskH.office.id&HS6<0.5] yes=3,no=4,missing=3
+		3:[RiskH.HS6&country<0.5] yes=7,no=8,missing=7
+			7:[RiskH.quantity<0.5] yes=15,no=16,missing=15
+				15:leaf=-0.274642259
+				16:leaf=-0.153633207
+			8:[tariff.code<8.70322688e+09] yes=17,no=18,missing=17
+				17:leaf=0.191860408
+				18:leaf=-0.0522001423
+		4:[tariff.code<8.70290227e+09] yes=9,no=10,missing=9
+			9:[RiskH.office.id&country<0.5] yes=19,no=20,missing=19
+				19:leaf=0.138616726
+				20:leaf=0.414784938
+			10:[tariff.code<8.71456563e+09] yes=21,no=22,missing=21
+				21:leaf=-0.13572605
+				22:leaf=0.391551465
+	2:[tariff.code<8.54840013e+09] yes=5,no=6,missing=5
+		5:[RiskH.office.id&HS6<0.5] yes=11,no=12,missing=11
+			11:[RiskH.quantity<0.5] yes=23,no=24,missing=23
+				23:leaf=0.0564575195
+				24:leaf=0.264889508
+			12:[quantity<3122] yes=25,no=26,missing=25
+				25:leaf=0.405580729
+				26:leaf=0.116121642
+		6:[tariff.code<8.70690406e+09] yes=13,no=14,missing=13
+			13:[RiskH.office.id&country<0.5] yes=27,no=28,missing=27
+				27:leaf=-0.113781445
+				28:leaf=0.326141536
+			14:[Unitprice<38328.875] yes=29,no=30,missing=29
+				29:leaf=0.322026819
+				30:leaf=-0.181196526
+booster[7]:
+0:[RiskH.office.id&importer.id<0.5] yes=1,no=2,missing=1
+	1:[RiskH.tariff.code<0.5] yes=3,no=4,missing=3
+		3:[RiskH.declarant.id<0.5] yes=7,no=8,missing=7
+			7:[RiskH.quantity<0.5] yes=15,no=16,missing=15
+				15:leaf=-0.249922886
+				16:leaf=-0.125407636
+			8:[RiskH.quantity<0.5] yes=17,no=18,missing=17
+				17:leaf=0.0270053931
+				18:leaf=0.267836362
+		4:[RiskH.office.id&country<0.5] yes=9,no=10,missing=9
+			9:[RiskH.declarant.id<0.5] yes=19,no=20,missing=19
+				19:leaf=0.126126975
+				20:leaf=0.45623529
+			10:[RiskH.quantity<0.5] yes=21,no=22,missing=21
+				21:leaf=0.255108386
+				22:leaf=0.577208757
+	2:[gross.weight<184035] yes=5,no=6,missing=5
+		5:[gross.weight<1046.5] yes=11,no=12,missing=11
+			11:[quantity<7689] yes=23,no=24,missing=23
+				23:leaf=0.309254467
+				24:leaf=-0.0257479195
+			12:[RiskH.office.id&HS6<0.5] yes=25,no=26,missing=25
+				25:leaf=0.0788871646
+				26:leaf=0.301902294
+		6:[tariff.code<8.70323302e+09] yes=13,no=14,missing=13
+			13:[Unitprice<4119.5] yes=27,no=28,missing=27
+				27:leaf=0.0711119398
+				28:leaf=-0.211843565
+			14:[TaxRatio<1.14626396] yes=29,no=30,missing=29
+				29:leaf=-0.291795284
+				30:leaf=0.0513440184
+booster[8]:
+0:[RiskH.importer.id<0.5] yes=1,no=2,missing=1
+	1:[RiskH.office.id&country<0.5] yes=3,no=4,missing=3
+		3:[RiskH.quantity<0.5] yes=7,no=8,missing=7
+			7:[RiskH.office.id&HS6<0.5] yes=15,no=16,missing=15
+				15:leaf=-0.234284624
+				16:leaf=-0.00753607042
+			8:[quantity<282] yes=17,no=18,missing=17
+				17:leaf=-0.147369102
+				18:leaf=0.14606528
+		4:[gross.weight<22963.5] yes=9,no=10,missing=9
+			9:[tariff.code<8.43141018e+09] yes=19,no=20,missing=19
+				19:leaf=0.271837294
+				20:leaf=0.109878764
+			10:[RiskH.HS2<0.5] yes=21,no=22,missing=21
+				21:leaf=-0.041904375
+				22:leaf=0.432509691
+	2:[RiskH.HS6&country<0.5] yes=5,no=6,missing=5
+		5:[RiskH.office.id&HS6<0.5] yes=11,no=12,missing=11
+			11:[RiskH.declarant.id<0.5] yes=23,no=24,missing=23
+				23:leaf=0.0135226799
+				24:leaf=0.321331412
+			12:[quantity<3122] yes=25,no=26,missing=25
+				25:leaf=0.364759237
+				26:leaf=-0.0231835656
+		6:[cif.value<820517.5] yes=13,no=14,missing=13
+			13:[quantity<5802.5] yes=27,no=28,missing=27
+				27:leaf=0.346777141
+				28:leaf=0.0568924583
+			14:leaf=0.0317771882
+booster[9]:
+0:[RiskH.HS6&country<0.5] yes=1,no=2,missing=1
+	1:[tariff.code<8.50211533e+09] yes=3,no=4,missing=3
+		3:[RiskH.office.id&HS6<0.5] yes=7,no=8,missing=7
+			7:[RiskH.declarant.id<0.5] yes=15,no=16,missing=15
+				15:leaf=-0.0902678818
+				16:leaf=0.184379295
+			8:[gross.weight<1025] yes=17,no=18,missing=17
+				17:leaf=0.362772882
+				18:leaf=0.114785127
+		4:[tariff.code<8.7046103e+09] yes=9,no=10,missing=9
+			9:[RiskH.office.id&importer.id<0.5] yes=19,no=20,missing=19
+				19:leaf=-0.210099801
+				20:leaf=0.0151752224
+			10:[total.taxes<7144] yes=21,no=22,missing=21
+				21:leaf=0.0531797521
+				22:leaf=0.29759419
+	2:[gross.weight<120118.5] yes=5,no=6,missing=5
+		5:[total.taxes<493.5] yes=11,no=12,missing=11
+			11:[gross.weight<94387.5] yes=23,no=24,missing=23
+				23:leaf=0.36110878
+				24:leaf=0.00465529691
+			12:[quantity<5648.5] yes=25,no=26,missing=25
+				25:leaf=0.193483084
+				26:leaf=-0.213732257
+		6:[RiskH.office.id&importer.id<0.5] yes=13,no=14,missing=13
+			13:[tariff.code<2.97191014e+09] yes=27,no=28,missing=27
+				27:leaf=0.2209979
+				28:leaf=-0.146250606
+			14:leaf=0.276089728
+booster[10]:
+0:[RiskH.quantity<0.5] yes=1,no=2,missing=1
+	1:[RiskH.importer.id<0.5] yes=3,no=4,missing=3
+		3:[gross.weight<1063.5] yes=7,no=8,missing=7
+			7:[quantity<1994] yes=15,no=16,missing=15
+				15:leaf=0.0499017946
+				16:leaf=-0.197622895
+			8:[RiskH.tariff.code<0.5] yes=17,no=18,missing=17
+				17:leaf=-0.195230454
+				18:leaf=0.0759814158
+		4:[quantity<2488] yes=9,no=10,missing=9
+			9:[total.taxes<469.5] yes=19,no=20,missing=19
+				19:leaf=0.303562284
+				20:leaf=0.0639326796
+			10:[RiskH.HS6&country<0.5] yes=21,no=22,missing=21
+				21:leaf=-0.336494744
+				22:leaf=-0.0140406452
+	2:[quantity<1636] yes=5,no=6,missing=5
+		5:[RiskH.tariff.code<0.5] yes=11,no=12,missing=11
+			11:[gross.weight<1013.5] yes=23,no=24,missing=23
+				23:leaf=0.0989877582
+				24:leaf=-0.0870123133
+			12:[TaxRatio<11.4070358] yes=25,no=26,missing=25
+				25:leaf=0.250733763
+				26:leaf=-0.193212226
+		6:[quantity<7860.5] yes=13,no=14,missing=13
+			13:[tariff.code<8.70290227e+09] yes=27,no=28,missing=27
+				27:leaf=0.341691226
+				28:leaf=0.0886639655
+			14:[WUnitprice<97.1016541] yes=29,no=30,missing=29
+				29:leaf=0.703210056
+				30:leaf=0.0145981191
+booster[11]:
+0:[gross.weight<231487.5] yes=1,no=2,missing=1
+	1:[RiskH.office.id&importer.id<0.5] yes=3,no=4,missing=3
+		3:[RiskH.office.id&country<0.5] yes=7,no=8,missing=7
+			7:[RiskH.declarant.id<0.5] yes=15,no=16,missing=15
+				15:leaf=-0.102642573
+				16:leaf=0.145372629
+			8:[gross.weight<162] yes=17,no=18,missing=17
+				17:leaf=0.349452853
+				18:leaf=0.112040274
+		4:[cif.value<2044] yes=9,no=10,missing=9
+			9:[tariff.code<8.42280499e+09] yes=19,no=20,missing=19
+				19:leaf=0.232275382
+				20:leaf=0.442277253
+			10:[RiskH.office.id&country<0.5] yes=21,no=22,missing=21
+				21:leaf=0.0995301679
+				22:leaf=0.311962277
+	2:[RiskH.importer.id<0.5] yes=5,no=6,missing=5
+		5:[RiskH.HS2<0.5] yes=11,no=12,missing=11
+			11:[RiskH.office.id&importer.id<0.5] yes=23,no=24,missing=23
+				23:leaf=-0.24102588
+				24:leaf=-0.064044781
+			12:[SGD.DayofYear<125.5] yes=25,no=26,missing=25
+				25:leaf=-0.0263815802
+				26:leaf=0.352161676
+		6:[SGD.DayofYear<46] yes=13,no=14,missing=13
+			13:[gross.weight<307765.5] yes=27,no=28,missing=27
+				27:leaf=0.524254918
+				28:leaf=-0.155411527
+			14:[WUnitprice<0.00513507379] yes=29,no=30,missing=29
+				29:leaf=0.264725864
+				30:leaf=-0.170669645
+booster[12]:
+0:[RiskH.HS6&country<0.5] yes=1,no=2,missing=1
+	1:[RiskH.quantity<0.5] yes=3,no=4,missing=3
+		3:[quantity<2577.5] yes=7,no=8,missing=7
+			7:[gross.weight<201994.5] yes=15,no=16,missing=15
+				15:leaf=-0.0656705946
+				16:leaf=-0.205948204
+			8:[quantity<4602] yes=17,no=18,missing=17
+				17:leaf=-0.206512108
+				18:leaf=-0.310948968
+		4:[quantity<222] yes=9,no=10,missing=9
+			9:[RiskH.importer.id<0.5] yes=19,no=20,missing=19
+				19:leaf=-0.0792210922
+				20:leaf=0.102557912
+			10:[quantity<7241] yes=21,no=22,missing=21
+				21:leaf=0.122381844
+				22:leaf=0.446338624
+	2:[total.taxes<490.5] yes=5,no=6,missing=5
+		5:[gross.weight<208486.5] yes=11,no=12,missing=11
+			11:[Unitprice<108780.5] yes=23,no=24,missing=23
+				23:leaf=0.330249071
+				24:leaf=0.0415551811
+			12:leaf=-0.0951812342
+		6:[RiskH.office.id&importer.id<0.5] yes=13,no=14,missing=13
+			13:[quantity<5607.5] yes=25,no=26,missing=25
+				25:leaf=0.11347279
+				26:leaf=-0.257549822
+			14:leaf=0.295425743
+booster[13]:
+0:[RiskH.office.id&HS6<0.5] yes=1,no=2,missing=1
+	1:[RiskH.importer.id<0.5] yes=3,no=4,missing=3
+		3:[total.taxes<340.5] yes=7,no=8,missing=7
+			7:[SGD.DayofYear<56.5] yes=15,no=16,missing=15
+				15:leaf=0.266365319
+				16:leaf=0.0757046267
+			8:[RiskH.declarant.id<0.5] yes=17,no=18,missing=17
+				17:leaf=-0.110979408
+				18:leaf=0.101177685
+		4:[tariff.code<2.82514509e+09] yes=9,no=10,missing=9
+			9:[SGD.DayofYear<210.5] yes=19,no=20,missing=19
+				19:leaf=0.316924512
+				20:leaf=-0.12201456
+			10:[RiskH.HS6&country<0.5] yes=21,no=22,missing=21
+				21:leaf=0.0328417681
+				22:leaf=0.24919121
+	2:[cif.value<2020] yes=5,no=6,missing=5
+		5:[total.taxes<97.5] yes=11,no=12,missing=11
+			11:leaf=0.0254255049
+			12:[SGD.DayofYear<11.5] yes=23,no=24,missing=23
+				23:leaf=0.0452177934
+				24:leaf=0.468624264
+		6:[gross.weight<151615.5] yes=13,no=14,missing=13
+			13:[quantity<1188] yes=25,no=26,missing=25
+				25:leaf=0.185624301
+				26:leaf=0.0199804157
+			14:[tariff.code<8.25855027e+09] yes=27,no=28,missing=27
+				27:leaf=0.128170446
+				28:leaf=-0.190664068
+booster[14]:
+0:[gross.weight<231487.5] yes=1,no=2,missing=1
+	1:[RiskH.tariff.code<0.5] yes=3,no=4,missing=3
+		3:[RiskH.office.id&importer.id<0.5] yes=7,no=8,missing=7
+			7:[RiskH.office.id&country<0.5] yes=15,no=16,missing=15
+				15:leaf=-0.058953695
+				16:leaf=0.0915987194
+			8:[cif.value<2044] yes=17,no=18,missing=17
+				17:leaf=0.352784067
+				18:leaf=0.088995412
+		4:[total.taxes<8669.5] yes=9,no=10,missing=9
+			9:[WUnitprice<0.0612280369] yes=19,no=20,missing=19
+				19:leaf=0.321199656
+				20:leaf=0.102359809
+			10:[TaxRatio<1.15613484] yes=21,no=22,missing=21
+				21:leaf=0.480435014
+				22:leaf=0.153564066
+	2:[RiskH.office.id&importer.id<0.5] yes=5,no=6,missing=5
+		5:[gross.weight<516689] yes=11,no=12,missing=11
+			11:[tariff.code<8.70328218e+09] yes=23,no=24,missing=23
+				23:leaf=-0.174946398
+				24:leaf=-0.0621484481
+			12:[WUnitprice<0.00184004451] yes=25,no=26,missing=25
+				25:leaf=0.00904106069
+				26:leaf=-0.259913266
+		6:[tariff.code<8.70323302e+09] yes=13,no=14,missing=13
+			13:[TaxRatio<0.332878113] yes=27,no=28,missing=27
+				27:leaf=0.27141577
+				28:leaf=-0.0398702472
+			14:[TaxRatio<1.14626396] yes=29,no=30,missing=29
+				29:leaf=-0.238992482
+				30:leaf=0.196991637
+booster[15]:
+0:[RiskH.quantity<0.5] yes=1,no=2,missing=1
+	1:[quantity<4602] yes=3,no=4,missing=3
+		3:[tariff.code<8.47299994e+09] yes=7,no=8,missing=7
+			7:[TaxUnitquantity<20695.5] yes=15,no=16,missing=15
+				15:leaf=0.0164083857
+				16:leaf=0.289220095
+			8:[total.taxes<505.5] yes=17,no=18,missing=17
+				17:leaf=0.0445586964
+				18:leaf=-0.0991256237
+		4:[RiskH.declarant.id<0.5] yes=9,no=10,missing=9
+			9:[total.taxes<110.5] yes=19,no=20,missing=19
+				19:leaf=-0.0944040194
+				20:leaf=-0.311743915
+			10:[quantity<6181] yes=21,no=22,missing=21
+				21:leaf=0.0182724949
+				22:leaf=-0.242392093
+	2:[quantity<222] yes=5,no=6,missing=5
+		5:[tariff.code<8.90600038e+09] yes=11,no=12,missing=11
+			11:[RiskH.HS6&country<0.5] yes=23,no=24,missing=23
+				23:leaf=-0.0376674347
+				24:leaf=0.173088282
+			12:[WUnitprice<1.71956158] yes=25,no=26,missing=25
+				25:leaf=0.506014824
+				26:leaf=0.123437308
+		6:[TaxUnitquantity<0.275423408] yes=13,no=14,missing=13
+			13:[total.taxes<1436] yes=27,no=28,missing=27
+				27:leaf=0.246436998
+				28:leaf=0.533289492
+			14:[total.taxes<6573.5] yes=29,no=30,missing=29
+				29:leaf=0.0430840105
+				30:leaf=0.244061068
+booster[16]:
+0:[gross.weight<1035.5] yes=1,no=2,missing=1
+	1:[RiskH.office.id&importer.id<0.5] yes=3,no=4,missing=3
+		3:[gross.weight<981.5] yes=7,no=8,missing=7
+			7:[SGD.DayofYear<175.5] yes=15,no=16,missing=15
+				15:leaf=0.0691008568
+				16:leaf=-0.0836926475
+			8:[gross.weight<988.5] yes=17,no=18,missing=17
+				17:leaf=0.536947846
+				18:leaf=0.149307802
+		4:[TaxRatio<4.41422033] yes=9,no=10,missing=9
+			9:[SGD.DayofYear<216.5] yes=19,no=20,missing=19
+				19:leaf=0.281732827
+				20:leaf=0.0026685996
+			10:[Unitprice<213.29808] yes=21,no=22,missing=21
+				21:leaf=-0.247352287
+				22:leaf=0.264743686
+	2:[gross.weight<330278] yes=5,no=6,missing=5
+		5:[RiskH.office.id&HS6<0.5] yes=11,no=12,missing=11
+			11:[total.taxes<275.5] yes=23,no=24,missing=23
+				23:leaf=0.119104631
+				24:leaf=-0.0477491245
+			12:[TaxRatio<0.0255140923] yes=25,no=26,missing=25
+				25:leaf=0.178947747
+				26:leaf=0.0583744943
+		6:[cif.value<2244.5] yes=13,no=14,missing=13
+			13:[TaxUnitquantity<204.90625] yes=27,no=28,missing=27
+				27:leaf=-0.0629707947
+				28:leaf=0.566942275
+			14:[RiskH.office.id&country<0.5] yes=29,no=30,missing=29
+				29:leaf=-0.175012857
+				30:leaf=0.156172812
+booster[17]:
+0:[RiskH.office.id&importer.id<0.5] yes=1,no=2,missing=1
+	1:[RiskH.HS4<0.5] yes=3,no=4,missing=3
+		3:[RiskH.importer.id<0.5] yes=7,no=8,missing=7
+			7:[RiskH.quantity<0.5] yes=15,no=16,missing=15
+				15:leaf=-0.0832270458
+				16:leaf=-0.00680644298
+			8:[gross.weight<160.5] yes=17,no=18,missing=17
+				17:leaf=0.306885719
+				18:leaf=0.0539587438
+		4:[tariff.code<2.81889997e+09] yes=9,no=10,missing=9
+			9:[Unitprice<132.835526] yes=19,no=20,missing=19
+				19:leaf=0.0421111435
+				20:leaf=0.589586616
+			10:[tariff.code<8.42250496e+09] yes=21,no=22,missing=21
+				21:leaf=0.0351555981
+				22:leaf=0.214601383
+	2:[RiskH.declarant.id<0.5] yes=5,no=6,missing=5
+		5:[total.taxes<2623.5] yes=11,no=12,missing=11
+			11:[tariff.code<8.70421709e+09] yes=23,no=24,missing=23
+				23:leaf=0.115580462
+				24:leaf=0.359850645
+			12:[total.taxes<5753.5] yes=25,no=26,missing=25
+				25:leaf=-0.0784093663
+				26:leaf=0.0803017542
+		6:[TaxUnitquantity<0.379197419] yes=13,no=14,missing=13
+			13:[gross.weight<5298.5] yes=27,no=28,missing=27
+				27:leaf=-0.130786523
+				28:leaf=0.210869029
+			14:[total.taxes<31970] yes=29,no=30,missing=29
+				29:leaf=0.376637906
+				30:leaf=0.113286726
+booster[18]:
+0:[RiskH.HS6&country<0.5] yes=1,no=2,missing=1
+	1:[tariff.code<7.06194483e+09] yes=3,no=4,missing=3
+		3:[tariff.code<5.90440038e+09] yes=7,no=8,missing=7
+			7:[tariff.code<2.81270989e+09] yes=15,no=16,missing=15
+				15:leaf=0.117089398
+				16:leaf=-0.0421746187
+			8:[RiskH.office.id&country<0.5] yes=17,no=18,missing=17
+				17:leaf=0.173009574
+				18:leaf=0.471229911
+		4:[tariff.code<8.7046103e+09] yes=9,no=10,missing=9
+			9:[RiskH.declarant.id<0.5] yes=19,no=20,missing=19
+				19:leaf=-0.0635516122
+				20:leaf=0.0905558318
+			10:[TaxUnitquantity<1.06236446] yes=21,no=22,missing=21
+				21:leaf=-0.0722348467
+				22:leaf=0.143431544
+	2:[tariff.code<6.50699469e+09] yes=5,no=6,missing=5
+		5:[tariff.code<3.00439501e+09] yes=11,no=12,missing=11
+			11:[quantity<3792] yes=23,no=24,missing=23
+				23:leaf=0.291116774
+				24:leaf=-0.0477648936
+			12:[tariff.code<3.00500019e+09] yes=25,no=26,missing=25
+				25:leaf=-0.644359767
+				26:leaf=0.0731764883
+		6:[tariff.code<8.70200115e+09] yes=13,no=14,missing=13
+			13:[RiskH.HS6<0.5] yes=27,no=28,missing=27
+				27:leaf=0.350658029
+				28:leaf=0.166335046
+			14:[Unitprice<1867.25] yes=29,no=30,missing=29
+				29:leaf=-0.00997102633
+				30:leaf=0.205295444
+booster[19]:
+0:[gross.weight<516689] yes=1,no=2,missing=1
+	1:[RiskH.office.id&HS6<0.5] yes=3,no=4,missing=3
+		3:[RiskH.HS6&country<0.5] yes=7,no=8,missing=7
+			7:[tariff.code<2.8096e+09] yes=15,no=16,missing=15
+				15:leaf=0.077143535
+				16:leaf=-0.0274860878
+			8:[total.taxes<490.5] yes=17,no=18,missing=17
+				17:leaf=0.225614429
+				18:leaf=0.0660452619
+		4:[cif.value<2690.5] yes=9,no=10,missing=9
+			9:[WUnitprice<2.57863522] yes=19,no=20,missing=19
+				19:leaf=0.176630035
+				20:leaf=0.410473585
+			10:[RiskH.office.id&importer.id<0.5] yes=21,no=22,missing=21
+				21:leaf=0.0373473763
+				22:leaf=0.255633056
+	2:[cif.value<2480.5] yes=5,no=6,missing=5
+		5:[WUnitprice<0.00188374263] yes=11,no=12,missing=11
+			11:leaf=0.348543465
+			12:leaf=-0.078135252
+		6:[WUnitprice<0.364624262] yes=13,no=14,missing=13
+			13:[total.taxes<30723] yes=23,no=24,missing=23
+				23:leaf=-0.229388297
+				24:leaf=0.0490210503
+			14:[cif.value<252997.5] yes=25,no=26,missing=25
+				25:leaf=-0.176836312
+				26:leaf=0.120790139
+booster[20]:
+0:[RiskH.office.id&importer.id<0.5] yes=1,no=2,missing=1
+	1:[cif.value<2690.5] yes=3,no=4,missing=3
+		3:[Unitprice<2667.5] yes=7,no=8,missing=7
+			7:[total.taxes<84001] yes=15,no=16,missing=15
+				15:leaf=0.0371181518
+				16:leaf=0.489360183
+			8:[tariff.code<5.55806566e+09] yes=17,no=18,missing=17
+				17:leaf=0.148588926
+				18:leaf=0.643835127
+		4:[WUnitprice<11.5713501] yes=9,no=10,missing=9
+			9:[total.taxes<49798] yes=19,no=20,missing=19
+				19:leaf=-0.0551854633
+				20:leaf=0.12030635
+			10:[cif.value<66076] yes=21,no=22,missing=21
+				21:leaf=0.0825721771
+				22:leaf=-0.0202878807
+	2:[RiskH.office.id&country<0.5] yes=5,no=6,missing=5
+		5:[Unitprice<130.168152] yes=11,no=12,missing=11
+			11:[gross.weight<524.5] yes=23,no=24,missing=23
+				23:leaf=0.232947007
+				24:leaf=-0.0624359399
+			12:[Unitprice<7746.5] yes=25,no=26,missing=25
+				25:leaf=0.171174705
+				26:leaf=0.0104926275
+		6:[total.taxes<30986.5] yes=13,no=14,missing=13
+			13:[TaxUnitquantity<0.0536907166] yes=27,no=28,missing=27
+				27:leaf=0.0779750571
+				28:leaf=0.331937015
+			14:leaf=-0.0631498396
+booster[21]:
+0:[RiskH.office.id&country<0.5] yes=1,no=2,missing=1
+	1:[cif.value<2025.5] yes=3,no=4,missing=3
+		3:[tariff.code<8.70305587e+09] yes=7,no=8,missing=7
+			7:[cif.value<1776.5] yes=15,no=16,missing=15
+				15:leaf=-0.0518599786
+				16:leaf=0.125543579
+			8:[total.taxes<432.5] yes=17,no=18,missing=17
+				17:leaf=-0.20812948
+				18:leaf=0.316403836
+		4:[RiskH.declarant.id<0.5] yes=9,no=10,missing=9
+			9:[TaxRatio<0.000449406187] yes=19,no=20,missing=19
+				19:leaf=0.126929224
+				20:leaf=-0.030818183
+			10:[WUnitprice<433.27417] yes=21,no=22,missing=21
+				21:leaf=0.0554397069
+				22:leaf=0.361759335
+	2:[cif.value<2520.5] yes=5,no=6,missing=5
+		5:[RiskH.quantity<0.5] yes=11,no=12,missing=11
+			11:[TaxRatio<5.13307285] yes=23,no=24,missing=23
+				23:leaf=-0.256314516
+				24:leaf=0.0492185205
+			12:[WUnitprice<1.04400551] yes=25,no=26,missing=25
+				25:leaf=0.181822106
+				26:leaf=-0.157939062
+		6:[cif.value<2653.5] yes=13,no=14,missing=13
+			13:[TaxUnitquantity<1.18955135] yes=27,no=28,missing=27
+				27:leaf=-0.0348432213
+				28:leaf=0.418659657
+			14:[Unitprice<284175.5] yes=29,no=30,missing=29
+				29:leaf=0.0722461492
+				30:leaf=0.498541385
+booster[22]:
+0:[RiskH.importer.id<0.5] yes=1,no=2,missing=1
+	1:[gross.weight<486043.5] yes=3,no=4,missing=3
+		3:[tariff.code<8.704e+09] yes=7,no=8,missing=7
+			7:[total.taxes<505.5] yes=15,no=16,missing=15
+				15:leaf=0.0377201736
+				16:leaf=-0.0311663114
+			8:[total.taxes<638.5] yes=17,no=18,missing=17
+				17:leaf=-0.0321720541
+				18:leaf=0.111236103
+		4:[tariff.code<8.70290227e+09] yes=9,no=10,missing=9
+			9:[TaxRatio<0.016210163] yes=19,no=20,missing=19
+				19:leaf=0.261142462
+				20:leaf=-0.0838591754
+			10:[total.taxes<527.5] yes=21,no=22,missing=21
+				21:leaf=0.0149399983
+				22:leaf=-0.217233256
+	2:[quantity<1472.5] yes=5,no=6,missing=5
+		5:[TaxRatio<7.32592297] yes=11,no=12,missing=11
+			11:[TaxRatio<0.390807092] yes=23,no=24,missing=23
+				23:leaf=0.0594351552
+				24:leaf=0.15675737
+			12:[RiskH.office.id&HS6<0.5] yes=25,no=26,missing=25
+				25:leaf=-0.211931333
+				26:leaf=0.170717955
+		6:[RiskH.quantity<0.5] yes=13,no=14,missing=13
+			13:[SGD.DayofYear<20.5] yes=27,no=28,missing=27
+				27:leaf=0.199801341
+				28:leaf=-0.220494255
+			14:[quantity<3544] yes=29,no=30,missing=29
+				29:leaf=-0.0168335792
+				30:leaf=0.277258396
+booster[23]:
+0:[RiskH.HS6&country<0.5] yes=1,no=2,missing=1
+	1:[RiskH.office.id&HS6<0.5] yes=3,no=4,missing=3
+		3:[RiskH.HS6<0.5] yes=7,no=8,missing=7
+			7:[total.taxes<2754.5] yes=15,no=16,missing=15
+				15:leaf=0.000132382542
+				16:leaf=-0.0454222113
+			8:[total.taxes<1691.5] yes=17,no=18,missing=17
+				17:leaf=-0.00169391441
+				18:leaf=0.148935378
+		4:[cif.value<1785] yes=9,no=10,missing=9
+			9:[total.taxes<18943] yes=19,no=20,missing=19
+				19:leaf=0.378262848
+				20:leaf=0.0221498888
+			10:[TaxUnitquantity<6303] yes=21,no=22,missing=21
+				21:leaf=0.0338925384
+				22:leaf=0.193169251
+	2:[RiskH.HS4<0.5] yes=5,no=6,missing=5
+		5:[tariff.code<6.50699469e+09] yes=11,no=12,missing=11
+			11:[tariff.code<3.00439501e+09] yes=23,no=24,missing=23
+				23:leaf=0.208736882
+				24:leaf=-0.132539049
+			12:[tariff.code<8.65605018e+09] yes=25,no=26,missing=25
+				25:leaf=0.296190947
+				26:leaf=0.0195458997
+		6:[TaxUnitquantity<3000.5] yes=13,no=14,missing=13
+			13:[quantity<2371] yes=27,no=28,missing=27
+				27:leaf=0.301761448
+				28:leaf=0.0609365106
+			14:leaf=0.0308434777
+booster[24]:
+0:[RiskH.office.id&importer.id<0.5] yes=1,no=2,missing=1
+	1:[total.taxes<7049.5] yes=3,no=4,missing=3
+		3:[total.taxes<2760.5] yes=7,no=8,missing=7
+			7:[WUnitprice<0.0200805366] yes=15,no=16,missing=15
+				15:leaf=-0.106580906
+				16:leaf=0.0104375668
+			8:[gross.weight<50536.5] yes=17,no=18,missing=17
+				17:leaf=-0.0993495435
+				18:leaf=-0.0178522263
+		4:[RiskH.office.id<0.5] yes=9,no=10,missing=9
+			9:[gross.weight<168561.5] yes=19,no=20,missing=19
+				19:leaf=0.0605910942
+				20:leaf=-0.0705502704
+			10:[SGD.DayofYear<182.5] yes=21,no=22,missing=21
+				21:leaf=-0.286245346
+				22:leaf=0.144583225
+	2:[RiskH.declarant.id<0.5] yes=5,no=6,missing=5
+		5:[RiskH.office.id&country<0.5] yes=11,no=12,missing=11
+			11:[gross.weight<41833] yes=23,no=24,missing=23
+				23:leaf=0.00146573177
+				24:leaf=0.129405588
+			12:[total.taxes<30986.5] yes=25,no=26,missing=25
+				25:leaf=0.283532739
+				26:leaf=-0.0680397376
+		6:[TaxUnitquantity<0.379197419] yes=13,no=14,missing=13
+			13:leaf=0.000411343353
+			14:[total.taxes<31970] yes=27,no=28,missing=27
+				27:leaf=0.338610083
+				28:leaf=0.0473555326
+booster[25]:
+0:[gross.weight<45246] yes=1,no=2,missing=1
+	1:[gross.weight<30079.5] yes=3,no=4,missing=3
+		3:[total.taxes<76844.5] yes=7,no=8,missing=7
+			7:[tariff.code<8.70415565e+09] yes=15,no=16,missing=15
+				15:leaf=-0.00785522256
+				16:leaf=0.0608522631
+			8:[SGD.DayofYear<48.5] yes=17,no=18,missing=17
+				17:leaf=0.57098192
+				18:leaf=0.068382822
+		4:[WUnitprice<0.0645802617] yes=9,no=10,missing=9
+			9:[WUnitprice<0.0599632971] yes=19,no=20,missing=19
+				19:leaf=-0.101583593
+				20:leaf=0.538841426
+			10:[total.taxes<459.5] yes=21,no=22,missing=21
+				21:leaf=0.100512445
+				22:leaf=-0.212274686
+	2:[gross.weight<125560] yes=5,no=6,missing=5
+		5:[TaxUnitquantity<491.5] yes=11,no=12,missing=11
+			11:[TaxUnitquantity<66.5761261] yes=23,no=24,missing=23
+				23:leaf=0.157311603
+				24:leaf=-0.0287514757
+			12:[TaxRatio<0.236530304] yes=25,no=26,missing=25
+				25:leaf=0.565772355
+				26:leaf=0.162157387
+		6:[gross.weight<549728] yes=13,no=14,missing=13
+			13:[SGD.DayofYear<76.5] yes=27,no=28,missing=27
+				27:leaf=0.0634005964
+				28:leaf=-0.0380562842
+			14:[WUnitprice<0.00199789554] yes=29,no=30,missing=29
+				29:leaf=0.162348107
+				30:leaf=-0.165574402
+booster[26]:
+0:[RiskH.quantity<0.5] yes=1,no=2,missing=1
+	1:[quantity<2577.5] yes=3,no=4,missing=3
+		3:[SGD.DayofYear<8.5] yes=7,no=8,missing=7
+			7:[TaxUnitquantity<940.75] yes=15,no=16,missing=15
+				15:leaf=0.245896131
+				16:leaf=-0.0677269921
+			8:[WUnitprice<339.555328] yes=17,no=18,missing=17
+				17:leaf=-0.00412718626
+				18:leaf=0.142184705
+		4:[quantity<4602] yes=9,no=10,missing=9
+			9:[quantity<4528.5] yes=19,no=20,missing=19
+				19:leaf=-0.143126518
+				20:leaf=0.369997114
+			10:[quantity<5333.5] yes=21,no=22,missing=21
+				21:leaf=-0.196076751
+				22:leaf=-0.306989491
+	2:[quantity<1636] yes=5,no=6,missing=5
+		5:[tariff.code<1.10766003e+09] yes=11,no=12,missing=11
+			11:[TaxRatio<0.00713250227] yes=23,no=24,missing=23
+				23:leaf=0.13408564
+				24:leaf=-0.270382106
+			12:[tariff.code<2.40114995e+09] yes=25,no=26,missing=25
+				25:leaf=0.205899671
+				26:leaf=-0.00949965697
+		6:[quantity<9114.5] yes=13,no=14,missing=13
+			13:[TaxRatio<0.0197360292] yes=27,no=28,missing=27
+				27:leaf=0.285767525
+				28:leaf=0.106040366
+			14:[WUnitprice<107.517227] yes=29,no=30,missing=29
+				29:leaf=0.453186691
+				30:leaf=-0.00982386805
+booster[27]:
+0:[RiskH.office.id&importer.id<0.5] yes=1,no=2,missing=1
+	1:[TaxUnitquantity<0.372791767] yes=3,no=4,missing=3
+		3:[RiskH.quantity<0.5] yes=7,no=8,missing=7
+			7:[quantity<4411.5] yes=15,no=16,missing=15
+				15:leaf=-0.103441678
+				16:leaf=-0.272428274
+			8:[quantity<1756.5] yes=17,no=18,missing=17
+				17:leaf=-0.0576829761
+				18:leaf=0.15581724
+		4:[TaxUnitquantity<1.27304256] yes=9,no=10,missing=9
+			9:[total.taxes<553.5] yes=19,no=20,missing=19
+				19:leaf=0.188796908
+				20:leaf=-7.80270202e-05
+			10:[tariff.code<8.70324224e+09] yes=21,no=22,missing=21
+				21:leaf=-0.0206733719
+				22:leaf=0.0277107339
+	2:[cif.value<2044] yes=5,no=6,missing=5
+		5:[WUnitprice<1.81487417] yes=11,no=12,missing=11
+			11:[tariff.code<8.41226496e+09] yes=23,no=24,missing=23
+				23:leaf=0.105678603
+				24:leaf=0.353001714
+			12:leaf=-0.0315276161
+		6:[cif.value<2536.5] yes=13,no=14,missing=13
+			13:[TaxUnitquantity<722] yes=25,no=26,missing=25
+				25:leaf=-0.271407783
+				26:leaf=0.176381871
+			14:[SGD.DayofYear<220.5] yes=27,no=28,missing=27
+				27:leaf=0.0368232317
+				28:leaf=0.210920945
+booster[28]:
+0:[RiskH.HS6&country<0.5] yes=1,no=2,missing=1
+	1:[tariff.code<7.06194483e+09] yes=3,no=4,missing=3
+		3:[tariff.code<5.50624973e+09] yes=7,no=8,missing=7
+			7:[tariff.code<2.81270989e+09] yes=15,no=16,missing=15
+				15:leaf=0.0433689132
+				16:leaf=-0.0511835702
+			8:[cif.value<1832] yes=17,no=18,missing=17
+				17:leaf=-0.183349237
+				18:leaf=0.157169357
+		4:[tariff.code<7.60114995e+09] yes=9,no=10,missing=9
+			9:[cif.value<61907.5] yes=19,no=20,missing=19
+				19:leaf=-0.23311536
+				20:leaf=-0.0883331224
+			10:[total.taxes<6316.5] yes=21,no=22,missing=21
+				21:leaf=-0.0218298342
+				22:leaf=0.0410689898
+	2:[RiskH.HS4<0.5] yes=5,no=6,missing=5
+		5:[WUnitprice<26.3838425] yes=11,no=12,missing=11
+			11:[WUnitprice<0.395838737] yes=23,no=24,missing=23
+				23:leaf=0.128807724
+				24:leaf=-0.0581296459
+			12:[Unitprice<27762.082] yes=25,no=26,missing=25
+				25:leaf=0.212389976
+				26:leaf=0.00505720545
+		6:[SGD.DayofYear<41.5] yes=13,no=14,missing=13
+			13:leaf=0.0146191102
+			14:leaf=0.273289472
+booster[29]:
+0:[cif.value<2690.5] yes=1,no=2,missing=1
+	1:[cif.value<2577.5] yes=3,no=4,missing=3
+		3:[cif.value<2325.5] yes=7,no=8,missing=7
+			7:[cif.value<2313.5] yes=15,no=16,missing=15
+				15:leaf=0.0266129244
+				16:leaf=0.359635353
+			8:[total.taxes<4645.5] yes=17,no=18,missing=17
+				17:leaf=-0.14406082
+				18:leaf=0.0799960569
+		4:[gross.weight<1505] yes=9,no=10,missing=9
+			9:[RiskH.declarant.id<0.5] yes=19,no=20,missing=19
+				19:leaf=-0.111434735
+				20:leaf=0.298111141
+			10:[SGD.DayofYear<126.5] yes=21,no=22,missing=21
+				21:leaf=0.28403312
+				22:leaf=0.0983047113
+	2:[gross.weight<28.5] yes=5,no=6,missing=5
+		5:[cif.value<3487.5] yes=11,no=12,missing=11
+			11:leaf=0.543969095
+			12:[WUnitprice<1577.0896] yes=23,no=24,missing=23
+				23:leaf=-0.0628054664
+				24:leaf=0.274801105
+		6:[cif.value<13764.5] yes=13,no=14,missing=13
+			13:[cif.value<9062.5] yes=25,no=26,missing=25
+				25:leaf=-0.0169525165
+				26:leaf=-0.201764271
+			14:[cif.value<14507.5] yes=27,no=28,missing=27
+				27:leaf=0.573590934
+				28:leaf=0.00751857227
+booster[30]:
+0:[gross.weight<49697.5] yes=1,no=2,missing=1
+	1:[gross.weight<30262.5] yes=3,no=4,missing=3
+		3:[gross.weight<2114.5] yes=7,no=8,missing=7
+			7:[gross.weight<1709.5] yes=15,no=16,missing=15
+				15:leaf=0.00921220239
+				16:leaf=-0.136429161
+			8:[gross.weight<2234.5] yes=17,no=18,missing=17
+				17:leaf=0.29562813
+				18:leaf=0.0164625775
+		4:[RiskH.declarant.id<0.5] yes=9,no=10,missing=9
+			9:[cif.value<2466.5] yes=19,no=20,missing=19
+				19:leaf=0.0851757303
+				20:leaf=-0.181589529
+			10:[gross.weight<32918] yes=21,no=22,missing=21
+				21:leaf=-0.160002351
+				22:leaf=0.413405061
+	2:[gross.weight<125270.5] yes=5,no=6,missing=5
+		5:[tariff.code<8.70322176e+09] yes=11,no=12,missing=11
+			11:[TaxUnitquantity<2428.5] yes=23,no=24,missing=23
+				23:leaf=0.0296012554
+				24:leaf=0.274028063
+			12:[tariff.code<8.70332314e+09] yes=25,no=26,missing=25
+				25:leaf=0.376863718
+				26:leaf=0.0685308427
+		6:[WUnitprice<3.50693178] yes=13,no=14,missing=13
+			13:[WUnitprice<2.08564854] yes=27,no=28,missing=27
+				27:leaf=-0.0134490719
+				28:leaf=0.346570253
+			14:[SGD.DayofYear<77] yes=29,no=30,missing=29
+				29:leaf=0.102929965
+				30:leaf=-0.323795676
+booster[31]:
+0:[tariff.code<1.10665101e+09] yes=1,no=2,missing=1
+	1:[total.taxes<2837.5] yes=3,no=4,missing=3
+		3:[total.taxes<2518.5] yes=7,no=8,missing=7
+			7:[cif.value<168729.5] yes=15,no=16,missing=15
+				15:leaf=-0.0914106965
+				16:leaf=0.140466049
+			8:[RiskH.quantity<0.5] yes=17,no=18,missing=17
+				17:leaf=0.454220861
+				18:leaf=0.0569909811
+		4:[WUnitprice<0.303099096] yes=9,no=10,missing=9
+			9:[total.taxes<6934] yes=19,no=20,missing=19
+				19:leaf=-0.191374436
+				20:leaf=0.269166738
+			10:[TaxRatio<0.0172247179] yes=21,no=22,missing=21
+				21:leaf=0.0559799485
+				22:leaf=-0.320265353
+	2:[tariff.code<2.8096e+09] yes=5,no=6,missing=5
+		5:[cif.value<37075.5] yes=11,no=12,missing=11
+			11:[cif.value<19001] yes=23,no=24,missing=23
+				23:leaf=0.0548752062
+				24:leaf=-0.164003223
+			12:[gross.weight<23424.5] yes=25,no=26,missing=25
+				25:leaf=0.31712383
+				26:leaf=-0.101047613
+		6:[tariff.code<3.21105459e+09] yes=13,no=14,missing=13
+			13:[RiskH.office.id&importer.id<0.5] yes=27,no=28,missing=27
+				27:leaf=-0.165326133
+				28:leaf=0.121653363
+			14:[tariff.code<3.40409498e+09] yes=29,no=30,missing=29
+				29:leaf=0.203043789
+				30:leaf=0.00157908828
+booster[32]:
+0:[RiskH.office.id&HS6<0.5] yes=1,no=2,missing=1
+	1:[Unitprice<1131531.75] yes=3,no=4,missing=3
+		3:[TaxRatio<0.0601042137] yes=7,no=8,missing=7
+			7:[cif.value<3517389] yes=15,no=16,missing=15
+				15:leaf=-0.0297124032
+				16:leaf=0.319507003
+			8:[cif.value<13539] yes=17,no=18,missing=17
+				17:leaf=-0.0096142469
+				18:leaf=0.071805954
+		4:[SGD.DayofYear<184.5] yes=9,no=10,missing=9
+			9:[cif.value<3740170] yes=19,no=20,missing=19
+				19:leaf=0.424578935
+				20:leaf=0.0199912172
+			10:leaf=-0.179164678
+	2:[WUnitprice<210.453918] yes=5,no=6,missing=5
+		5:[TaxRatio<0.0346516296] yes=11,no=12,missing=11
+			11:[SGD.DayofYear<116.5] yes=21,no=22,missing=21
+				21:leaf=0.199742198
+				22:leaf=0.0504260473
+			12:[SGD.DayofYear<9.5] yes=23,no=24,missing=23
+				23:leaf=-0.212206855
+				24:leaf=0.0337316766
+		6:[TaxRatio<0.00291442499] yes=13,no=14,missing=13
+			13:[tariff.code<7.37064499e+09] yes=25,no=26,missing=25
+				25:leaf=0.0182763375
+				26:leaf=-0.429939657
+			14:[WUnitprice<1373.64648] yes=27,no=28,missing=27
+				27:leaf=-0.0893567875
+				28:leaf=0.2530967
+booster[33]:
+0:[total.taxes<2630.5] yes=1,no=2,missing=1
+	1:[total.taxes<1697] yes=3,no=4,missing=3
+		3:[SGD.DayofYear<70.5] yes=7,no=8,missing=7
+			7:[TaxUnitquantity<0.36762467] yes=15,no=16,missing=15
+				15:leaf=-0.0932338312
+				16:leaf=0.0661402792
+			8:[WUnitprice<2.37527704] yes=17,no=18,missing=17
+				17:leaf=0.0109343659
+				18:leaf=-0.0365060344
+		4:[TaxUnitquantity<2614.5] yes=9,no=10,missing=9
+			9:[TaxRatio<0.592297435] yes=19,no=20,missing=19
+				19:leaf=0.0466408357
+				20:leaf=0.211970523
+			10:leaf=0.711881876
+	2:[total.taxes<5680.5] yes=5,no=6,missing=5
+		5:[WUnitprice<3.13667393] yes=11,no=12,missing=11
+			11:[gross.weight<1095.5] yes=21,no=22,missing=21
+				21:leaf=0.295493424
+				22:leaf=-0.0262034107
+			12:[WUnitprice<10.0766134] yes=23,no=24,missing=23
+				23:leaf=-0.211415306
+				24:leaf=-0.0415964462
+		6:[tariff.code<8.70322688e+09] yes=13,no=14,missing=13
+			13:[TaxRatio<39.3942108] yes=25,no=26,missing=25
+				25:leaf=-0.0256438497
+				26:leaf=0.319103569
+			14:[TaxUnitquantity<29311] yes=27,no=28,missing=27
+				27:leaf=0.0648274049
+				28:leaf=-0.15363428
+booster[34]:
+0:[RiskH.office.id&importer.id<0.5] yes=1,no=2,missing=1
+	1:[RiskH.office.id<0.5] yes=3,no=4,missing=3
+		3:[WUnitprice<0.0205466226] yes=7,no=8,missing=7
+			7:[WUnitprice<0.0153915137] yes=15,no=16,missing=15
+				15:leaf=-0.0252422746
+				16:leaf=-0.147428796
+			8:[WUnitprice<0.0653795749] yes=17,no=18,missing=17
+				17:leaf=0.0721168071
+				18:leaf=-0.00406300137
+		4:[TaxRatio<0.00037528557] yes=9,no=10,missing=9
+			9:[SGD.DayofYear<166.5] yes=19,no=20,missing=19
+				19:leaf=-0.0557482466
+				20:leaf=0.506866932
+			10:[RiskH.HS6&country<0.5] yes=21,no=22,missing=21
+				21:leaf=-0.209800452
+				22:leaf=0.167686075
+	2:[tariff.code<8.70423245e+09] yes=5,no=6,missing=5
+		5:[gross.weight<7488.5] yes=11,no=12,missing=11
+			11:[gross.weight<2648] yes=23,no=24,missing=23
+				23:leaf=0.000174953704
+				24:leaf=-0.272285283
+			12:[total.taxes<33287] yes=25,no=26,missing=25
+				25:leaf=0.09710747
+				26:leaf=-0.185999364
+		6:[gross.weight<127004] yes=13,no=14,missing=13
+			13:[Unitprice<31076.5] yes=27,no=28,missing=27
+				27:leaf=0.297400981
+				28:leaf=-0.0499084704
+			14:[TaxRatio<0.109877348] yes=29,no=30,missing=29
+				29:leaf=0.00282299565
+				30:leaf=-0.199707225
+booster[35]:
+0:[gross.weight<22545] yes=1,no=2,missing=1
+	1:[gross.weight<16470.5] yes=3,no=4,missing=3
+		3:[quantity<1.5] yes=7,no=8,missing=7
+			7:[gross.weight<12124.5] yes=15,no=16,missing=15
+				15:leaf=0.0558845997
+				16:leaf=-0.215890139
+			8:[total.taxes<90251] yes=17,no=18,missing=17
+				17:leaf=-0.0149446772
+				18:leaf=0.192584157
+		4:[tariff.code<8.71160525e+09] yes=9,no=10,missing=9
+			9:[quantity<19.5] yes=19,no=20,missing=19
+				19:leaf=-0.0163864717
+				20:leaf=0.158785328
+			10:[TaxUnitquantity<0.499046624] yes=21,no=22,missing=21
+				21:leaf=-0.0520003811
+				22:leaf=0.542524338
+	2:[gross.weight<42264.5] yes=5,no=6,missing=5
+		5:[quantity<2303.5] yes=11,no=12,missing=11
+			11:[quantity<1957.5] yes=23,no=24,missing=23
+				23:leaf=-0.0728227571
+				24:leaf=0.298039675
+			12:[quantity<7145] yes=25,no=26,missing=25
+				25:leaf=-0.277022988
+				26:leaf=0.0145485988
+		6:[gross.weight<202038] yes=13,no=14,missing=13
+			13:[SGD.DayofYear<39.5] yes=27,no=28,missing=27
+				27:leaf=-0.0621678941
+				28:leaf=0.058300782
+			14:[gross.weight<204807] yes=29,no=30,missing=29
+				29:leaf=-0.335195541
+				30:leaf=-0.0216074456
+booster[36]:
+0:[cif.value<1449] yes=1,no=2,missing=1
+	1:[RiskH.quantity<0.5] yes=3,no=4,missing=3
+		3:leaf=0.426697016
+		4:leaf=-0.0771848261
+	2:[RiskH.HS6&country<0.5] yes=5,no=6,missing=5
+		5:[cif.value<3089062] yes=7,no=8,missing=7
+			7:[cif.value<1090023] yes=11,no=12,missing=11
+				11:leaf=-0.0039091846
+				12:leaf=-0.131616607
+			8:[cif.value<3874265] yes=13,no=14,missing=13
+				13:leaf=0.540630341
+				14:leaf=-0.14363125
+		6:[tariff.code<8.70200115e+09] yes=9,no=10,missing=9
+			9:[tariff.code<6.50699469e+09] yes=15,no=16,missing=15
+				15:leaf=0.0189568307
+				16:leaf=0.257683277
+			10:[Unitprice<144344.75] yes=17,no=18,missing=17
+				17:leaf=-0.0374769345
+				18:leaf=0.363363624
+booster[37]:
+0:[gross.weight<14.5] yes=1,no=2,missing=1
+	1:[TaxRatio<0.0129106734] yes=3,no=4,missing=3
+		3:leaf=-0.072998248
+		4:[TaxRatio<0.100151137] yes=7,no=8,missing=7
+			7:leaf=0.434285134
+			8:[total.taxes<1516.5] yes=11,no=12,missing=11
+				11:leaf=-0.158768311
+				12:leaf=0.219804481
+	2:[gross.weight<17.5] yes=5,no=6,missing=5
+		5:leaf=-0.255403012
+		6:[gross.weight<21.5] yes=9,no=10,missing=9
+			9:[TaxUnitquantity<4.07477856] yes=13,no=14,missing=13
+				13:leaf=-0.217287287
+				14:leaf=0.333861411
+			10:[RiskH.HS4<0.5] yes=15,no=16,missing=15
+				15:leaf=-0.00455806497
+				16:leaf=0.0423495509
+booster[38]:
+0:[gross.weight<549728] yes=1,no=2,missing=1
+	1:[WUnitprice<0.00587206334] yes=3,no=4,missing=3
+		3:[SGD.DayofYear<118.5] yes=7,no=8,missing=7
+			7:[TaxRatio<1.09088004] yes=15,no=16,missing=15
+				15:leaf=-0.1636253
+				16:leaf=0.800466537
+			8:[cif.value<2328.5] yes=17,no=18,missing=17
+				17:leaf=0.115157798
+				18:leaf=-0.210764095
+		4:[TaxRatio<1.27243733] yes=9,no=10,missing=9
+			9:[tariff.code<3.21105459e+09] yes=19,no=20,missing=19
+				19:leaf=-0.0350607708
+				20:leaf=0.0123348115
+			10:[WUnitprice<1.5254159] yes=21,no=22,missing=21
+				21:leaf=-0.0606822781
+				22:leaf=0.0255256146
+	2:[total.taxes<527.5] yes=5,no=6,missing=5
+		5:[total.taxes<502.5] yes=11,no=12,missing=11
+			11:leaf=-0.197102472
+			12:leaf=0.555927813
+		6:[total.taxes<10640] yes=13,no=14,missing=13
+			13:[gross.weight<1857433.5] yes=23,no=24,missing=23
+				23:leaf=-0.22978054
+				24:leaf=0.0461774096
+			14:[TaxUnitquantity<11305] yes=25,no=26,missing=25
+				25:leaf=0.364983916
+				26:leaf=-0.147864833
+booster[39]:
+0:[RiskH.office.id&country<0.5] yes=1,no=2,missing=1
+	1:[TaxRatio<1.62446377e-05] yes=3,no=4,missing=3
+		3:[quantity<2407.5] yes=7,no=8,missing=7
+			7:[RiskH.HS6<0.5] yes=13,no=14,missing=13
+				13:leaf=0.0121676764
+				14:leaf=0.286625654
+			8:[gross.weight<1618.5] yes=15,no=16,missing=15
+				15:leaf=0.624976039
+				16:leaf=0.0672247559
+		4:[TaxUnitquantity<0.203626394] yes=9,no=10,missing=9
+			9:[RiskH.quantity<0.5] yes=17,no=18,missing=17
+				17:leaf=-0.200565338
+				18:leaf=0.0389092527
+			10:[tariff.code<8.70324224e+09] yes=19,no=20,missing=19
+				19:leaf=-0.0110222306
+				20:leaf=0.0224174839
+	2:[tariff.code<9.40459418e+09] yes=5,no=6,missing=5
+		5:[cif.value<2520.5] yes=11,no=12,missing=11
+			11:[RiskH.quantity<0.5] yes=21,no=22,missing=21
+				21:leaf=-0.192425191
+				22:leaf=0.00505730882
+			12:[TaxUnitquantity<13117] yes=23,no=24,missing=23
+				23:leaf=0.0444886312
+				24:leaf=0.270329028
+		6:leaf=-0.278639764
+booster[40]:
+0:[tariff.code<8.70323302e+09] yes=1,no=2,missing=1
+	1:[tariff.code<8.70322688e+09] yes=3,no=4,missing=3
+		3:[RiskH.office.id&HS6<0.5] yes=7,no=8,missing=7
+			7:[TaxRatio<6.21008301] yes=15,no=16,missing=15
+				15:leaf=-0.000861875946
+				16:leaf=-0.102952361
+			8:[Unitprice<219346.5] yes=17,no=18,missing=17
+				17:leaf=0.0649475157
+				18:leaf=-0.236046806
+		4:[TaxRatio<2.76788807] yes=9,no=10,missing=9
+			9:[TaxRatio<0.214186236] yes=19,no=20,missing=19
+				19:leaf=0.128830597
+				20:leaf=-0.0466486812
+			10:[TaxUnitquantity<11520] yes=21,no=22,missing=21
+				21:leaf=0.475189686
+				22:leaf=-0.140446275
+	2:[tariff.code<8.70324224e+09] yes=5,no=6,missing=5
+		5:[total.taxes<42406.5] yes=11,no=12,missing=11
+			11:[cif.value<251166] yes=23,no=24,missing=23
+				23:leaf=-0.103350013
+				24:leaf=0.0909733996
+			12:[RiskH.quantity<0.5] yes=25,no=26,missing=25
+				25:leaf=-0.00525895599
+				26:leaf=0.692977071
+		6:[total.taxes<29302] yes=13,no=14,missing=13
+			13:[total.taxes<28001.5] yes=27,no=28,missing=27
+				27:leaf=0.0136507759
+				28:leaf=0.523490608
+			14:[cif.value<529494] yes=29,no=30,missing=29
+				29:leaf=-0.130622461
+				30:leaf=0.390016317
+booster[41]:
+0:[SGD.DayofYear<115.5] yes=1,no=2,missing=1
+	1:[gross.weight<49.5] yes=3,no=4,missing=3
+		3:[Unitprice<56.8491783] yes=7,no=8,missing=7
+			7:[tariff.code<8.70361702e+09] yes=15,no=16,missing=15
+				15:leaf=0.422709733
+				16:leaf=-0.105113126
+			8:[Unitprice<5019.8125] yes=17,no=18,missing=17
+				17:leaf=-0.0810169429
+				18:leaf=0.309243441
+		4:[SGD.DayofYear<114.5] yes=9,no=10,missing=9
+			9:[gross.weight<591031] yes=19,no=20,missing=19
+				19:leaf=0.00603908906
+				20:leaf=-0.205162555
+			10:[TaxRatio<0.094724983] yes=21,no=22,missing=21
+				21:leaf=0.562302053
+				22:leaf=-0.0609876476
+	2:[WUnitprice<1716.23523] yes=5,no=6,missing=5
+		5:[WUnitprice<1376.48914] yes=11,no=12,missing=11
+			11:[RiskH.HS6&country<0.5] yes=23,no=24,missing=23
+				23:leaf=-0.0134644797
+				24:leaf=0.061954774
+			12:[total.taxes<1184] yes=25,no=26,missing=25
+				25:leaf=-0.0749579668
+				26:leaf=0.439952284
+		6:[WUnitprice<3013.68359] yes=13,no=14,missing=13
+			13:leaf=-0.286259413
+			14:[WUnitprice<3523.05591] yes=27,no=28,missing=27
+				27:leaf=0.265509248
+				28:leaf=-0.112970404
+booster[42]:
+0:[WUnitprice<2.35642123] yes=1,no=2,missing=1
+	1:[WUnitprice<1.60653615] yes=3,no=4,missing=3
+		3:[WUnitprice<1.2674973] yes=7,no=8,missing=7
+			7:[WUnitprice<0.74686873] yes=15,no=16,missing=15
+				15:leaf=-0.00309702358
+				16:leaf=0.086847052
+			8:[TaxUnitquantity<5.23489094] yes=17,no=18,missing=17
+				17:leaf=0.0650542751
+				18:leaf=-0.175657645
+		4:[TaxUnitquantity<1.23488843] yes=9,no=10,missing=9
+			9:[quantity<2022] yes=19,no=20,missing=19
+				19:leaf=-0.15319024
+				20:leaf=0.0565520488
+			10:[TaxUnitquantity<2.37878418] yes=21,no=22,missing=21
+				21:leaf=0.476561338
+				22:leaf=0.089942053
+	2:[WUnitprice<3.07863569] yes=5,no=6,missing=5
+		5:[quantity<401.5] yes=11,no=12,missing=11
+			11:[Unitprice<40.3375397] yes=23,no=24,missing=23
+				23:leaf=-0.296039045
+				24:leaf=-0.0910466835
+			12:[total.taxes<2633.5] yes=25,no=26,missing=25
+				25:leaf=-0.0621708967
+				26:leaf=0.162174091
+		6:[WUnitprice<3.70017481] yes=13,no=14,missing=13
+			13:[total.taxes<24887] yes=27,no=28,missing=27
+				27:leaf=0.0635104999
+				28:leaf=0.568866611
+			14:[WUnitprice<11.5713501] yes=29,no=30,missing=29
+				29:leaf=-0.0527720489
+				30:leaf=0.00488555338
+booster[43]:
+0:[quantity<1.5] yes=1,no=2,missing=1
+	1:[cif.value<2780.5] yes=3,no=4,missing=3
+		3:[tariff.code<8.70415565e+09] yes=7,no=8,missing=7
+			7:[tariff.code<8.70323302e+09] yes=15,no=16,missing=15
+				15:leaf=0.117993452
+				16:leaf=-0.0639980361
+			8:[SGD.DayofYear<112.5] yes=17,no=18,missing=17
+				17:leaf=0.492024273
+				18:leaf=0.0462413132
+		4:[cif.value<2969.5] yes=9,no=10,missing=9
+			9:[tariff.code<8.70361702e+09] yes=19,no=20,missing=19
+				19:leaf=-0.208997086
+				20:leaf=0.0995298177
+			10:[WUnitprice<0.0239322819] yes=21,no=22,missing=21
+				21:leaf=-0.127910241
+				22:leaf=0.020517854
+	2:[Unitprice<56060.1016] yes=5,no=6,missing=5
+		5:[Unitprice<47861.3984] yes=11,no=12,missing=11
+			11:[RiskH.quantity<0.5] yes=23,no=24,missing=23
+				23:leaf=-0.0271145664
+				24:leaf=0.00735377241
+			12:leaf=-0.309772342
+		6:[WUnitprice<2.45085907] yes=13,no=14,missing=13
+			13:leaf=0.56526494
+			14:[SGD.DayofYear<162] yes=25,no=26,missing=25
+				25:leaf=-0.0478981212
+				26:leaf=0.210244372
+booster[44]:
+0:[gross.weight<6259.5] yes=1,no=2,missing=1
+	1:[gross.weight<3080.5] yes=3,no=4,missing=3
+		3:[gross.weight<2114.5] yes=7,no=8,missing=7
+			7:[gross.weight<1728.5] yes=15,no=16,missing=15
+				15:leaf=0.00275051664
+				16:leaf=-0.105583742
+			8:[gross.weight<2369.5] yes=17,no=18,missing=17
+				17:leaf=0.14698115
+				18:leaf=0.0181285888
+		4:[TaxRatio<0.000842846581] yes=9,no=10,missing=9
+			9:leaf=0.272797912
+			10:[total.taxes<3105] yes=19,no=20,missing=19
+				19:leaf=-0.112273164
+				20:leaf=-0.27657485
+	2:[gross.weight<6968.5] yes=5,no=6,missing=5
+		5:[tariff.code<8.54569472e+09] yes=11,no=12,missing=11
+			11:[SGD.DayofYear<109.5] yes=21,no=22,missing=21
+				21:leaf=0.0316365473
+				22:leaf=0.767871261
+			12:leaf=-0.0782654583
+		6:[gross.weight<20417] yes=13,no=14,missing=13
+			13:[gross.weight<19985.5] yes=23,no=24,missing=23
+				23:leaf=0.0401095152
+				24:leaf=0.346000671
+			14:[gross.weight<42833.5] yes=25,no=26,missing=25
+				25:leaf=-0.0420015454
+				26:leaf=0.0126133095
+booster[45]:
+0:[RiskH.office.id&importer.id<0.5] yes=1,no=2,missing=1
+	1:[RiskH.office.id<0.5] yes=3,no=4,missing=3
+		3:[total.taxes<688.5] yes=7,no=8,missing=7
+			7:[total.taxes<584.5] yes=15,no=16,missing=15
+				15:leaf=-0.011472255
+				16:leaf=-0.234271452
+			8:[total.taxes<744.5] yes=17,no=18,missing=17
+				17:leaf=0.0907264352
+				18:leaf=-0.00156548631
+		4:[TaxRatio<0.00037528557] yes=9,no=10,missing=9
+			9:[Unitprice<993.967346] yes=19,no=20,missing=19
+				19:leaf=-0.0550650246
+				20:leaf=0.371851265
+			10:[RiskH.HS6&country<0.5] yes=21,no=22,missing=21
+				21:leaf=-0.181206703
+				22:leaf=0.134855524
+	2:[RiskH.office.id&country<0.5] yes=5,no=6,missing=5
+		5:[RiskH.office.id<0.5] yes=11,no=12,missing=11
+			11:[SGD.DayofYear<220.5] yes=23,no=24,missing=23
+				23:leaf=-0.00270171347
+				24:leaf=0.150425032
+			12:leaf=0.278783858
+		6:[total.taxes<30986.5] yes=13,no=14,missing=13
+			13:[gross.weight<33949.5] yes=25,no=26,missing=25
+				25:leaf=0.288860291
+				26:leaf=0.0747945234
+			14:leaf=-0.0371064246
+booster[46]:
+0:[TaxUnitquantity<99815] yes=1,no=2,missing=1
+	1:[TaxUnitquantity<78018] yes=3,no=4,missing=3
+		3:[tariff.code<8.53534515e+09] yes=7,no=8,missing=7
+			7:[tariff.code<8.50186035e+09] yes=11,no=12,missing=11
+				11:leaf=-0.00201904401
+				12:leaf=-0.0931589603
+			8:[quantity<1780.5] yes=13,no=14,missing=13
+				13:leaf=0.0189432614
+				14:leaf=-0.0511474647
+		4:[total.taxes<88113] yes=9,no=10,missing=9
+			9:leaf=0.438358992
+			10:leaf=0.030839473
+	2:[cif.value<4451.5] yes=5,no=6,missing=5
+		5:leaf=0.0827315599
+		6:leaf=-0.260589689
+booster[47]:
+0:[quantity<203.5] yes=1,no=2,missing=1
+	1:[quantity<35.5] yes=3,no=4,missing=3
+		3:[cif.value<2049488] yes=7,no=8,missing=7
+			7:[SGD.DayofYear<169.5] yes=15,no=16,missing=15
+				15:leaf=0.0148617299
+				16:leaf=-0.0281293895
+			8:[cif.value<3874265] yes=17,no=18,missing=17
+				17:leaf=0.376961708
+				18:leaf=-0.158678323
+		4:[Unitprice<8635.94824] yes=9,no=10,missing=9
+			9:[RiskH.HS6<0.5] yes=19,no=20,missing=19
+				19:leaf=-0.0436621308
+				20:leaf=0.096917972
+			10:[RiskH.HS6&country<0.5] yes=21,no=22,missing=21
+				21:leaf=-0.292959064
+				22:leaf=-0.0593465865
+	2:[RiskH.quantity<0.5] yes=5,no=6,missing=5
+		5:[quantity<4602] yes=11,no=12,missing=11
+			11:[cif.value<246787.5] yes=23,no=24,missing=23
+				23:leaf=0.017958466
+				24:leaf=-0.164629072
+			12:[quantity<5333.5] yes=25,no=26,missing=25
+				25:leaf=-0.131925777
+				26:leaf=-0.293379962
+		6:[quantity<7332] yes=13,no=14,missing=13
+			13:[total.taxes<76766.5] yes=27,no=28,missing=27
+				27:leaf=0.0527702607
+				28:leaf=0.35091266
+			14:[WUnitprice<101.706993] yes=29,no=30,missing=29
+				29:leaf=0.335558176
+				30:leaf=-0.0774205551
+booster[48]:
+0:[RiskH.importer.id<0.5] yes=1,no=2,missing=1
+	1:[tariff.code<8.53534515e+09] yes=3,no=4,missing=3
+		3:[quantity<1172.5] yes=7,no=8,missing=7
+			7:[Unitprice<133.08519] yes=15,no=16,missing=15
+				15:leaf=-0.080831632
+				16:leaf=-0.010967426
+			8:[quantity<1231.5] yes=17,no=18,missing=17
+				17:leaf=0.343232095
+				18:leaf=0.0165310465
+		4:[cif.value<138639.5] yes=9,no=10,missing=9
+			9:[tariff.code<8.70323302e+09] yes=19,no=20,missing=19
+				19:leaf=0.0567044392
+				20:leaf=5.17156623e-05
+			10:[total.taxes<484.5] yes=21,no=22,missing=21
+				21:leaf=0.137595773
+				22:leaf=-0.0772378966
+	2:[TaxRatio<7.33211708] yes=5,no=6,missing=5
+		5:[SGD.DayofYear<223.5] yes=11,no=12,missing=11
+			11:[SGD.DayofYear<78.5] yes=23,no=24,missing=23
+				23:leaf=0.0783116221
+				24:leaf=-0.0086434437
+			12:[tariff.code<3.90565018e+09] yes=25,no=26,missing=25
+				25:leaf=-0.122829966
+				26:leaf=0.237971708
+		6:[tariff.code<6.80624026e+09] yes=13,no=14,missing=13
+			13:[cif.value<3273] yes=27,no=28,missing=27
+				27:leaf=0.146339491
+				28:leaf=-0.196552753
+			14:[tariff.code<8.70415565e+09] yes=29,no=30,missing=29
+				29:leaf=-0.338244408
+				30:leaf=0.0569317341
+booster[49]:
+0:[cif.value<1449] yes=1,no=2,missing=1
+	1:[cif.value<1352.5] yes=3,no=4,missing=3
+		3:leaf=-0.058126796
+		4:leaf=0.349596053
+	2:[Unitprice<0.791721344] yes=5,no=6,missing=5
+		5:[RiskH.quantity<0.5] yes=7,no=8,missing=7
+			7:[TaxUnitquantity<0.0474641696] yes=11,no=12,missing=11
+				11:leaf=-0.0320600867
+				12:leaf=-0.228729784
+			8:[quantity<7860.5] yes=13,no=14,missing=13
+				13:leaf=-0.0463057086
+				14:leaf=0.276319802
+		6:[Unitprice<0.801526666] yes=9,no=10,missing=9
+			9:leaf=0.310976297
+			10:[TaxUnitquantity<2.85157824] yes=15,no=16,missing=15
+				15:leaf=0.0190254748
+				16:leaf=-0.00532978075
+booster[50]:
+0:[total.taxes<685.5] yes=1,no=2,missing=1
+	1:[total.taxes<505.5] yes=3,no=4,missing=3
+		3:[TaxUnitquantity<497.5] yes=7,no=8,missing=7
+			7:[quantity<149.5] yes=15,no=16,missing=15
+				15:leaf=-0.0268613473
+				16:leaf=0.0560221113
+			8:[TaxRatio<0.0567808375] yes=17,no=18,missing=17
+				17:leaf=-0.119546175
+				18:leaf=0.52150166
+		4:[WUnitprice<0.101086006] yes=9,no=10,missing=9
+			9:[WUnitprice<0.0235702507] yes=19,no=20,missing=19
+				19:leaf=-0.0545478873
+				20:leaf=0.225086629
+			10:[RiskH.importer.id<0.5] yes=21,no=22,missing=21
+				21:leaf=-0.13655974
+				22:leaf=0.0424060039
+	2:[TaxRatio<0.0050038565] yes=5,no=6,missing=5
+		5:[cif.value<363157] yes=11,no=12,missing=11
+			11:[TaxUnitquantity<726.5] yes=23,no=24,missing=23
+				23:leaf=0.4233208
+				24:leaf=-0.111145489
+			12:[quantity<34] yes=25,no=26,missing=25
+				25:leaf=0.10275013
+				26:leaf=-0.179016069
+		6:[TaxRatio<0.00605653226] yes=13,no=14,missing=13
+			13:[Unitprice<7267.09473] yes=27,no=28,missing=27
+				27:leaf=0.0202710908
+				28:leaf=-0.28750053
+			14:[TaxRatio<0.00686695985] yes=29,no=30,missing=29
+				29:leaf=0.237813979
+				30:leaf=0.0014814235
+booster[51]:
+0:[TaxUnitquantity<0.433173329] yes=1,no=2,missing=1
+	1:[RiskH.quantity<0.5] yes=3,no=4,missing=3
+		3:[quantity<4411.5] yes=7,no=8,missing=7
+			7:[WUnitprice<0.0524723083] yes=15,no=16,missing=15
+				15:leaf=-0.23832424
+				16:leaf=-0.0156326443
+			8:[RiskH.office.id&HS6<0.5] yes=17,no=18,missing=17
+				17:leaf=-0.261043668
+				18:leaf=-0.0660288259
+		4:[quantity<1878.5] yes=9,no=10,missing=9
+			9:[total.taxes<495.5] yes=19,no=20,missing=19
+				19:leaf=-0.0124859745
+				20:leaf=-0.365712702
+			10:[cif.value<3921.5] yes=21,no=22,missing=21
+				21:leaf=-0.0460516699
+				22:leaf=0.154733196
+	2:[TaxUnitquantity<0.450660557] yes=5,no=6,missing=5
+		5:[RiskH.importer.id<0.5] yes=11,no=12,missing=11
+			11:[gross.weight<164825.5] yes=23,no=24,missing=23
+				23:leaf=0.604838371
+				24:leaf=0.0440337211
+			12:leaf=-0.122056842
+		6:[total.taxes<136.5] yes=13,no=14,missing=13
+			13:[SGD.DayofYear<135.5] yes=25,no=26,missing=25
+				25:leaf=-0.0120457178
+				26:leaf=-0.230816767
+			14:[total.taxes<340.5] yes=27,no=28,missing=27
+				27:leaf=0.0905910283
+				28:leaf=-0.00169324398
+booster[52]:
+0:[gross.weight<3389897] yes=1,no=2,missing=1
+	1:[WUnitprice<0.00199789554] yes=3,no=4,missing=3
+		3:leaf=0.364375204
+		4:[gross.weight<657398.5] yes=5,no=6,missing=5
+			5:[quantity<1.5] yes=7,no=8,missing=7
+				7:leaf=0.0156779811
+				8:leaf=-0.00536947604
+			6:[gross.weight<1451541.5] yes=9,no=10,missing=9
+				9:leaf=-0.174714699
+				10:leaf=0.211703882
+	2:leaf=-0.195128679
+booster[53]:
+0:[TaxRatio<0.0601042137] yes=1,no=2,missing=1
+	1:[cif.value<3418.5] yes=3,no=4,missing=3
+		3:[gross.weight<1445] yes=7,no=8,missing=7
+			7:[cif.value<2463.5] yes=15,no=16,missing=15
+				15:leaf=-0.26343897
+				16:leaf=-0.0204328224
+			8:[WUnitprice<0.0298299771] yes=17,no=18,missing=17
+				17:leaf=-0.0675255507
+				18:leaf=0.282029212
+		4:[cif.value<16492.5] yes=9,no=10,missing=9
+			9:[WUnitprice<0.220044464] yes=19,no=20,missing=19
+				19:leaf=0.064657107
+				20:leaf=-0.138308689
+			10:[cif.value<20583.5] yes=21,no=22,missing=21
+				21:leaf=0.259222597
+				22:leaf=-0.0165422428
+	2:[TaxRatio<0.0690535158] yes=5,no=6,missing=5
+		5:[SGD.DayofYear<116.5] yes=11,no=12,missing=11
+			11:[TaxRatio<0.0650414973] yes=23,no=24,missing=23
+				23:leaf=0.0822538584
+				24:leaf=0.424894035
+			12:[tariff.code<8.70324224e+09] yes=25,no=26,missing=25
+				25:leaf=0.131067768
+				26:leaf=-0.229320318
+		6:[cif.value<143242] yes=13,no=14,missing=13
+			13:[cif.value<13539] yes=27,no=28,missing=27
+				27:leaf=-0.00667052949
+				28:leaf=0.0581831299
+			14:[total.taxes<75551] yes=29,no=30,missing=29
+				29:leaf=-0.180643246
+				30:leaf=0.0950555578
+booster[54]:
+0:[RiskH.office.id&importer.id<0.5] yes=1,no=2,missing=1
+	1:[tariff.code<8.70431232e+09] yes=3,no=4,missing=3
+		3:[tariff.code<8.70324224e+09] yes=7,no=8,missing=7
+			7:[tariff.code<8.70323302e+09] yes=15,no=16,missing=15
+				15:leaf=-0.000685608014
+				16:leaf=-0.0484733135
+			8:[RiskH.declarant.id<0.5] yes=17,no=18,missing=17
+				17:leaf=0.0194682889
+				18:leaf=0.182345763
+		4:[Unitprice<6.46063137] yes=9,no=10,missing=9
+			9:[RiskH.declarant.id<0.5] yes=19,no=20,missing=19
+				19:leaf=-0.210783586
+				20:leaf=0.0222873613
+			10:[total.taxes<46310.5] yes=21,no=22,missing=21
+				21:leaf=-0.00479182927
+				22:leaf=-0.262123138
+	2:[WUnitprice<0.0198314711] yes=5,no=6,missing=5
+		5:[TaxRatio<1.14605236] yes=11,no=12,missing=11
+			11:[tariff.code<8.70323302e+09] yes=23,no=24,missing=23
+				23:leaf=0.145048618
+				24:leaf=-0.157270387
+			12:[TaxRatio<1.50974584] yes=25,no=26,missing=25
+				25:leaf=0.532703876
+				26:leaf=0.162290633
+		6:[total.taxes<384] yes=13,no=14,missing=13
+			13:[tariff.code<8.50216499e+09] yes=27,no=28,missing=27
+				27:leaf=0.259166479
+				28:leaf=0.0483053885
+			14:[RiskH.declarant.id<0.5] yes=29,no=30,missing=29
+				29:leaf=-0.0140283071
+				30:leaf=0.212005138
+booster[55]:
+0:[TaxUnitquantity<99815] yes=1,no=2,missing=1
+	1:[TaxUnitquantity<84949.5] yes=3,no=4,missing=3
+		3:[total.taxes<230785] yes=7,no=8,missing=7
+			7:[TaxRatio<39.3942108] yes=9,no=10,missing=9
+				9:leaf=-0.000576454157
+				10:leaf=0.178870291
+			8:leaf=-0.233591378
+		4:leaf=0.248812482
+	2:[gross.weight<1748.5] yes=5,no=6,missing=5
+		5:leaf=0.076887235
+		6:leaf=-0.243535876
+booster[56]:
+0:[WUnitprice<2967.10791] yes=1,no=2,missing=1
+	1:[WUnitprice<2171.10571] yes=3,no=4,missing=3
+		3:[cif.value<3726530] yes=7,no=8,missing=7
+			7:[cif.value<830258.5] yes=11,no=12,missing=11
+				11:leaf=0.000644074637
+				12:leaf=-0.079525128
+			8:[cif.value<4076463] yes=13,no=14,missing=13
+				13:leaf=0.399016291
+				14:leaf=-0.0142826
+		4:leaf=-0.243768081
+	2:[cif.value<84864.5] yes=5,no=6,missing=5
+		5:leaf=0.453229904
+		6:[cif.value<749234] yes=9,no=10,missing=9
+			9:[RiskH.HS6&country<0.5] yes=15,no=16,missing=15
+				15:leaf=-0.144035637
+				16:leaf=0.120776735
+			10:[TaxRatio<0.000365562097] yes=17,no=18,missing=17
+				17:leaf=-0.0618713088
+				18:leaf=0.269920796
+booster[57]:
+0:[gross.weight<10.5] yes=1,no=2,missing=1
+	1:[tariff.code<8.01240986e+09] yes=3,no=4,missing=3
+		3:leaf=0.222681388
+		4:leaf=0.0550902784
+	2:[quantity<1780.5] yes=5,no=6,missing=5
+		5:[Unitprice<1.62688184] yes=7,no=8,missing=7
+			7:[total.taxes<3430.5] yes=11,no=12,missing=11
+				11:leaf=-0.00165380782
+				12:leaf=0.415477604
+			8:[Unitprice<1.80288601] yes=13,no=14,missing=13
+				13:leaf=-0.172382832
+				14:leaf=0.00184034021
+		6:[RiskH.quantity<0.5] yes=9,no=10,missing=9
+			9:[quantity<5333.5] yes=15,no=16,missing=15
+				15:leaf=-0.0576151609
+				16:leaf=-0.273252368
+			10:[tariff.code<2.87325491e+09] yes=17,no=18,missing=17
+				17:leaf=0.310779274
+				18:leaf=0.0461688042
+booster[58]:
+0:[tariff.code<3.21450086e+09] yes=1,no=2,missing=1
+	1:[tariff.code<2.81270989e+09] yes=3,no=4,missing=3
+		3:[cif.value<528150.5] yes=7,no=8,missing=7
+			7:[cif.value<1643] yes=15,no=16,missing=15
+				15:leaf=-0.291845888
+				16:leaf=0.0186694879
+			8:[gross.weight<1712] yes=17,no=18,missing=17
+				17:leaf=0.527924895
+				18:leaf=-0.0522365756
+		4:[WUnitprice<0.0323689505] yes=9,no=10,missing=9
+			9:[quantity<18.5] yes=19,no=20,missing=19
+				19:leaf=0.328398198
+				20:leaf=-0.0748332813
+			10:[RiskH.HS6&country<0.5] yes=21,no=22,missing=21
+				21:leaf=-0.17603004
+				22:leaf=-0.00238918047
+	2:[tariff.code<3.40455014e+09] yes=5,no=6,missing=5
+		5:[TaxUnitquantity<22.2916679] yes=11,no=12,missing=11
+			11:[quantity<3018.5] yes=23,no=24,missing=23
+				23:leaf=0.457627892
+				24:leaf=-0.118309438
+			12:[gross.weight<1029.5] yes=25,no=26,missing=25
+				25:leaf=0.290679306
+				26:leaf=-0.160261989
+		6:[cif.value<1565.5] yes=13,no=14,missing=13
+			13:[TaxRatio<0.45898366] yes=27,no=28,missing=27
+				27:leaf=0.369748563
+				28:leaf=0.0174161196
+			14:[cif.value<1627.5] yes=29,no=30,missing=29
+				29:leaf=-0.200349867
+				30:leaf=0.00133832591
+booster[59]:
+0:[tariff.code<1.10351462e+09] yes=1,no=2,missing=1
+	1:[total.taxes<3164.5] yes=3,no=4,missing=3
+		3:[TaxRatio<1.08290291] yes=7,no=8,missing=7
+			7:[tariff.code<710249984] yes=15,no=16,missing=15
+				15:leaf=0.0603753217
+				16:leaf=-0.138147324
+			8:leaf=0.396005124
+		4:[TaxRatio<3.59724689] yes=9,no=10,missing=9
+			9:[gross.weight<126488.5] yes=17,no=18,missing=17
+				17:leaf=-0.292316824
+				18:leaf=-0.0356416516
+			10:[tariff.code<304640000] yes=19,no=20,missing=19
+				19:leaf=0.24698101
+				20:leaf=-0.166587532
+	2:[tariff.code<2.00985446e+09] yes=5,no=6,missing=5
+		5:[TaxUnitquantity<3.91469288] yes=11,no=12,missing=11
+			11:[gross.weight<20854] yes=21,no=22,missing=21
+				21:leaf=-0.00265434384
+				22:leaf=-0.253955752
+			12:[SGD.DayofYear<197.5] yes=23,no=24,missing=23
+				23:leaf=0.0834589601
+				24:leaf=0.516955376
+		6:[tariff.code<3.21105459e+09] yes=13,no=14,missing=13
+			13:[TaxRatio<0.344613791] yes=25,no=26,missing=25
+				25:leaf=-0.0834562927
+				26:leaf=0.0504444689
+			14:[tariff.code<4.41005466e+09] yes=27,no=28,missing=27
+				27:leaf=0.0489225723
+				28:leaf=-0.00185097731
+booster[60]:
+0:[RiskH.HS2<0.5] yes=1,no=2,missing=1
+	1:[TaxUnitquantity<27567.668] yes=3,no=4,missing=3
+		3:[total.taxes<84018.5] yes=7,no=8,missing=7
+			7:[TaxRatio<17.348875] yes=15,no=16,missing=15
+				15:leaf=-0.000444451609
+				16:leaf=-0.161680833
+			8:[SGD.DayofYear<39.5] yes=17,no=18,missing=17
+				17:leaf=0.485826045
+				18:leaf=0.0381200463
+		4:[cif.value<8639.5] yes=9,no=10,missing=9
+			9:[WUnitprice<0.287352771] yes=19,no=20,missing=19
+				19:leaf=-0.153728113
+				20:leaf=0.156468794
+			10:[tariff.code<8.70333235e+09] yes=21,no=22,missing=21
+				21:leaf=-0.205883622
+				22:leaf=0.0477501303
+	2:[total.taxes<454.5] yes=5,no=6,missing=5
+		5:[tariff.code<8.95465472e+09] yes=11,no=12,missing=11
+			11:[gross.weight<1491.5] yes=23,no=24,missing=23
+				23:leaf=-0.155232221
+				24:leaf=0.118117571
+			12:leaf=-0.313884914
+		6:[SGD.DayofYear<76.5] yes=13,no=14,missing=13
+			13:[SGD.DayofYear<6.5] yes=25,no=26,missing=25
+				25:leaf=-0.180231124
+				26:leaf=0.230407938
+			14:[WUnitprice<0.0316705555] yes=27,no=28,missing=27
+				27:leaf=-0.259311557
+				28:leaf=0.0451080501
+booster[61]:
+0:[SGD.DayofYear<238.5] yes=1,no=2,missing=1
+	1:[RiskH.office.id&importer.id<0.5] yes=3,no=4,missing=3
+		3:[RiskH.office.id<0.5] yes=7,no=8,missing=7
+			7:[SGD.DayofYear<231.5] yes=11,no=12,missing=11
+				11:leaf=0.000630118593
+				12:leaf=-0.0566224195
+			8:[TaxUnitquantity<2.26362848] yes=13,no=14,missing=13
+				13:leaf=0.100185193
+				14:leaf=-0.163224131
+		4:[RiskH.office.id&country<0.5] yes=9,no=10,missing=9
+			9:[RiskH.tariff.code<0.5] yes=15,no=16,missing=15
+				15:leaf=0.00584406313
+				16:leaf=0.173310563
+			10:[total.taxes<30986.5] yes=17,no=18,missing=17
+				17:leaf=0.244041741
+				18:leaf=-0.0241840985
+	2:[gross.weight<17091.5] yes=5,no=6,missing=5
+		5:leaf=-0.255262494
+		6:leaf=-0.0265371706
+booster[62]:
+0:[TaxRatio<4.11531448] yes=1,no=2,missing=1
+	1:[TaxRatio<3.61020756] yes=3,no=4,missing=3
+		3:[tariff.code<9.40591514e+09] yes=7,no=8,missing=7
+			7:[tariff.code<9.40240077e+09] yes=15,no=16,missing=15
+				15:leaf=-0.000107022555
+				16:leaf=-0.191842705
+			8:[quantity<14.5] yes=17,no=18,missing=17
+				17:leaf=-0.129238874
+				18:leaf=0.234520882
+		4:[TaxRatio<3.63234496] yes=9,no=10,missing=9
+			9:leaf=0.805188298
+			10:[TaxRatio<3.90715981] yes=19,no=20,missing=19
+				19:leaf=-0.0626966506
+				20:leaf=0.320418894
+	2:[SGD.DayofYear<30.5] yes=5,no=6,missing=5
+		5:[WUnitprice<3.67827272] yes=11,no=12,missing=11
+			11:[total.taxes<12964] yes=21,no=22,missing=21
+				21:leaf=0.40713653
+				22:leaf=-0.0509531498
+			12:[SGD.DayofYear<25.5] yes=23,no=24,missing=23
+				23:leaf=0.0600787364
+				24:leaf=0.515898526
+		6:[WUnitprice<4.68552732] yes=13,no=14,missing=13
+			13:[WUnitprice<2.78058577] yes=25,no=26,missing=25
+				25:leaf=-0.0508479215
+				26:leaf=0.190653771
+			14:[WUnitprice<9.90977287] yes=27,no=28,missing=27
+				27:leaf=-0.311554939
+				28:leaf=-0.0531985834
+booster[63]:
+0:[Unitprice<0.24595429] yes=1,no=2,missing=1
+	1:[RiskH.quantity<0.5] yes=3,no=4,missing=3
+		3:leaf=-0.0584070645
+		4:leaf=0.260780692
+	2:[Unitprice<0.499820232] yes=5,no=6,missing=5
+		5:[total.taxes<747] yes=7,no=8,missing=7
+			7:[TaxRatio<0.104626589] yes=11,no=12,missing=11
+				11:leaf=0.0198766701
+				12:leaf=-0.370061606
+			8:[tariff.code<8.70332314e+09] yes=13,no=14,missing=13
+				13:leaf=0.0639750585
+				14:leaf=-0.225325286
+		6:[gross.weight<3389897] yes=9,no=10,missing=9
+			9:[gross.weight<1279893.5] yes=15,no=16,missing=15
+				15:leaf=0.000272690755
+				16:leaf=0.200316891
+			10:leaf=-0.214789554
+booster[64]:
+0:[TaxUnitquantity<6033.5] yes=1,no=2,missing=1
+	1:[TaxUnitquantity<3639.5] yes=3,no=4,missing=3
+		3:[TaxUnitquantity<3587.5] yes=7,no=8,missing=7
+			7:[TaxUnitquantity<3529.5] yes=15,no=16,missing=15
+				15:leaf=0.00198274618
+				16:leaf=-0.222756416
+			8:[SGD.DayofYear<91.5] yes=17,no=18,missing=17
+				17:leaf=0.462577254
+				18:leaf=5.16131986e-05
+		4:[gross.weight<282434] yes=9,no=10,missing=9
+			9:[SGD.DayofYear<43.5] yes=19,no=20,missing=19
+				19:leaf=0.0689430684
+				20:leaf=-0.222948015
+			10:[WUnitprice<0.0172615647] yes=21,no=22,missing=21
+				21:leaf=-0.0977367759
+				22:leaf=0.353829771
+	2:[TaxUnitquantity<6473.5] yes=5,no=6,missing=5
+		5:[gross.weight<20713.5] yes=11,no=12,missing=11
+			11:[gross.weight<1818.5] yes=23,no=24,missing=23
+				23:leaf=0.0763101429
+				24:leaf=0.644903541
+			12:[Unitprice<16369.75] yes=25,no=26,missing=25
+				25:leaf=-0.0839711726
+				26:leaf=0.13761498
+		6:[SGD.DayofYear<23] yes=13,no=14,missing=13
+			13:[TaxUnitquantity<18061] yes=27,no=28,missing=27
+				27:leaf=-0.268761367
+				28:leaf=0.0446363054
+			14:[cif.value<143327] yes=29,no=30,missing=29
+				29:leaf=0.0542330071
+				30:leaf=-0.101396449
+booster[65]:
+0:[tariff.code<8.41500006e+09] yes=1,no=2,missing=1
+	1:[tariff.code<7.20903987e+09] yes=3,no=4,missing=3
+		3:[gross.weight<148067.5] yes=7,no=8,missing=7
+			7:[WUnitprice<0.0154335126] yes=15,no=16,missing=15
+				15:leaf=0.447934538
+				16:leaf=0.0147958277
+			8:[RiskH.office.id&HS6<0.5] yes=17,no=18,missing=17
+				17:leaf=-0.137984037
+				18:leaf=0.0859794095
+		4:[TaxRatio<0.00365831237] yes=9,no=10,missing=9
+			9:[gross.weight<1830] yes=19,no=20,missing=19
+				19:leaf=-0.141456604
+				20:leaf=0.178319559
+			10:[RiskH.HS6&country<0.5] yes=21,no=22,missing=21
+				21:leaf=-0.154143557
+				22:leaf=0.0889052823
+	2:[tariff.code<8.42915021e+09] yes=5,no=6,missing=5
+		5:[total.taxes<718.5] yes=11,no=12,missing=11
+			11:[SGD.DayofYear<50.5] yes=23,no=24,missing=23
+				23:leaf=0.443237484
+				24:leaf=-0.201109231
+			12:[tariff.code<8.42040525e+09] yes=25,no=26,missing=25
+				25:leaf=0.0745510235
+				26:leaf=0.39428854
+		6:[tariff.code<8.45919539e+09] yes=13,no=14,missing=13
+			13:[RiskH.HS6&country<0.5] yes=27,no=28,missing=27
+				27:leaf=-0.168076545
+				28:leaf=0.235797331
+			14:[WUnitprice<1292.64331] yes=29,no=30,missing=29
+				29:leaf=0.00682612881
+				30:leaf=-0.126795709
+booster[66]:
+0:[Unitprice<45148.6016] yes=1,no=2,missing=1
+	1:[Unitprice<22346.3945] yes=3,no=4,missing=3
+		3:[Unitprice<17564.75] yes=7,no=8,missing=7
+			7:[Unitprice<8237.5] yes=15,no=16,missing=15
+				15:leaf=0.00215930142
+				16:leaf=-0.0677855909
+			8:[tariff.code<6.9090048e+09] yes=17,no=18,missing=17
+				17:leaf=-0.0788457692
+				18:leaf=0.186342582
+		4:[TaxRatio<0.123469964] yes=9,no=10,missing=9
+			9:[gross.weight<94061.5] yes=19,no=20,missing=19
+				19:leaf=-0.157022864
+				20:leaf=-0.00581304822
+			10:[total.taxes<6574.5] yes=21,no=22,missing=21
+				21:leaf=0.373018354
+				22:leaf=-0.0739253387
+	2:[cif.value<66086.5] yes=5,no=6,missing=5
+		5:[gross.weight<10264] yes=11,no=12,missing=11
+			11:[WUnitprice<33.6678734] yes=23,no=24,missing=23
+				23:leaf=0.746638775
+				24:leaf=-0.00742118526
+			12:[TaxRatio<0.0518305078] yes=25,no=26,missing=25
+				25:leaf=-0.104138747
+				26:leaf=0.129383117
+		6:[WUnitprice<2.42719126] yes=13,no=14,missing=13
+			13:[quantity<3.5] yes=27,no=28,missing=27
+				27:leaf=0.046688851
+				28:leaf=0.522754312
+			14:[WUnitprice<5.67754745] yes=29,no=30,missing=29
+				29:leaf=-0.196980476
+				30:leaf=0.00396265369
+booster[67]:
+0:[Unitprice<4955.26318] yes=1,no=2,missing=1
+	1:[Unitprice<4431.5] yes=3,no=4,missing=3
+		3:[Unitprice<3265.21045] yes=7,no=8,missing=7
+			7:[Unitprice<2798.5] yes=15,no=16,missing=15
+				15:leaf=-0.00210867287
+				16:leaf=-0.12209437
+			8:[SGD.DayofYear<158.5] yes=17,no=18,missing=17
+				17:leaf=0.122631125
+				18:leaf=-0.0844784528
+		4:[RiskH.importer.id<0.5] yes=9,no=10,missing=9
+			9:[tariff.code<5.9560448e+09] yes=19,no=20,missing=19
+				19:leaf=-0.0150336325
+				20:leaf=-0.268004358
+			10:[RiskH.quantity<0.5] yes=21,no=22,missing=21
+				21:leaf=-0.0334660597
+				22:leaf=0.233038694
+	2:[Unitprice<6669.06836] yes=5,no=6,missing=5
+		5:[SGD.DayofYear<83.5] yes=11,no=12,missing=11
+			11:[WUnitprice<0.979340315] yes=23,no=24,missing=23
+				23:leaf=-0.231859043
+				24:leaf=0.0919616818
+			12:[tariff.code<4.81076992e+09] yes=25,no=26,missing=25
+				25:leaf=0.535254955
+				26:leaf=0.166731104
+		6:[cif.value<8303] yes=13,no=14,missing=13
+			13:[WUnitprice<7.89901161] yes=27,no=28,missing=27
+				27:leaf=0.069759585
+				28:leaf=0.601069808
+			14:[WUnitprice<0.236029178] yes=29,no=30,missing=29
+				29:leaf=-0.128409639
+				30:leaf=0.000383018632
+booster[68]:
+0:[tariff.code<5.50624973e+09] yes=1,no=2,missing=1
+	1:[tariff.code<4.80521523e+09] yes=3,no=4,missing=3
+		3:[gross.weight<148067.5] yes=7,no=8,missing=7
+			7:[WUnitprice<0.0154335126] yes=15,no=16,missing=15
+				15:leaf=0.389694124
+				16:leaf=0.00640403014
+			8:[total.taxes<480.5] yes=17,no=18,missing=17
+				17:leaf=0.160852954
+				18:leaf=-0.169950932
+		4:[RiskH.office.id&HS6<0.5] yes=9,no=10,missing=9
+			9:[cif.value<2105.5] yes=19,no=20,missing=19
+				19:leaf=0.105803683
+				20:leaf=-0.201065615
+			10:[SGD.DayofYear<92.5] yes=21,no=22,missing=21
+				21:leaf=-0.145259798
+				22:leaf=0.201878622
+	2:[tariff.code<5.80149965e+09] yes=5,no=6,missing=5
+		5:[Unitprice<2.55669498] yes=11,no=12,missing=11
+			11:leaf=-0.169247285
+			12:[TaxUnitquantity<2.9776516] yes=23,no=24,missing=23
+				23:leaf=0.461502403
+				24:leaf=0.0944977775
+		6:[gross.weight<159.5] yes=13,no=14,missing=13
+			13:[gross.weight<123] yes=25,no=26,missing=25
+				25:leaf=0.0351712182
+				26:leaf=0.291598201
+			14:[gross.weight<276.5] yes=27,no=28,missing=27
+				27:leaf=-0.121334322
+				28:leaf=0.00151832961
+booster[69]:
+0:[gross.weight<6472.5] yes=1,no=2,missing=1
+	1:[gross.weight<3036.5] yes=3,no=4,missing=3
+		3:[gross.weight<2960.5] yes=7,no=8,missing=7
+			7:[total.taxes<2754.5] yes=15,no=16,missing=15
+				15:leaf=0.0117664123
+				16:leaf=-0.0299279056
+			8:[Unitprice<5564.18164] yes=17,no=18,missing=17
+				17:leaf=0.458750933
+				18:leaf=-0.181390092
+		4:[total.taxes<508.5] yes=9,no=10,missing=9
+			9:[quantity<200.5] yes=19,no=20,missing=19
+				19:leaf=-0.0846399963
+				20:leaf=0.387660086
+			10:[SGD.DayofYear<228.5] yes=21,no=22,missing=21
+				21:leaf=-0.21715492
+				22:leaf=0.285389721
+	2:[gross.weight<6968.5] yes=5,no=6,missing=5
+		5:[cif.value<15378.5] yes=11,no=12,missing=11
+			11:[WUnitprice<0.376042008] yes=23,no=24,missing=23
+				23:leaf=-0.0545753352
+				24:leaf=0.598330438
+			12:[tariff.code<7.1095552e+09] yes=25,no=26,missing=25
+				25:leaf=0.240629256
+				26:leaf=-0.18806088
+		6:[gross.weight<7163.5] yes=13,no=14,missing=13
+			13:leaf=-0.24862498
+			14:[gross.weight<7937.5] yes=27,no=28,missing=27
+				27:leaf=0.14613989
+				28:leaf=0.0036916805
+booster[70]:
+0:[total.taxes<685.5] yes=1,no=2,missing=1
+	1:[total.taxes<543.5] yes=3,no=4,missing=3
+		3:[tariff.code<8.4670249e+09] yes=7,no=8,missing=7
+			7:[SGD.DayofYear<48.5] yes=15,no=16,missing=15
+				15:leaf=0.0739505216
+				16:leaf=-0.0639005899
+			8:[tariff.code<8.50186035e+09] yes=17,no=18,missing=17
+				17:leaf=0.184513971
+				18:leaf=0.00831743143
+		4:[Unitprice<181004.5] yes=9,no=10,missing=9
+			9:[WUnitprice<0.0927022398] yes=19,no=20,missing=19
+				19:leaf=0.0139860464
+				20:leaf=-0.175637007
+			10:leaf=0.232818484
+	2:[total.taxes<706.5] yes=5,no=6,missing=5
+		5:[Unitprice<3.6632607] yes=11,no=12,missing=11
+			11:leaf=-0.222013429
+			12:[gross.weight<18623] yes=21,no=22,missing=21
+				21:leaf=0.323366553
+				22:leaf=0.000984741375
+		6:[total.taxes<709.5] yes=13,no=14,missing=13
+			13:[cif.value<2643] yes=23,no=24,missing=23
+				23:leaf=0.129704073
+				24:leaf=-0.279957354
+			14:[total.taxes<725.5] yes=25,no=26,missing=25
+				25:leaf=0.0888414904
+				26:leaf=0.00207483978
+booster[71]:
+0:[SGD.DayofYear<37.5] yes=1,no=2,missing=1
+	1:[total.taxes<39572] yes=3,no=4,missing=3
+		3:[SGD.DayofYear<36.5] yes=7,no=8,missing=7
+			7:[Unitprice<59.7713318] yes=15,no=16,missing=15
+				15:leaf=0.0282847416
+				16:leaf=-0.0546891503
+			8:[tariff.code<3.96625997e+09] yes=17,no=18,missing=17
+				17:leaf=0.0429236293
+				18:leaf=-0.265732914
+		4:[TaxUnitquantity<41202] yes=9,no=10,missing=9
+			9:[Unitprice<405.6073] yes=19,no=20,missing=19
+				19:leaf=0.0474114716
+				20:leaf=0.517635345
+			10:[WUnitprice<0.554265141] yes=21,no=22,missing=21
+				21:leaf=0.101402707
+				22:leaf=-0.203668192
+	2:[SGD.DayofYear<41.5] yes=5,no=6,missing=5
+		5:[TaxUnitquantity<382.16272] yes=11,no=12,missing=11
+			11:[tariff.code<8.70333235e+09] yes=23,no=24,missing=23
+				23:leaf=0.388915271
+				24:leaf=-0.155059457
+			12:[gross.weight<194295] yes=25,no=26,missing=25
+				25:leaf=-0.176461577
+				26:leaf=0.271527231
+		6:[cif.value<3207860.5] yes=13,no=14,missing=13
+			13:[RiskH.HS6&country<0.5] yes=27,no=28,missing=27
+				27:leaf=-0.00213345257
+				28:leaf=0.0452698022
+			14:[total.taxes<526.5] yes=29,no=30,missing=29
+				29:leaf=0.449400067
+				30:leaf=0.0149440868
+booster[72]:
+0:[quantity<1.5] yes=1,no=2,missing=1
+	1:[TaxRatio<0.00587411132] yes=3,no=4,missing=3
+		3:[SGD.DayofYear<172.5] yes=7,no=8,missing=7
+			7:[WUnitprice<1.06626141] yes=13,no=14,missing=13
+				13:leaf=0.114515655
+				14:leaf=-0.129071519
+			8:[WUnitprice<5.6321578] yes=15,no=16,missing=15
+				15:leaf=-0.220748678
+				16:leaf=0.188277796
+		4:[TaxRatio<0.00741899945] yes=9,no=10,missing=9
+			9:[cif.value<362001.5] yes=17,no=18,missing=17
+				17:leaf=0.165774405
+				18:leaf=0.698763132
+			10:[SGD.DayofYear<165.5] yes=19,no=20,missing=19
+				19:leaf=0.0365515091
+				20:leaf=-0.0317196809
+	2:[TaxUnitquantity<24222.834] yes=5,no=6,missing=5
+		5:[Unitprice<205175.469] yes=11,no=12,missing=11
+			11:[TaxUnitquantity<17982.5] yes=21,no=22,missing=21
+				21:leaf=-0.00616190629
+				22:leaf=0.233346432
+			12:[WUnitprice<527.842651] yes=23,no=24,missing=23
+				23:leaf=0.32622838
+				24:leaf=-0.187635764
+		6:leaf=-0.223538131
+booster[73]:
+0:[WUnitprice<2967.10791] yes=1,no=2,missing=1
+	1:[WUnitprice<2171.10571] yes=3,no=4,missing=3
+		3:[quantity<106.5] yes=7,no=8,missing=7
+			7:[RiskH.quantity<0.5] yes=15,no=16,missing=15
+				15:leaf=0.0112884594
+				16:leaf=-0.0288612992
+			8:[RiskH.quantity<0.5] yes=17,no=18,missing=17
+				17:leaf=-0.0120233232
+				18:leaf=0.0395655707
+		4:[total.taxes<468] yes=9,no=10,missing=9
+			9:leaf=-0.0280859638
+			10:leaf=-0.220145494
+	2:[TaxUnitquantity<7.48058701] yes=5,no=6,missing=5
+		5:[gross.weight<156] yes=11,no=12,missing=11
+			11:[tariff.code<8.70356582e+09] yes=19,no=20,missing=19
+				19:leaf=-0.201591954
+				20:leaf=-0.020708872
+			12:leaf=0.0681993365
+		6:[cif.value<155346] yes=13,no=14,missing=13
+			13:[tariff.code<6.15900006e+09] yes=21,no=22,missing=21
+				21:leaf=0.589324832
+				22:leaf=0.121434234
+			14:[cif.value<964317.5] yes=23,no=24,missing=23
+				23:leaf=-0.0702535287
+				24:leaf=0.257971108
+booster[74]:
+0:[TaxUnitquantity<0.411104888] yes=1,no=2,missing=1
+	1:[SGD.DayofYear<228.5] yes=3,no=4,missing=3
+		3:[SGD.DayofYear<205.5] yes=7,no=8,missing=7
+			7:[TaxRatio<0.105594292] yes=15,no=16,missing=15
+				15:leaf=-0.00207446329
+				16:leaf=-0.129585788
+			8:[SGD.DayofYear<210.5] yes=17,no=18,missing=17
+				17:leaf=0.485033423
+				18:leaf=0.00695735868
+		4:[RiskH.importer.id<0.5] yes=9,no=10,missing=9
+			9:[quantity<5586.5] yes=19,no=20,missing=19
+				19:leaf=-0.283791363
+				20:leaf=-0.0107682925
+			10:leaf=0.0569066443
+	2:[TaxUnitquantity<0.509967089] yes=5,no=6,missing=5
+		5:[gross.weight<1055.5] yes=11,no=12,missing=11
+			11:[quantity<1224] yes=21,no=22,missing=21
+				21:leaf=0.0958972648
+				22:leaf=0.513332605
+			12:[quantity<941.5] yes=23,no=24,missing=23
+				23:leaf=0.305253088
+				24:leaf=0.00499353465
+		6:[TaxUnitquantity<0.549824238] yes=13,no=14,missing=13
+			13:[total.taxes<2490] yes=25,no=26,missing=25
+				25:leaf=-0.0744571909
+				26:leaf=-0.398031563
+			14:[TaxUnitquantity<0.556957364] yes=27,no=28,missing=27
+				27:leaf=0.260937601
+				28:leaf=0.000544692331
+booster[75]:
+0:[Unitprice<0.262392759] yes=1,no=2,missing=1
+	1:[RiskH.quantity<0.5] yes=3,no=4,missing=3
+		3:leaf=-0.0575728305
+		4:leaf=0.250438631
+	2:[Unitprice<0.499820232] yes=5,no=6,missing=5
+		5:[SGD.DayofYear<125.5] yes=7,no=8,missing=7
+			7:[SGD.DayofYear<48.5] yes=11,no=12,missing=11
+				11:leaf=-0.21180816
+				12:leaf=0.19816342
+			8:[tariff.code<3.96710554e+09] yes=13,no=14,missing=13
+				13:leaf=0.0546273366
+				14:leaf=-0.249495655
+		6:[Unitprice<0.548070073] yes=9,no=10,missing=9
+			9:[tariff.code<8.49953997e+09] yes=15,no=16,missing=15
+				15:leaf=-0.12758562
+				16:leaf=0.33820194
+			10:[gross.weight<3389897] yes=17,no=18,missing=17
+				17:leaf=0.000143687925
+				18:leaf=-0.203963712
+booster[76]:
+0:[WUnitprice<4.29293728] yes=1,no=2,missing=1
+	1:[WUnitprice<3.4929862] yes=3,no=4,missing=3
+		3:[cif.value<393490] yes=7,no=8,missing=7
+			7:[TaxRatio<0.0142037906] yes=15,no=16,missing=15
+				15:leaf=-0.0498931669
+				16:leaf=0.00517642032
+			8:[cif.value<546159.5] yes=17,no=18,missing=17
+				17:leaf=0.460784465
+				18:leaf=-0.169861212
+		4:[SGD.DayofYear<157.5] yes=9,no=10,missing=9
+			9:[total.taxes<2331] yes=19,no=20,missing=19
+				19:leaf=0.347515404
+				20:leaf=0.0163278244
+			10:[SGD.DayofYear<183.5] yes=21,no=22,missing=21
+				21:leaf=-0.279896379
+				22:leaf=-0.00707094045
+	2:[WUnitprice<11.5713501] yes=5,no=6,missing=5
+		5:[total.taxes<465.5] yes=11,no=12,missing=11
+			11:[Unitprice<18750] yes=23,no=24,missing=23
+				23:leaf=-0.244095221
+				24:leaf=0.05665984
+			12:[total.taxes<778.5] yes=25,no=26,missing=25
+				25:leaf=0.0494171567
+				26:leaf=-0.0691708103
+		6:[WUnitprice<11.7947416] yes=13,no=14,missing=13
+			13:[SGD.DayofYear<71.5] yes=27,no=28,missing=27
+				27:leaf=-0.0742825046
+				28:leaf=0.613591731
+			14:[SGD.DayofYear<142.5] yes=29,no=30,missing=29
+				29:leaf=-0.0178225301
+				30:leaf=0.0335250311
+booster[77]:
+0:[RiskH.office.id&importer.id<0.5] yes=1,no=2,missing=1
+	1:[cif.value<1776.5] yes=3,no=4,missing=3
+		3:[gross.weight<119265.5] yes=7,no=8,missing=7
+			7:[RiskH.office.id&HS6<0.5] yes=15,no=16,missing=15
+				15:leaf=-0.10773059
+				16:leaf=0.120029151
+			8:[quantity<25] yes=17,no=18,missing=17
+				17:leaf=0.280437559
+				18:leaf=0.0767064318
+		4:[cif.value<1814.5] yes=9,no=10,missing=9
+			9:[tariff.code<5.60400486e+09] yes=19,no=20,missing=19
+				19:leaf=0.439022779
+				20:leaf=-0.0108551681
+			10:[cif.value<1826.5] yes=21,no=22,missing=21
+				21:leaf=-0.23202759
+				22:leaf=-0.00185198546
+	2:[cif.value<2044] yes=5,no=6,missing=5
+		5:[gross.weight<1516.5] yes=11,no=12,missing=11
+			11:[RiskH.quantity<0.5] yes=23,no=24,missing=23
+				23:leaf=0.0786844343
+				24:leaf=-0.116474018
+			12:leaf=0.265153319
+		6:[Unitprice<125.211685] yes=13,no=14,missing=13
+			13:[TaxUnitquantity<73.6801605] yes=25,no=26,missing=25
+				25:leaf=-0.0120337233
+				26:leaf=-0.248147771
+			14:[TaxUnitquantity<36.2961311] yes=27,no=28,missing=27
+				27:leaf=0.167302728
+				28:leaf=0.0145147229
+booster[78]:
+0:[WUnitprice<0.000838844106] yes=1,no=2,missing=1
+	1:leaf=0.20554471
+	2:[gross.weight<2217120.5] yes=3,no=4,missing=3
+		3:[gross.weight<1279893.5] yes=5,no=6,missing=5
+			5:[gross.weight<788704] yes=7,no=8,missing=7
+				7:leaf=0.000368643203
+				8:leaf=-0.21552904
+			6:[TaxUnitquantity<11.9457626] yes=9,no=10,missing=9
+				9:leaf=0.441200376
+				10:leaf=-0.11207255
+		4:leaf=-0.218345106
+booster[79]:
+0:[gross.weight<10.5] yes=1,no=2,missing=1
+	1:[total.taxes<729] yes=3,no=4,missing=3
+		3:leaf=0.0384581685
+		4:leaf=0.211112678
+	2:[TaxRatio<3.98510838] yes=5,no=6,missing=5
+		5:[TaxRatio<3.90715981] yes=7,no=8,missing=7
+			7:[TaxUnitquantity<13149.5] yes=11,no=12,missing=11
+				11:leaf=-0.000956577598
+				12:leaf=0.0675677732
+			8:[quantity<6.5] yes=13,no=14,missing=13
+				13:leaf=0.140984342
+				14:leaf=0.529498816
+		6:[cif.value<3900.5] yes=9,no=10,missing=9
+			9:[quantity<804] yes=15,no=16,missing=15
+				15:leaf=-0.0294589791
+				16:leaf=0.107851945
+			10:[SGD.DayofYear<179.5] yes=17,no=18,missing=17
+				17:leaf=-0.178541034
+				18:leaf=0.0545280837
+booster[80]:
+0:[Unitprice<2049488] yes=1,no=2,missing=1
+	1:[TaxUnitquantity<3318.5] yes=3,no=4,missing=3
+		3:[TaxUnitquantity<2913.5] yes=7,no=8,missing=7
+			7:[TaxUnitquantity<2807.5] yes=13,no=14,missing=13
+				13:leaf=0.00182521623
+				14:leaf=-0.221916169
+			8:[gross.weight<287409.5] yes=15,no=16,missing=15
+				15:leaf=0.155126706
+				16:leaf=-0.220628649
+		4:[TaxUnitquantity<5008.5] yes=9,no=10,missing=9
+			9:[tariff.code<8.70290227e+09] yes=17,no=18,missing=17
+				17:leaf=0.0533204451
+				18:leaf=-0.158552825
+			10:[TaxUnitquantity<9449] yes=19,no=20,missing=19
+				19:leaf=0.0664312765
+				20:leaf=-0.0320472792
+	2:[SGD.DayofYear<107.5] yes=5,no=6,missing=5
+		5:[SGD.DayofYear<62.5] yes=11,no=12,missing=11
+			11:leaf=-0.0189565308
+			12:leaf=0.495494366
+		6:leaf=-0.130756706
+booster[81]:
+0:[tariff.code<3.91721498e+09] yes=1,no=2,missing=1
+	1:[tariff.code<3.90750003e+09] yes=3,no=4,missing=3
+		3:[tariff.code<3.90699981e+09] yes=7,no=8,missing=7
+			7:[cif.value<175880.5] yes=15,no=16,missing=15
+				15:leaf=-0.0275995787
+				16:leaf=0.0871161819
+			8:[total.taxes<728] yes=17,no=18,missing=17
+				17:leaf=0.0392716303
+				18:leaf=0.567321181
+		4:[Unitprice<4.96393728] yes=9,no=10,missing=9
+			9:leaf=0.04656725
+			10:[TaxRatio<0.00300870161] yes=19,no=20,missing=19
+				19:leaf=-0.0661116391
+				20:leaf=-0.313576877
+	2:[tariff.code<3.92e+09] yes=5,no=6,missing=5
+		5:[TaxRatio<0.0744067878] yes=11,no=12,missing=11
+			11:leaf=0.544999421
+			12:[SGD.DayofYear<111.5] yes=21,no=22,missing=21
+				21:leaf=0.219415531
+				22:leaf=-0.225895435
+		6:[WUnitprice<82.6346283] yes=13,no=14,missing=13
+			13:[WUnitprice<78.3369141] yes=23,no=24,missing=23
+				23:leaf=0.00406869501
+				24:leaf=0.358814746
+			14:[cif.value<97317] yes=25,no=26,missing=25
+				25:leaf=0.0458936132
+				26:leaf=-0.0759839788
+booster[82]:
+0:[WUnitprice<34723.2109] yes=1,no=2,missing=1
+	1:[gross.weight<823.5] yes=3,no=4,missing=3
+		3:[RiskH.HS6&country<0.5] yes=5,no=6,missing=5
+			5:[TaxUnitquantity<478.5] yes=9,no=10,missing=9
+				9:leaf=-0.0591510758
+				10:leaf=0.0456093028
+			6:[SGD.DayofYear<203.5] yes=11,no=12,missing=11
+				11:leaf=0.202086583
+				12:leaf=-0.144580975
+		4:[gross.weight<885] yes=7,no=8,missing=7
+			7:[tariff.code<8.70421197e+09] yes=13,no=14,missing=13
+				13:leaf=0.381740957
+				14:leaf=-0.0957013145
+			8:[gross.weight<1035.5] yes=15,no=16,missing=15
+				15:leaf=0.0563022681
+				16:leaf=-0.0025610819
+	2:leaf=0.157412991
+booster[83]:
+0:[WUnitprice<2.08639574] yes=1,no=2,missing=1
+	1:[WUnitprice<1.59698117] yes=3,no=4,missing=3
+		3:[WUnitprice<1.2674973] yes=7,no=8,missing=7
+			7:[WUnitprice<1.14624524] yes=15,no=16,missing=15
+				15:leaf=0.000232425067
+				16:leaf=0.151181072
+			8:[SGD.DayofYear<210.5] yes=17,no=18,missing=17
+				17:leaf=-0.122908317
+				18:leaf=0.233304963
+		4:[TaxUnitquantity<329.216217] yes=9,no=10,missing=9
+			9:[WUnitprice<2.04912424] yes=19,no=20,missing=19
+				19:leaf=0.00089692272
+				20:leaf=0.335278451
+			10:[SGD.DayofYear<189.5] yes=21,no=22,missing=21
+				21:leaf=0.305386961
+				22:leaf=-0.0743680149
+	2:[TaxRatio<0.268998563] yes=5,no=6,missing=5
+		5:[TaxRatio<0.238119006] yes=11,no=12,missing=11
+			11:[Unitprice<2.61266565] yes=23,no=24,missing=23
+				23:leaf=-0.134241536
+				24:leaf=0.00263873255
+			12:[total.taxes<702] yes=25,no=26,missing=25
+				25:leaf=-0.178128302
+				26:leaf=0.291225404
+		6:[gross.weight<27865] yes=13,no=14,missing=13
+			13:[TaxRatio<0.319718122] yes=27,no=28,missing=27
+				27:leaf=-0.219068244
+				28:leaf=-0.0254354198
+			14:leaf=0.444434315
+booster[84]:
+0:[total.taxes<340.5] yes=1,no=2,missing=1
+	1:[TaxUnitquantity<308.5] yes=3,no=4,missing=3
+		3:[gross.weight<810.5] yes=7,no=8,missing=7
+			7:[WUnitprice<21.3516235] yes=15,no=16,missing=15
+				15:leaf=-0.252212584
+				16:leaf=-0.0343393162
+			8:[tariff.code<8.70431744e+09] yes=17,no=18,missing=17
+				17:leaf=0.0569501482
+				18:leaf=-0.177612871
+		4:[gross.weight<21690.5] yes=9,no=10,missing=9
+			9:leaf=0.592239618
+			10:leaf=-0.00234132633
+	2:[total.taxes<351.5] yes=5,no=6,missing=5
+		5:[RiskH.importer.id<0.5] yes=11,no=12,missing=11
+			11:leaf=-0.257259697
+			12:leaf=0.100573726
+		6:[TaxRatio<0.000123374804] yes=13,no=14,missing=13
+			13:leaf=0.314744264
+			14:[TaxRatio<0.00132328621] yes=19,no=20,missing=19
+				19:leaf=-0.092527613
+				20:leaf=0.000277843967
+booster[85]:
+0:[tariff.code<8.53534515e+09] yes=1,no=2,missing=1
+	1:[RiskH.importer.id<0.5] yes=3,no=4,missing=3
+		3:[quantity<1483.5] yes=7,no=8,missing=7
+			7:[tariff.code<8.50186035e+09] yes=15,no=16,missing=15
+				15:leaf=-0.0189648326
+				16:leaf=-0.0995297432
+			8:[SGD.DayofYear<186.5] yes=17,no=18,missing=17
+				17:leaf=0.00368911005
+				18:leaf=0.167029545
+		4:[gross.weight<2513] yes=9,no=10,missing=9
+			9:[quantity<1626.5] yes=19,no=20,missing=19
+				19:leaf=0.113024972
+				20:leaf=-0.195125222
+			10:[WUnitprice<0.151765615] yes=21,no=22,missing=21
+				21:leaf=0.0958038867
+				22:leaf=-0.0616752021
+	2:[SGD.DayofYear<43.5] yes=5,no=6,missing=5
+		5:[TaxUnitquantity<4081.5] yes=11,no=12,missing=11
+			11:[cif.value<2101.5] yes=23,no=24,missing=23
+				23:leaf=0.174322203
+				24:leaf=-0.0621423237
+			12:[SGD.DayofYear<14.5] yes=25,no=26,missing=25
+				25:leaf=-0.0719487444
+				26:leaf=0.195304722
+		6:[tariff.code<8.70290227e+09] yes=13,no=14,missing=13
+			13:[cif.value<8910.5] yes=27,no=28,missing=27
+				27:leaf=0.182003781
+				28:leaf=-0.00373198348
+			14:[TaxUnitquantity<3220.5] yes=29,no=30,missing=29
+				29:leaf=0.0174087416
+				30:leaf=-0.0729770586
+booster[86]:
+0:[cif.value<4955] yes=1,no=2,missing=1
+	1:[Unitprice<4506.5] yes=3,no=4,missing=3
+		3:[cif.value<4157.5] yes=7,no=8,missing=7
+			7:[SGD.DayofYear<88.5] yes=13,no=14,missing=13
+				13:leaf=0.0398710258
+				14:leaf=-0.0153390132
+			8:[gross.weight<1755.5] yes=15,no=16,missing=15
+				15:leaf=-0.204785749
+				16:leaf=-0.0258555803
+		4:leaf=-0.283731997
+	2:[cif.value<5525.5] yes=5,no=6,missing=5
+		5:[quantity<19.5] yes=9,no=10,missing=9
+			9:[WUnitprice<0.200633332] yes=17,no=18,missing=17
+				17:leaf=0.241546839
+				18:leaf=-0.124849111
+			10:[total.taxes<20978.5] yes=19,no=20,missing=19
+				19:leaf=0.366012156
+				20:leaf=-0.0962510556
+		6:[WUnitprice<0.0330802277] yes=11,no=12,missing=11
+			11:[cif.value<8933.5] yes=21,no=22,missing=21
+				21:leaf=0.321195126
+				22:leaf=-0.133311868
+			12:[WUnitprice<0.0378405675] yes=23,no=24,missing=23
+				23:leaf=-0.229050592
+				24:leaf=0.000649299705
+booster[87]:
+0:[total.taxes<149.5] yes=1,no=2,missing=1
+	1:[Unitprice<6.72586823] yes=3,no=4,missing=3
+		3:[gross.weight<25572] yes=7,no=8,missing=7
+			7:[SGD.DayofYear<98.5] yes=15,no=16,missing=15
+				15:leaf=-0.0135267349
+				16:leaf=0.40530476
+			8:[cif.value<2638.5] yes=17,no=18,missing=17
+				17:leaf=0.0975167081
+				18:leaf=-0.230502442
+		4:[cif.value<2202] yes=9,no=10,missing=9
+			9:[SGD.DayofYear<74] yes=19,no=20,missing=19
+				19:leaf=-0.0363080092
+				20:leaf=-0.254199237
+			10:[cif.value<3421] yes=21,no=22,missing=21
+				21:leaf=0.126990989
+				22:leaf=-0.074258782
+	2:[total.taxes<185.5] yes=5,no=6,missing=5
+		5:[Unitprice<421.778992] yes=11,no=12,missing=11
+			11:[TaxUnitquantity<0.13916859] yes=23,no=24,missing=23
+				23:leaf=-0.042836085
+				24:leaf=0.372118533
+			12:[SGD.DayofYear<46] yes=25,no=26,missing=25
+				25:leaf=0.361495972
+				26:leaf=-0.176913083
+		6:[TaxRatio<0.00256596529] yes=13,no=14,missing=13
+			13:[TaxRatio<0.00132128061] yes=27,no=28,missing=27
+				27:leaf=-0.0338182785
+				28:leaf=0.13721846
+			14:[TaxRatio<0.00299974694] yes=29,no=30,missing=29
+				29:leaf=-0.151002869
+				30:leaf=-0.00153548981
+booster[88]:
+0:[quantity<1789.5] yes=1,no=2,missing=1
+	1:[quantity<1700.5] yes=3,no=4,missing=3
+		3:[total.taxes<39581.5] yes=7,no=8,missing=7
+			7:[total.taxes<36238.5] yes=15,no=16,missing=15
+				15:leaf=0.000396325631
+				16:leaf=-0.214931548
+			8:[total.taxes<40641] yes=17,no=18,missing=17
+				17:leaf=0.418670386
+				18:leaf=0.0141707817
+		4:[TaxUnitquantity<1.87528884] yes=9,no=10,missing=9
+			9:[tariff.code<8.48019507e+09] yes=19,no=20,missing=19
+				19:leaf=-0.24850902
+				20:leaf=0.0842026621
+			10:[total.taxes<25505.5] yes=21,no=22,missing=21
+				21:leaf=0.433623701
+				22:leaf=-0.0675781816
+	2:[RiskH.quantity<0.5] yes=5,no=6,missing=5
+		5:[quantity<5333.5] yes=11,no=12,missing=11
+			11:[quantity<2018.5] yes=23,no=24,missing=23
+				23:leaf=-0.163675904
+				24:leaf=-0.00276240008
+			12:[total.taxes<487.5] yes=25,no=26,missing=25
+				25:leaf=-0.0469749309
+				26:leaf=-0.282337636
+		6:[quantity<10306] yes=13,no=14,missing=13
+			13:[tariff.code<2.87325491e+09] yes=27,no=28,missing=27
+				27:leaf=0.237560511
+				28:leaf=0.00320187421
+			14:[gross.weight<1355.5] yes=29,no=30,missing=29
+				29:leaf=-0.0117927026
+				30:leaf=0.325857162
+booster[89]:
+0:[WUnitprice<2967.10791] yes=1,no=2,missing=1
+	1:[WUnitprice<2171.10571] yes=3,no=4,missing=3
+		3:[WUnitprice<1376.48914] yes=7,no=8,missing=7
+			7:[WUnitprice<1292.64331] yes=13,no=14,missing=13
+				13:leaf=-0.00082888297
+				14:leaf=-0.276536733
+			8:[SGD.DayofYear<161.5] yes=15,no=16,missing=15
+				15:leaf=0.210509092
+				16:leaf=-0.119835861
+		4:[SGD.DayofYear<123] yes=9,no=10,missing=9
+			9:leaf=-0.228160664
+			10:leaf=-0.0485929437
+	2:[total.taxes<340.5] yes=5,no=6,missing=5
+		5:leaf=-0.204968214
+		6:[quantity<321] yes=11,no=12,missing=11
+			11:[SGD.DayofYear<95] yes=17,no=18,missing=17
+				17:leaf=0.29256925
+				18:leaf=0.0306329541
+			12:[quantity<1343.5] yes=19,no=20,missing=19
+				19:leaf=-0.162539989
+				20:leaf=0.0485316068
+booster[90]:
+0:[Unitprice<0.265350699] yes=1,no=2,missing=1
+	1:[RiskH.quantity<0.5] yes=3,no=4,missing=3
+		3:leaf=-0.0210451353
+		4:leaf=0.211915806
+	2:[Unitprice<0.486701846] yes=5,no=6,missing=5
+		5:[Unitprice<0.430150092] yes=7,no=8,missing=7
+			7:[SGD.DayofYear<132.5] yes=11,no=12,missing=11
+				11:leaf=0.124563739
+				12:leaf=-0.129038081
+			8:[Unitprice<0.473280072] yes=13,no=14,missing=13
+				13:leaf=-0.296284884
+				14:leaf=-0.0566655472
+		6:[RiskH.HS2<0.5] yes=9,no=10,missing=9
+			9:[tariff.code<8.48e+09] yes=15,no=16,missing=15
+				15:leaf=-0.0124526266
+				16:leaf=0.00510442443
+			10:[gross.weight<205819] yes=17,no=18,missing=17
+				17:leaf=0.0180979129
+				18:leaf=0.339195251
+booster[91]:
+0:[RiskH.office.id&importer.id<0.5] yes=1,no=2,missing=1
+	1:[WUnitprice<0.0195601061] yes=3,no=4,missing=3
+		3:[WUnitprice<0.0153915137] yes=7,no=8,missing=7
+			7:[total.taxes<853] yes=15,no=16,missing=15
+				15:leaf=-0.0958345532
+				16:leaf=0.0530052036
+			8:[SGD.DayofYear<165.5] yes=17,no=18,missing=17
+				17:leaf=-0.261950672
+				18:leaf=0.0545304678
+		4:[WUnitprice<0.0210295264] yes=9,no=10,missing=9
+			9:[Unitprice<147.538452] yes=19,no=20,missing=19
+				19:leaf=0.347180724
+				20:leaf=-0.124594368
+			10:[WUnitprice<0.021741543] yes=21,no=22,missing=21
+				21:leaf=-0.236945286
+				22:leaf=-0.000287944393
+	2:[RiskH.HS6&country<0.5] yes=5,no=6,missing=5
+		5:[gross.weight<982.5] yes=11,no=12,missing=11
+			11:[gross.weight<117.5] yes=23,no=24,missing=23
+				23:leaf=-0.072259374
+				24:leaf=0.2001504
+			12:[gross.weight<1298] yes=25,no=26,missing=25
+				25:leaf=-0.196798012
+				26:leaf=0.0219428837
+		6:[gross.weight<80186.5] yes=13,no=14,missing=13
+			13:leaf=0.247438729
+			14:leaf=0.0191249624
+booster[92]:
+0:[TaxRatio<1.36085677] yes=1,no=2,missing=1
+	1:[TaxRatio<1.32895172] yes=3,no=4,missing=3
+		3:[TaxRatio<1.30535674] yes=7,no=8,missing=7
+			7:[TaxRatio<1.29929078] yes=15,no=16,missing=15
+				15:leaf=0.00202498818
+				16:leaf=0.300837457
+			8:[TaxRatio<1.31462038] yes=17,no=18,missing=17
+				17:leaf=-0.260198772
+				18:leaf=-0.0497132316
+		4:[total.taxes<3991] yes=9,no=10,missing=9
+			9:[total.taxes<2886] yes=19,no=20,missing=19
+				19:leaf=0.160914302
+				20:leaf=-0.173849791
+			10:[tariff.code<8.62550016e+09] yes=21,no=22,missing=21
+				21:leaf=0.0189250037
+				22:leaf=0.715401471
+	2:[TaxRatio<1.45694017] yes=5,no=6,missing=5
+		5:[Unitprice<2406.5] yes=11,no=12,missing=11
+			11:[TaxRatio<1.3706677] yes=23,no=24,missing=23
+				23:leaf=-0.0591671281
+				24:leaf=-0.318690777
+			12:[TaxRatio<1.4129684] yes=25,no=26,missing=25
+				25:leaf=0.289227366
+				26:leaf=-0.162438646
+		6:[tariff.code<9.40460032e+09] yes=13,no=14,missing=13
+			13:[TaxRatio<1.54927647] yes=27,no=28,missing=27
+				27:leaf=0.152626902
+				28:leaf=-0.00874702632
+			14:leaf=-0.278795958
+booster[93]:
+0:[TaxUnitquantity<89066.5] yes=1,no=2,missing=1
+	1:[TaxUnitquantity<84949.5] yes=3,no=4,missing=3
+		3:[total.taxes<230785] yes=7,no=8,missing=7
+			7:[total.taxes<195862.5] yes=9,no=10,missing=9
+				9:leaf=-0.000382313301
+				10:leaf=0.224241301
+			8:leaf=-0.203308865
+		4:leaf=0.311053425
+	2:[cif.value<3914] yes=5,no=6,missing=5
+		5:leaf=0.125570863
+		6:leaf=-0.229171097
+booster[94]:
+0:[SGD.DayofYear<238.5] yes=1,no=2,missing=1
+	1:[cif.value<1563.5] yes=3,no=4,missing=3
+		3:[TaxUnitquantity<1.39200795] yes=5,no=6,missing=5
+			5:[cif.value<1470] yes=9,no=10,missing=9
+				9:leaf=0.00869114976
+				10:leaf=-0.190723762
+			6:[TaxUnitquantity<816.060181] yes=11,no=12,missing=11
+				11:leaf=0.259659916
+				12:leaf=-0.19494389
+		4:[cif.value<1630] yes=7,no=8,missing=7
+			7:[SGD.DayofYear<183.5] yes=13,no=14,missing=13
+				13:leaf=-0.246322408
+				14:leaf=0.0759407803
+			8:[tariff.code<9.61155072e+09] yes=15,no=16,missing=15
+				15:leaf=0.000777069887
+				16:leaf=-0.179830894
+	2:leaf=-0.149201885
+booster[95]:
+0:[cif.value<4551821] yes=1,no=2,missing=1
+	1:[cif.value<3811490] yes=3,no=4,missing=3
+		3:[WUnitprice<38.6658745] yes=5,no=6,missing=5
+			5:[WUnitprice<21.3718071] yes=7,no=8,missing=7
+				7:leaf=-0.00214454811
+				8:leaf=0.0767060071
+			6:[WUnitprice<40.0361023] yes=9,no=10,missing=9
+				9:leaf=-0.258275807
+				10:leaf=-0.0100505473
+		4:leaf=0.256347656
+	2:leaf=-0.167960614
+booster[96]:
+0:[Unitprice<2049488] yes=1,no=2,missing=1
+	1:[Unitprice<1436527] yes=3,no=4,missing=3
+		3:[Unitprice<1138933] yes=7,no=8,missing=7
+			7:[Unitprice<148494] yes=11,no=12,missing=11
+				11:leaf=0.00081776164
+				12:leaf=-0.0334678106
+			8:leaf=0.208661035
+		4:leaf=-0.166734323
+	2:[SGD.DayofYear<107.5] yes=5,no=6,missing=5
+		5:[SGD.DayofYear<73.5] yes=9,no=10,missing=9
+			9:leaf=-0.0460406989
+			10:leaf=0.434018016
+		6:leaf=-0.102920368
+booster[97]:
+0:[Unitprice<1658.62097] yes=1,no=2,missing=1
+	1:[Unitprice<1286.92175] yes=3,no=4,missing=3
+		3:[Unitprice<1266.05322] yes=7,no=8,missing=7
+			7:[TaxUnitquantity<0.00264238147] yes=15,no=16,missing=15
+				15:leaf=0.0893972963
+				16:leaf=-0.00557937147
+			8:[SGD.DayofYear<108.5] yes=17,no=18,missing=17
+				17:leaf=-0.0149033172
+				18:leaf=0.576271653
+		4:[gross.weight<307493] yes=9,no=10,missing=9
+			9:[WUnitprice<610.029358] yes=19,no=20,missing=19
+				19:leaf=-0.187072441
+				20:leaf=0.144217223
+			10:leaf=0.359521508
+	2:[Unitprice<1820.08325] yes=5,no=6,missing=5
+		5:[gross.weight<1727.5] yes=11,no=12,missing=11
+			11:[gross.weight<1486] yes=21,no=22,missing=21
+				21:leaf=0.104947649
+				22:leaf=0.755837262
+			12:[SGD.DayofYear<123.5] yes=23,no=24,missing=23
+				23:leaf=-0.208084017
+				24:leaf=0.117774934
+		6:[Unitprice<1891.125] yes=13,no=14,missing=13
+			13:[WUnitprice<6.71177959] yes=25,no=26,missing=25
+				25:leaf=-0.254606575
+				26:leaf=0.0593199842
+			14:[Unitprice<1938.76196] yes=27,no=28,missing=27
+				27:leaf=0.246187791
+				28:leaf=0.00418848684
+booster[98]:
+0:[TaxRatio<0.0601042137] yes=1,no=2,missing=1
+	1:[SGD.DayofYear<65.5] yes=3,no=4,missing=3
+		3:[total.taxes<492.5] yes=7,no=8,missing=7
+			7:[total.taxes<241.5] yes=15,no=16,missing=15
+				15:leaf=0.0448578559
+				16:leaf=-0.0866860375
+			8:[Unitprice<208795.5] yes=17,no=18,missing=17
+				17:leaf=0.0964170322
+				18:leaf=-0.135060281
+		4:[TaxRatio<0.032576941] yes=9,no=10,missing=9
+			9:[TaxRatio<0.0320111662] yes=19,no=20,missing=19
+				19:leaf=-0.0121813938
+				20:leaf=0.369655699
+			10:[cif.value<264870] yes=21,no=22,missing=21
+				21:leaf=-0.0963943377
+				22:leaf=0.1560307
+	2:[TaxRatio<0.0608005449] yes=5,no=6,missing=5
+		5:[Unitprice<83.3482208] yes=11,no=12,missing=11
+			11:leaf=-0.072846137
+			12:[tariff.code<8.51698483e+09] yes=23,no=24,missing=23
+				23:leaf=0.125457585
+				24:leaf=0.560867846
+		6:[cif.value<145422.5] yes=13,no=14,missing=13
+			13:[cif.value<95134.5] yes=25,no=26,missing=25
+				25:leaf=0.00216334616
+				26:leaf=0.163310125
+			14:[total.taxes<75551] yes=27,no=28,missing=27
+				27:leaf=-0.139062613
+				28:leaf=0.0809877813
+booster[99]:
+0:[SGD.DayofYear<37.5] yes=1,no=2,missing=1
+	1:[total.taxes<71722.5] yes=3,no=4,missing=3
+		3:[TaxUnitquantity<7.67368126] yes=7,no=8,missing=7
+			7:[TaxRatio<0.00747808907] yes=15,no=16,missing=15
+				15:leaf=-0.117410652
+				16:leaf=0.071648173
+			8:[tariff.code<6.35651021e+09] yes=17,no=18,missing=17
+				17:leaf=-0.14064987
+				18:leaf=-0.0161942802
+		4:[TaxRatio<3.70972061] yes=9,no=10,missing=9
+			9:[cif.value<115798.5] yes=19,no=20,missing=19
+				19:leaf=0.570904016
+				20:leaf=0.125536859
+			10:[TaxRatio<43.08255] yes=21,no=22,missing=21
+				21:leaf=-0.130965829
+				22:leaf=0.104716934
+	2:[SGD.DayofYear<50.5] yes=5,no=6,missing=5
+		5:[TaxUnitquantity<516.5] yes=11,no=12,missing=11
+			11:[tariff.code<8.70324224e+09] yes=23,no=24,missing=23
+				23:leaf=0.150303647
+				24:leaf=-0.054782901
+			12:[WUnitprice<5.24926472] yes=25,no=26,missing=25
+				25:leaf=0.0293105524
+				26:leaf=-0.212905824
+		6:[TaxUnitquantity<7.44343472] yes=13,no=14,missing=13
+			13:[TaxUnitquantity<6.07846165] yes=27,no=28,missing=27
+				27:leaf=-0.0086127026
+				28:leaf=-0.169433326
+			14:[TaxUnitquantity<8.06007004] yes=29,no=30,missing=29
+				29:leaf=0.210017785
+				30:leaf=0.00436233217
