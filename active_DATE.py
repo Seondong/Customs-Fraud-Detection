@@ -140,6 +140,7 @@ if __name__ == '__main__':
     for i in range(epochs):
         # make dataset
         splitter = ["13-01-01", "13-03-25", "13-03-25", "13-04-01", start_day.strftime('%y-%m-%d'), end_day.strftime('%y-%m-%d'), newly_labeled]
+
         preprocess_data.split_data(splitter, newly_labeled)
         generate_loader.loader()
         # load data
@@ -174,7 +175,7 @@ if __name__ == '__main__':
         # selection
         
         # add new label:
-        
+                    
         # New epoch's starting day
         start_day = end_day
         end_day = start_day + timedelta(days = 7) 
