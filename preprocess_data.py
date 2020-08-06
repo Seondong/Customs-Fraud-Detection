@@ -136,7 +136,7 @@ def split_data(splitter, newly_labeled = None):
     valid = df[(df["sgd.date"] >= splitter[2]) & (df["sgd.date"] < splitter[3])]
     test = df[(df["sgd.date"] >= splitter[4]) & (df["sgd.date"] < splitter[5])]
     if newly_labeled:
-        pass
+        train = pd.concat([train, newly_labeled])
     # save label data
     train_reg_label = train['revenue'].values
     valid_reg_label = valid['revenue'].values
