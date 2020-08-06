@@ -120,7 +120,7 @@ def tag_risky_profiles(df: pd.DataFrame, profile: str, profiles: list or dict, o
         df.loc[:, 'RiskH.'+profile] = df[profile].apply(lambda x: profiles.get(x), overall_ratio_train)
     return df
 
-def split_data(splitter = ["13-01-01", "13-10-01", "13-11-01", "13-12-31"]):
+def split_data(splitter, newly_labeled = None):
     # Dataset settings
     # data_length = df.shape[0]
     # train_ratio = 0.6
@@ -133,9 +133,10 @@ def split_data(splitter = ["13-01-01", "13-10-01", "13-11-01", "13-12-31"]):
     # valid = df.iloc[train_length:valid_length,:]
     # test = df.iloc[valid_length:,:]
     train = df[(df["sgd.date"] >= splitter[0]) & (df["sgd.date"] < splitter[1])]
-    valid = df[(df["sgd.date"] >= splitter[1]) & (df["sgd.date"] < splitter[2])]
-    test = df[(df["sgd.date"] >= splitter[1]) & (df["sgd.date"] < splitter[3])]
-
+    valid = df[(df["sgd.date"] >= splitter[2]) & (df["sgd.date"] < splitter[3])]
+    test = df[(df["sgd.date"] >= splitter[4]) & (df["sgd.date"] < splitter[5])]
+    if newly_labeled:
+        pass
     # save label data
     train_reg_label = train['revenue'].values
     valid_reg_label = valid['revenue'].values
@@ -208,5 +209,58 @@ def split_data(splitter = ["13-01-01", "13-10-01", "13-11-01", "13-12-31"]):
     pickle.dump(all_data, file)
     file.close()
 
+# def make_current_data(splitter = ["13-01-01", "13-10-01"]):
+
+#     current = df[(df["sgd.date"] >= splitter[0]) & (df["sgd.date"] < splitter[1])]
+
+#     # save label data
+#     current_reg_label = current['revenue'].values
+#     current_cls_label = current["illicit"].values
+
+#     # Run preprocessing
+#     current = preprocess(current)
+
+#     # save labels
+#     current_reg_label = current['revenue'].values
+#     current_cls_label = current["illicit"].values
+
+#     # Add a few more risky profiles
+#     risk_profiles = {}
+#     profile_candidates = ['importer.id', 'declarant.id', 'HS6.Origin', 'tariff.code', 'quantity', 'HS6', 'HS4', 'HS2', 'office.id'] + [col for col in current.columns if '&' in col]
+
+#     for profile in profile_candidates:
+#         option = 'topk'
+#         risk_profiles[profile] = find_risk_profile(current, profile, 0.1, 10, option=option)
+#         current = tag_risky_profiles(current, profile, risk_profiles[profile], option=option)
+
+#     # Features to use in a classifier
+#     column_to_use = ['fob.value', 'cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'FOBCIFRatio', 'TaxUnitquantity', 'tariff.code', 'HS6', 'HS4', 'HS2', 'SGD.DayofYear', 'SGD.WeekofYear', 'SGD.MonthofYear'] + [col for col in current.columns if 'RiskH' in col] 
+#     X_current = current[column_to_use].values
+#     print("Data size:")
+#     print(current.shape)
+
+#     # impute nan
+#     X_current = np.nan_to_num(X_current, 0)
+
+#     # store all data in a dictionary
+#     all_data = {"raw":{"current":current},
+#      "xgboost_data":{"current_x":X_current,"current_y":current_cls_label},
+#      "revenue":{"current":current_reg_label}}
+
+#     # make sure the data size are correct
+#     print("Checking data size...")
+#     print(X_current.shape[0], current_cls_label.shape, current_reg_label.shape)
+
+#     from collections import Counter
+#     print("Checking label distribution")
+#     cnt = Counter(current_cls_label)
+#     print("Current:",cnt[1]/cnt[0])
+
+#     # pickle a variable to a file
+#     file = open('./current_processed_data.pickle', 'wb')
+#     pickle.dump(all_data, file)
+#     file.close()
+
 if __name__ == '__main__':
-    split_data()
+    split_data(["13-01-01", "13-10-01", "13-10-01", "13-11-01", "13-11-01", "14-01-01"])
+    # make_current_data(["13-04-06", "13-04-15"])
