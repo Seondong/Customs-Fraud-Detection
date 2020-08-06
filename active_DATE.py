@@ -9,7 +9,7 @@ import time
 from collections import defaultdict
 from datetime import timedelta
 import datetime
-
+import badge
 import numpy as np
 import torch
 import torch.nn as nn
@@ -136,20 +136,20 @@ if __name__ == '__main__':
     newly_labeled = None
     start_day = datetime.date(2013, 4, 1)
     end_day = start_day + timedelta(days = 7)
-    print(start_day, end_day)
     for i in range(epochs):
         # make dataset
-        splitter = ["13-01-01", "13-03-25", "13-03-25", "13-04-01", start_day.strftime('%y-%m-%d'), end_day.strftime('%y-%m-%d'), newly_labeled]
+        splitter = ["13-01-01", "13-03-25", "13-03-25", "13-04-01", start_day.strftime('%y-%m-%d'), end_day.strftime('%y-%m-%d')]
 
         preprocess_data.split_data(splitter, newly_labeled)
         generate_loader.loader()
         # load data
         data = load_data("./torch_data.pickle")
+        train_loader, valid_loader, test_loader, leaf_num, importer_size, item_size, xgb_validy, xgb_testy, revenue_valid, revenue_test = data
         # create model
         date_model = DATE_model.VanillaDATE(data)
         # re-train
         date_model.train(args)
-        overall_f1, auc, precisions, recalls, f1s, revenues = date_model.evaluate(save_model)
+        overall_f1, auc, precisions, recalls, f1s, revenues, path = date_model.evaluate(save_model)
 
         # save result
         output_file =  "./results/" + args.output
@@ -173,7 +173,9 @@ if __name__ == '__main__':
         # get uncertainty
 
         # selection
-        
+        badge_sampling = badge.BadgeSampling(path, test_loader, args)
+        chosen = badge_sampling.query(10)
+        print(chosen)        
         # add new label:
                     
         # New epoch's starting day

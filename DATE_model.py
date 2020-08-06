@@ -135,7 +135,7 @@ class VanillaDATE:
             # evaluate 
             model.eval()
             print("Validate at epoch %s"%(epoch+1))
-            y_prob, val_loss = model.module.eval_on_batch(valid_loader)
+            y_prob, val_loss, _ = model.module.eval_on_batch(valid_loader)
             y_pred_tensor = torch.tensor(y_prob).float().to(device)
             best_threshold, val_score, roc = torch_threshold(y_prob,xgb_validy)
             overall_f1, auc, precisions, recalls, f1s, revenues = metrics(y_prob,xgb_validy,revenue_valid)
@@ -143,7 +143,7 @@ class VanillaDATE:
             print("Over-all F1:%.4f, AUC:%.4f, F1-top:%.4f" % (overall_f1, auc, select_best) )
 
             print("Evaluate at epoch %s"%(epoch+1))
-            y_prob, val_loss = model.module.eval_on_batch(test_loader)
+            y_prob, val_loss, _ = model.module.eval_on_batch(test_loader)
             y_pred_tensor = torch.tensor(y_prob).float().to(device)
             overall_f1, auc, precisions, recalls, f1s, revenues = metrics(y_prob,xgb_testy,revenue_test,best_thresh=best_threshold)
             print("Over-all F1:%.4f, AUC:%.4f, F1-top:%.4f" %(overall_f1, auc, np.mean(f1s)) )
@@ -177,11 +177,11 @@ class VanillaDATE:
         best_model.eval()
 
         # get threshold
-        y_prob, val_loss = best_model.module.eval_on_batch(valid_loader)
+        y_prob, val_loss, _ = best_model.module.eval_on_batch(valid_loader)
         best_threshold, val_score, roc = torch_threshold(y_prob,xgb_validy)
 
         # predict test 
-        y_prob, val_loss = best_model.module.eval_on_batch(test_loader)
+        y_prob, val_loss, _ = best_model.module.eval_on_batch(test_loader)
         overall_f1, auc, precisions, recalls, f1s, revenues = metrics(y_prob,xgb_testy,revenue_test,best_threshold)
         best_score = f1s[0]
         os.system("rm %s"%model_path)
@@ -189,7 +189,7 @@ class VanillaDATE:
             scroed_name = "./saved_models/%s_%.4f.pkl" % (model_name,overall_f1)
             torch.save(best_model,scroed_name)
         
-        return overall_f1, auc, precisions, recalls, f1s, revenues
+        return overall_f1, auc, precisions, recalls, f1s, revenues, scroed_name
 
 
 # if __name__ == '__main__':
