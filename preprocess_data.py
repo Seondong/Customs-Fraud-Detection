@@ -133,7 +133,7 @@ def split_data(df, splitter, newly_labeled = None):
     test = df[(df["sgd.date"] >= splitter[4]) & (df["sgd.date"] < splitter[5])]
     offset = test.index[0]
 
-    if newly_labeled is None:
+    if newly_labeled is not None:
         train = pd.concat([train, newly_labeled])
 
     # save label data
