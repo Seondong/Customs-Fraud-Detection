@@ -129,6 +129,7 @@ class DATE(nn.Module):
         cls_loss = []
         reg_loss = []
         hiddens = []
+        revs = []        
         for batch in test_loader:
             batch_feature, batch_user, batch_item, batch_cls, batch_reg = batch
             batch_feature,batch_user,batch_item,batch_cls,batch_reg =  \
@@ -136,6 +137,7 @@ class DATE(nn.Module):
             batch_item.to(self.device), batch_cls.to(self.device), batch_reg.to(self.device)
             batch_cls,batch_reg = batch_cls.view(-1,1), batch_reg.view(-1,1)
             y_pred_prob, y_pred_rev, hidden = self.forward(batch_feature,batch_user,batch_item)
+            revs.extend(y_pred_rev)
             hiddens.extend(hidden)
             # compute classification loss
             cls_losses = nn.BCELoss()(y_pred_prob,batch_cls)
@@ -150,4 +152,4 @@ class DATE(nn.Module):
             final_output.extend(y_pred)
 
         print("CLS loss: %.4f, REG loss: %.4f"% (np.mean(cls_loss), np.mean(reg_loss)) )
-        return np.array(final_output).ravel(), np.mean(cls_loss)+ np.mean(reg_loss), hiddens
+        return np.array(final_output).ravel(), np.mean(cls_loss)+ np.mean(reg_loss), (hiddens, revs)
