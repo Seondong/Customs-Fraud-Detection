@@ -3,8 +3,10 @@ import numpy as np
 import preprocess_data
 import pickle
 from xgboost import XGBClassifier, XGBRegressor
+from utils import find_best_threshold
+from sklearn.metrics import f1_score,roc_auc_score
 
-def uncertainty_tag(test, column_to_use_unc_measure, option) :
+def uncertainty_tag(test, unc, column_to_use_unc_measure, option) :
     test['uncertain'] = 0
 
     if option == 'naive' :
@@ -12,7 +14,7 @@ def uncertainty_tag(test, column_to_use_unc_measure, option) :
         uncertainty_coefficient = 1/(len(column_to_use_unc_measure))
 
         for col in column_to_use_unc_measure :
-            test['uncertain'] = test['uncertain'] + uncertainty_coefficient * test['unc.'+col]
+            test['uncertain'] = test['uncertain'] + uncertainty_coefficient * unc['unc.'+col]
 
 def scaling(x) :
     if x < 0 :
@@ -21,16 +23,19 @@ def scaling(x) :
         return 1
     return x
 
-def uncertainty_measurement(train, test) :
+def uncertainty_measurement(train, valid, test) :
     # Columns to use
     # numeric_columns = ['fob.value', 'cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'FOBCIFRatio', 'TaxUnitquantity', 'SGD.DayofYear', 'SGD.WeekofYear', 'SGD.MonthofYear']
     numeric_columns = ['fob.value', 'cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'FOBCIFRatio', 'TaxUnitquantity']
     categorical_columns = ['RiskH.importer.id', 'RiskH.declarant.id',
-       'RiskH.HS6.Origin', 'RiskH.tariff.code', 'RiskH.quantity', 'RiskH.HS6',
+       'RiskH.HS6.Origin', 'RiskH.tariff.code', 'RiskH.HS6',
        'RiskH.HS4', 'RiskH.HS2', 'RiskH.office.id']
     column_to_use_unc_measure = numeric_columns + categorical_columns
 
+    unc = pd.DataFrame()
+
     train_unc = pd.DataFrame(train, columns = column_to_use_unc_measure)
+    valid_unc = pd.DataFrame(valid, columns = column_to_use_unc_measure)
     test_unc = pd.DataFrame(test, columns = column_to_use_unc_measure)
 
     # Generate classifiers for predict each masked categorical feature
@@ -39,14 +44,28 @@ def uncertainty_measurement(train, test) :
 
         print("Training xgboost model for predicting %s" % cc)
         xgb_trainx = pd.DataFrame(train_unc, columns = columns)
+        xgb_validx = pd.DataFrame(valid_unc, columns = columns)
         xgb_testx = pd.DataFrame(test_unc, columns = columns)
 
         xgb_clf = XGBClassifier(n_estimators=100)
         xgb_clf.fit(xgb_trainx,train[cc].values)
 
+        # evaluate xgboost model
+        print("------Evaluating xgboost model------")
+        test_pred = xgb_clf.predict_proba(xgb_testx)[:,1]
+        xgb_auc = roc_auc_score(test[cc].values, test_pred)
+        xgb_threshold,_ = find_best_threshold(xgb_clf, xgb_validx, valid[cc].values)
+        xgb_f1 = find_best_threshold(xgb_clf, xgb_testx, test[cc].values,best_thresh=xgb_threshold)
+        print("AUC = %.4f, F1-score = %.4f" % (xgb_auc, xgb_f1))
+        print("------------------------------------")
+
         xgb_clf_pred = xgb_clf.predict(xgb_testx)
-        test['pred.'+cc] = xgb_clf_pred.tolist()
-        test['unc.'+cc] = np.bitwise_xor(test[cc], test['pred.'+cc])
+        unc['unc.'+cc] = np.bitwise_xor(test[cc], xgb_clf_pred.tolist())
+
+        # Descriptive statistical analysis
+        print("------Descriptive statistics------")
+        print(pd.Categorical(xgb_clf_pred.tolist()).value_counts())
+        print("----------------------------------")
 
     # Generate regressors for predict each masked numeric feature
     for nc in numeric_columns :
@@ -62,12 +81,15 @@ def uncertainty_measurement(train, test) :
         xgb_reg.fit(xgb_trainx, train[nc].values)
         
         xgb_reg_pred = xgb_reg.predict(xgb_testx)
-        test['pred.'+nc] = xgb_reg_pred.tolist()
-        test['unc.'+nc] = abs(test[nc] - test['pred.'+nc]) / test[nc]
-        test['unc.'+nc] = test['unc.'+nc].apply(lambda x : scaling(x))
-        print(test['pred.'+nc].describe())
+        unc['unc.'+nc] = abs(test[nc] - xgb_reg_pred.tolist()) / test[nc]
+        unc['unc.'+nc] = unc['unc.'+nc].apply(lambda x : scaling(x))
+
+        # Descriptive statistical anaylsis
+        print("------Descriptive statistics------")
+        print(pd.DataFrame(xgb_reg_pred.tolist()).describe())
+        print("----------------------------------")
     
-    uncertainty_tag(test, column_to_use_unc_measure, 'naive')
+    uncertainty_tag(test, unc, column_to_use_unc_measure, 'naive')
 
 # -----------------------------------------------
 # Temporary test codes
@@ -84,6 +106,6 @@ train = processed_data["raw"]["train"]
 valid = processed_data["raw"]["valid"]
 test = processed_data["raw"]["test"]
 
-uncertainty_measurement(train, test)
+uncertainty_measurement(train, valid, test)
 print(test.columns)
 print(test.sort_values('uncertain', ascending=False)[1:20])
