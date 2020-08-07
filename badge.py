@@ -103,7 +103,7 @@ class BadgeSampling:
     def get_grad_embedding(self, model_path, dim, test_loader):
         embDim = dim
         best_model = torch.load(model_path)
-        final_output, _, hiddens = best_model.module.eval_on_batch(test_loader)
+        final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(test_loader)
         num_data = test_loader.dataset.tensors[-1].shape[0]
         nLab = 2
         print(len(final_output), hiddens[0].shape, len(hiddens))

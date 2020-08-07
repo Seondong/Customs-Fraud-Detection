@@ -15,10 +15,15 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.data as Data
+import pandas as pd
 
 from model.AttTreeEmbedding import Attention, DATE
 from ranger import Ranger
 from utils import torch_threshold, fgsm_attack, metrics
+
+df = pd.read_csv('./data/synthetic-imports-declarations.csv', encoding = "ISO-8859-1")
+df = df.dropna(subset=["illicit"])
+df = df.sort_values("sgd.date")
 
 warnings.filterwarnings("ignore")
 def load_data(path):
@@ -132,7 +137,7 @@ if __name__ == '__main__':
     agg = args.agg
     print(args)
 
-    epochs = 2
+    epochs = 20
     newly_labeled = None
     start_day = datetime.date(2013, 4, 1)
     end_day = start_day + timedelta(days = 7)
@@ -140,7 +145,8 @@ if __name__ == '__main__':
         # make dataset
         splitter = ["13-01-01", "13-03-25", "13-03-25", "13-04-01", start_day.strftime('%y-%m-%d'), end_day.strftime('%y-%m-%d')]
 
-        preprocess_data.split_data(splitter, newly_labeled)
+        offset = preprocess_data.split_data(df, splitter, newly_labeled)
+        print("offset %d" %offset)        
         generate_loader.loader()
         # load data
         data = load_data("./torch_data.pickle")
@@ -168,16 +174,19 @@ if __name__ == '__main__':
             output_metric = list(map(str,output_metric))
             print(" ".join(output_metric),file=ff)
 
-        # get predicted revenue
-
-        # get uncertainty
-
         # selection
+        num_samples = test_loader.dataset.tensors[-1].shape[0]//20
         badge_sampling = badge.BadgeSampling(path, test_loader, args)
-        chosen = badge_sampling.query(10)
-        print(chosen)        
+        chosen = badge_sampling.query(num_samples)
+        print(chosen)      
+  
         # add new label:
-                    
+        indices = [point + offset for point in chosen]
+        added_df = df.iloc[indices]
+        if newly_labeled is None:
+        	newly_labeled= pd.concat([newly_labeled, added_df])
+        else:
+        	newly_labeled = added_df                    
         # New epoch's starting day
         start_day = end_day
         end_day = start_day + timedelta(days = 7) 
