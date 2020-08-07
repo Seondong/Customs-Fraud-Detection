@@ -4,17 +4,15 @@ import preprocess_data
 import pickle
 from xgboost import XGBClassifier, XGBRegressor
 
-def uncertainty_naive(test, column_to_use_unc_measure) :
-    # Model 1 : Naive-equally contributing uncertainty
-
-    uncertainty_coefficient = 1/(len(column_to_use_unc_measure))
-
+def uncertainty_tag(test, column_to_use_unc_measure, option) :
     test['uncertain'] = 0
 
-    for col in column_to_use_unc_measure :
-        test['uncertain'] = test['uncertain'] + uncertainty_coefficient * test['unc.'+col]
-    
-    return test['uncertain']
+    if option == 'naive' :
+    # Model 1 : Naive equally-contributing uncertainty (mean)
+        uncertainty_coefficient = 1/(len(column_to_use_unc_measure))
+
+        for col in column_to_use_unc_measure :
+            test['uncertain'] = test['uncertain'] + uncertainty_coefficient * test['unc.'+col]
 
 def scaling(x) :
     if x < 0 :
@@ -25,8 +23,11 @@ def scaling(x) :
 
 def uncertainty_measurement(train, test) :
     # Columns to use
-    numeric_columns = ['fob.value', 'cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'FOBCIFRatio', 'TaxUnitquantity', 'SGD.DayofYear', 'SGD.WeekofYear', 'SGD.MonthofYear']
-    categorical_columns = [col for col in train.columns if 'RiskH' in col]
+    # numeric_columns = ['fob.value', 'cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'FOBCIFRatio', 'TaxUnitquantity', 'SGD.DayofYear', 'SGD.WeekofYear', 'SGD.MonthofYear']
+    numeric_columns = ['fob.value', 'cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'FOBCIFRatio', 'TaxUnitquantity']
+    categorical_columns = ['RiskH.importer.id', 'RiskH.declarant.id',
+       'RiskH.HS6.Origin', 'RiskH.tariff.code', 'RiskH.quantity', 'RiskH.HS6',
+       'RiskH.HS4', 'RiskH.HS2', 'RiskH.office.id']
     column_to_use_unc_measure = numeric_columns + categorical_columns
 
     train_unc = pd.DataFrame(train, columns = column_to_use_unc_measure)
@@ -66,7 +67,7 @@ def uncertainty_measurement(train, test) :
         test['unc.'+nc] = test['unc.'+nc].apply(lambda x : scaling(x))
         print(test['pred.'+nc].describe())
     
-    return uncertainty_naive(test, column_to_use_unc_measure)
+    uncertainty_tag(test, column_to_use_unc_measure, 'naive')
 
 # -----------------------------------------------
 # Temporary test codes
@@ -83,5 +84,6 @@ train = processed_data["raw"]["train"]
 valid = processed_data["raw"]["valid"]
 test = processed_data["raw"]["test"]
 
-print(uncertainty_measurement(train, test)[1:20])
+uncertainty_measurement(train, test)
 print(test.columns)
+print(test.sort_values('uncertain', ascending=False)[1:20])
