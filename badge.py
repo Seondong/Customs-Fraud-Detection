@@ -47,12 +47,12 @@ column_to_use = ['sgd.date','office.id','importer.id',
                  'declarant.id','tariff.code','country',
                  'cif.value','quantity','gross.weight','fob.value',
                  'total.taxes','revenue','illicit']
-def uncertainty(x):
-    if x < 0.05:
-        return 1
-    elif x > 0.6:
-        return 0
-    return 0.5
+# def uncertainty(x):
+#     if x < 0.05:
+#         return 1
+#     elif x > 0.6:
+#         return 0
+#     return 0.5
 # def preprocess(df: pd.DataFrame) -> pd.DataFrame:
 #     df.loc[:, 'tariff.ratio'] = df['total.taxes'] / df['fob.value']
 #     df.loc[:,'uncertain'] = df['tariff.ratio'].apply(uncertainty)
@@ -103,7 +103,7 @@ class BadgeSampling:
     def get_grad_embedding(self, model_path, dim, test_loader):
         embDim = dim
         best_model = torch.load(model_path)
-        final_output, _, hiddens = best_model.module.eval_on_batch(test_loader)
+        final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(test_loader)
         num_data = test_loader.dataset.tensors[-1].shape[0]
         nLab = 2
         print(len(final_output), hiddens[0].shape, len(hiddens))
@@ -118,7 +118,7 @@ class BadgeSampling:
                     maxInd = 0
                 for c in range(nLab):
                     if c == maxInd:
-                        embedding[idx][embDim * c : embDim * (c+1)] = hiddens[idx] * (1 - probs[c])
+                        embedding[idx][embDim * c : embDim * (c+1)] = hiddens[idx] * (1 - probs[c]) * revs[idx]
                     else:
-                        embedding[idx][embDim * c : embDim * (c+1)] = hiddens[idx] * (0 - probs[c])
+                        embedding[idx][embDim * c : embDim * (c+1)] = hiddens[idx] * (0 - probs[c]) * revs[idx]
             return embedding

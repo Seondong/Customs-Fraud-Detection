@@ -10,10 +10,6 @@ from datetime import datetime as dt
 import warnings
 warnings.filterwarnings("ignore")
 
-df = pd.read_csv('./data/synthetic-imports-declarations.csv', encoding = "ISO-8859-1")
-df = df.dropna(subset=["illicit"])
-df = df.sort_values("sgd.date")
-print("Finish loading data...")
 
 def merge_attributes(df: pd.DataFrame, *args: str) -> None:
     """
@@ -120,7 +116,7 @@ def tag_risky_profiles(df: pd.DataFrame, profile: str, profiles: list or dict, o
         df.loc[:, 'RiskH.'+profile] = df[profile].apply(lambda x: profiles.get(x), overall_ratio_train)
     return df
 
-def split_data(splitter, newly_labeled = None):
+def split_data(df, splitter, newly_labeled = None):
     # Dataset settings
     # data_length = df.shape[0]
     # train_ratio = 0.6
@@ -135,7 +131,9 @@ def split_data(splitter, newly_labeled = None):
     train = df[(df["sgd.date"] >= splitter[0]) & (df["sgd.date"] < splitter[1])]
     valid = df[(df["sgd.date"] >= splitter[2]) & (df["sgd.date"] < splitter[3])]
     test = df[(df["sgd.date"] >= splitter[4]) & (df["sgd.date"] < splitter[5])]
-    if newly_labeled:
+    offset = test.index[0]
+
+    if newly_labeled is None:
         train = pd.concat([train, newly_labeled])
 
     # save label data
@@ -209,6 +207,7 @@ def split_data(splitter, newly_labeled = None):
     file = open('./processed_data.pickle', 'wb')
     pickle.dump(all_data, file)
     file.close()
+    return offset
 
 # def make_current_data(splitter = ["13-01-01", "13-10-01"]):
 
