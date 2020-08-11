@@ -73,19 +73,13 @@ def load_data(path):
     return train_loader, valid_loader, test_loader, leaf_num, importer_size, item_size, xgb_validy, xgb_testy, revenue_valid, revenue_test
 
 
-def evaluate(chosen_rev,chosen_cls,xgb_testy,revenue_test):
+def evaluate_upDATE(chosen_rev,chosen_cls,xgb_testy,revenue_test):
     #get data
     print()
     print("--------Evaluating Active DATE model---------")
 
-    # predict test
     precisions, recalls, f1s, revenues = metrics_active(chosen_rev,chosen_cls,xgb_testy,revenue_test)
-    best_score = f1s[0]
-    # os.system("rm %s"%model_path)
-    # if save_model:
-    #     scroed_name = "./saved_models/%s_%.4f.pkl" % (model_name,overall_f1)
-    #     torch.save(best_model,scroed_name)
-    
+    best_score = f1s
     return precisions, recalls, f1s, revenues
 
 if __name__ == '__main__':
@@ -174,57 +168,57 @@ if __name__ == '__main__':
         # re-train
         date_model.train(args)
         overall_f1, auc, precisions, recalls, f1s, revenues, path = date_model.evaluate(save_model)
+
         # save result
         output_file =  "./results/" + args.output
         print("Saving result...",output_file)
         with open(output_file, 'a') as ff:
             # print(args,file=ff)
             print()
-            print("""Metrics DATE:\nf1:%.4f auc:%.4f\nPr@1:%.4f Pr@2:%.4f Pr@5:%.4f Pr@10:%.4f\nRe@1:%.4f Re@2:%.4f Re@5:%.4f Re@10:%.4f\nRev@1:%.4f Rev@2:%.4f Rev@5:%.4f Rev@10:%.4f""" \
+            # print("""Metrics DATE:\nf1:%.4f auc:%.4f\nPr@1:%.4f Pr@2:%.4f Pr@5:%.4f Pr@10:%.4f\nRe@1:%.4f Re@2:%.4f Re@5:%.4f Re@10:%.4f\nRev@1:%.4f Rev@2:%.4f Rev@5:%.4f Rev@10:%.4f""" \
+            #       % (overall_f1, auc,\
+            #          precisions[0],precisions[1],precisions[2],precisions[3],\
+            #          recalls[0],recalls[1],recalls[2],recalls[3],\
+            #          revenues[0],revenues[1],revenues[2],revenues[3]
+            #          ),
+            #          )
+            print("===========================================================================================")
+            print("""Metrics DATE:\nf1:%.4f auc:%.4f\nPr@5:%.4f Re@5:%.4fRev@5:%.4f""" \
                   % (overall_f1, auc,\
-                     precisions[0],precisions[1],precisions[2],precisions[3],\
-                     recalls[0],recalls[1],recalls[2],recalls[3],\
-                     revenues[0],revenues[1],revenues[2],revenues[3]
+                     precisions[2],recalls[2],revenues[2]
                      ),
-                     ) 
+                     )
             output_metric = [dim,overall_f1,auc] + precisions + recalls + revenues
             output_metric = list(map(str,output_metric))
             print(" ".join(output_metric),file=ff)
 
         # selection
-        active_revs = []
-        active_cls = []
-        for i in [5]:
-        # for i in [1,2,5,10]:
-            num_samples = int(test_loader.dataset.tensors[-1].shape[0]*(i/100))
-            badge_sampling = badge.BadgeSampling(path, test_loader, args)
-            chosen = badge_sampling.query(num_samples)
-            # print(chosen)      
-      
-            # add new label:
-            indices = [point + offset for point in chosen]
-            added_df = df.iloc[indices]
-            if newly_labeled is None:
-                newly_labeled = pd.concat([newly_labeled, added_df])
-            else:
-                newly_labeled = added_df                    
-            # print(added_df[:5])
+        # testing top 5%
+        num_samples = int(test_loader.dataset.tensors[-1].shape[0]*(5/100))
+        badge_sampling = badge.BadgeSampling(path, test_loader, args)
+        chosen = badge_sampling.query(num_samples)
+        # print(chosen)      
+  
+        # add new label:
+        indices = [point + offset for point in chosen]
+        added_df = df.iloc[indices]
+        if newly_labeled is None:
+            newly_labeled = pd.concat([newly_labeled, added_df])
+        else:
+            newly_labeled = added_df                    
+        # print(added_df[:5])
 
-            chosen_rev = added_df['revenue']
-            chosen_rev = chosen_rev.transpose().to_numpy()
+        active_rev = added_df['revenue']
+        active_rev = active_rev.transpose().to_numpy()
 
-            chosen_cls = added_df['illicit']
-            chosen_cls = chosen_cls.transpose().to_numpy()
+        active_cls = added_df['illicit']
+        active_cls = active_cls.transpose().to_numpy()
 
-            active_revs.append(chosen_rev)
-            active_cls.append(chosen_cls)
         # evaluate
-        active_precisions, active_recalls, active_f1s, active_revenues = evaluate(active_revs,active_cls,xgb_testy,revenue_test)
-        print("""Metrics Active DATE:\nPr@1:%.4f Pr@2:%.4f Pr@5:%.4f Pr@10:%.4f\nRe@1:%.4f Re@2:%.4f Re@5:%.4f Re@10:%.4f\nRev@1:%.4f Rev@2:%.4f Rev@5:%.4f Rev@10:%.4f""" \
+        active_precisions, active_recalls, active_f1s, active_revenues = evaluate_upDATE(active_rev,active_cls,xgb_testy,revenue_test)
+        print("""Metrics Active DATE:\n Pr@5:%.4f Re@5:%.4f Rev@5:%.4f""" \
                   % (
-                     active_precisions[0],active_precisions[1],active_precisions[2],active_precisions[3],\
-                     active_recalls[0],active_recalls[1],active_recalls[2],active_recalls[3],\
-                     active_revenues[0],active_revenues[1],active_revenues[2],active_revenues[3]
+                     active_precisions, active_recalls, active_revenues
                      ),
                      ) 
 
