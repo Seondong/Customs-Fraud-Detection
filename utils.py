@@ -104,9 +104,9 @@ def metrics(y_prob,xgb_testy,revenue_test,best_thresh=None):
         threshold = np.percentile(y_prob, i)
         #print(f'Checking top {100-i}% suspicious transactions: {len(y_prob[y_prob > threshold])}')
         precision = np.mean(xgb_testy[y_prob > threshold])
-        recall = sum(xgb_testy[y_prob > threshold])/sum(xgb_testy)
+        recall = sum(xgb_testy[y_prob > threshold])/ sum(xgb_testy)
         f1 = 2*precision*recall/(precision+recall)
-        revenue_recall = sum(revenue_test[y_prob > threshold]) /sum(revenue_test)
+        revenue_recall = sum(revenue_test[y_prob > threshold]) / sum(revenue_test)
 
         # save results
         pr.append(precision)
@@ -115,3 +115,23 @@ def metrics(y_prob,xgb_testy,revenue_test,best_thresh=None):
         rev.append(revenue_recall)
         # print(f'Precision: {round(precision, 4)}, Recall: {round(recall, 4)}, Seized Revenue (Recall): {round(revenue_recall, 4)}')
     return overall_f1,auc,pr, re, f, rev
+
+def metrics_active(active_revs,active_cls,xgb_testy,revenue_test):
+    pr, re, f, rev = [], [], [], []
+    n = [1,2,5,10]
+    l = 4
+    for top_n in range(l):
+        # Something wrong with precision
+        # How to get top n%?
+        precision = np.count_nonzero(active_cls[top_n] == 1) / len(active_cls[top_n])
+        recall = sum(active_cls[top_n]) / sum(xgb_testy)
+        f1 = 2*precision*recall / (precision+recall)
+        revenue_recall = sum(active_revs[top_n]) / sum(revenue_test)
+
+        # save results
+        pr.append(precision)
+        re.append(recall)
+        f.append(f1)
+        rev.append(revenue_recall)
+        # print(f'Precision: {round(precision, 4)}, Recall: {round(recall, 4)}, Seized Revenue (Recall): {round(revenue_recall, 4)}')
+    return pr, re, f, rev
