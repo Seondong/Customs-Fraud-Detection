@@ -39,23 +39,9 @@ from sklearn.utils.validation import FLOAT_DTYPES
 from sklearn.metrics.pairwise import rbf_kernel as rbf
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import pairwise_distances
+from sklearn.preprocessing import normalize
 
-# ADD uncertainty
-# preprocess data: add 1 more column
-# def preprocess(df: pd.DataFrame) -> pd.DataFrame:
-column_to_use = ['sgd.date','office.id','importer.id', 
-                 'declarant.id','tariff.code','country',
-                 'cif.value','quantity','gross.weight','fob.value',
-                 'total.taxes','revenue','illicit']
-def uncertainty(x):
-    if x < 0.05:
-        return 1
-    elif x > 0.6:
-        return 0
-    return 0.5
-# def preprocess(df: pd.DataFrame) -> pd.DataFrame:
-#     df.loc[:, 'tariff.ratio'] = df['total.taxes'] / df['fob.value']
-#     df.loc[:,'uncertain'] = df['tariff.ratio'].apply(uncertainty)
+# Get uncertainty
 
 # kmeans ++ initialization
 def init_centers(X, K):
@@ -89,7 +75,7 @@ def init_centers(X, K):
     vgt = val[val > 1e-2]
     return indsAll
 
-class BadgeSampling:
+class DATEBadgeSampling:
     def __init__(self, model_path, test_loader, args):
         self.test_loader = test_loader
         self.dim = args.dim
@@ -118,7 +104,11 @@ class BadgeSampling:
                     maxInd = 0
                 for c in range(nLab):
                     if c == maxInd:
-                        embedding[idx][embDim * c : embDim * (c+1)] = hiddens[idx] * (1 - probs[c]) * revs[idx]
+                        embedding[idx][embDim * c : embDim * (c+1)] = hiddens[idx] * (1 - probs[c])
                     else:
-                        embedding[idx][embDim * c : embDim * (c+1)] = hiddens[idx] * (0 - probs[c]) * revs[idx]
+                        embedding[idx][embDim * c : embDim * (c+1)] = hiddens[idx] * (0 - probs[c])
+            # Normalize:
+            embedding = normalize(embedding, axis = 1, norm = 'l2')
+            # Integrate revenue and uncertainty:
+                
             return embedding
