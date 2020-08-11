@@ -9,7 +9,7 @@ import time
 from collections import defaultdict
 from datetime import timedelta
 import datetime
-import badge
+from query_strategies import badge, badge_DATE
 import numpy as np
 import torch
 import torch.nn as nn
