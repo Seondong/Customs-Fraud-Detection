@@ -6,15 +6,12 @@ from xgboost import XGBClassifier, XGBRegressor
 from utils import find_best_threshold
 from sklearn.metrics import f1_score,roc_auc_score
 
-def uncertainty_tag(test, unc, column_to_use_unc_measure, option) :
-    test['uncertain'] = 0
-
-    if option == 'naive' :
-    # Model 1 : Naive equally-contributing uncertainty (mean)
-        uncertainty_coefficient = 1/(len(column_to_use_unc_measure))
-
-        for col in column_to_use_unc_measure :
-            test['uncertain'] = test['uncertain'] + uncertainty_coefficient * unc['unc.'+col]
+# Columns to use
+numeric_columns = ['fob.value', 'cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'FOBCIFRatio', 'TaxUnitquantity']
+categorical_columns = ['RiskH.importer.id', 'RiskH.declarant.id',
+    'RiskH.HS6.Origin', 'RiskH.tariff.code', 'RiskH.HS6',
+    'RiskH.HS4', 'RiskH.HS2', 'RiskH.office.id']
+column_to_use_unc_measure = numeric_columns + categorical_columns
 
 def scaling(x) :
     if x < 0 :
@@ -23,15 +20,29 @@ def scaling(x) :
         return 1
     return x
 
-def uncertainty_measurement(train, valid, test) :
-    # Columns to use
-    # numeric_columns = ['fob.value', 'cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'FOBCIFRatio', 'TaxUnitquantity', 'SGD.DayofYear', 'SGD.WeekofYear', 'SGD.MonthofYear']
-    numeric_columns = ['fob.value', 'cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'FOBCIFRatio', 'TaxUnitquantity']
-    categorical_columns = ['RiskH.importer.id', 'RiskH.declarant.id',
-       'RiskH.HS6.Origin', 'RiskH.tariff.code', 'RiskH.HS6',
-       'RiskH.HS4', 'RiskH.HS2', 'RiskH.office.id']
-    column_to_use_unc_measure = numeric_columns + categorical_columns
+def uncertainty_tag(train, test, unc, option) :
+    test['uncertain'] = 0
 
+    if option == 'naive' :
+        # Model 1 : Naive equally-contributing uncertainty (mean)
+        test['uncertain'] = unc.mean(axis=1)
+
+    elif option == 'feature_importance' :
+        # Model 2 : Feature importance from illicitness
+        xgb_illicit = XGBClassifier(n_estimators = 100)
+        xgb_illicit.fit(pd.DataFrame(train, columns=column_to_use_unc_measure), pd.DataFrame(train, columns=['illicit']))
+        test['uncertain'] = unc.dot(xgb_illicit.feature_importances_)
+
+    # elif option == 'fip_weighted' :
+    #     # Model 3 : Frequency inverse proportional weighted sum
+    #     train_using = train['unc.'+column_to_use_unc_measure]
+    #     fip_weight = train_using.sum() / len(train_using.columns)
+    #     test['uncertain'] = unc.dot(fip_weight)
+
+    else :
+        print('uncertainty_tag : Invalid option')
+
+def uncertainty_measurement(train, valid, test, option) :
     unc = pd.DataFrame()
 
     train_unc = pd.DataFrame(train, columns = column_to_use_unc_measure)
@@ -67,6 +78,11 @@ def uncertainty_measurement(train, valid, test) :
         print(pd.Categorical(xgb_clf_pred.tolist()).value_counts())
         print("----------------------------------")
 
+        # For unseen characters, mark them as uncertain case 
+        for idx, cat in enumerate(test[cc[6:]]) :
+            if cat not in train[cc[6:]] :
+                unc['unc.'+cc][idx] = 1
+
     # Generate regressors for predict each masked numeric feature
     for nc in numeric_columns :
         columns = []
@@ -89,7 +105,7 @@ def uncertainty_measurement(train, valid, test) :
         print(pd.DataFrame(xgb_reg_pred.tolist()).describe())
         print("----------------------------------")
     
-    uncertainty_tag(test, unc, column_to_use_unc_measure, 'naive')
+    uncertainty_tag(train, test, unc, option)
 
 # -----------------------------------------------
 # Temporary test codes
@@ -106,6 +122,6 @@ train = processed_data["raw"]["train"]
 valid = processed_data["raw"]["valid"]
 test = processed_data["raw"]["test"]
 
-uncertainty_measurement(train, valid, test)
+uncertainty_measurement(train, valid, test, 'feature_importance')
 print(test.columns)
 print(test.sort_values('uncertain', ascending=False)[1:20])
