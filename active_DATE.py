@@ -194,7 +194,8 @@ if __name__ == '__main__':
         # selection
         active_revs = []
         active_cls = []
-        for i in [1,2,5,10]:
+        for i in [5]:
+        # for i in [1,2,5,10]:
             num_samples = int(test_loader.dataset.tensors[-1].shape[0]*(i/100))
             badge_sampling = badge.BadgeSampling(path, test_loader, args)
             chosen = badge_sampling.query(num_samples)
