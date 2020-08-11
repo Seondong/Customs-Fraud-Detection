@@ -16,16 +16,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.data as Data
 import pandas as pd
-
 from model.AttTreeEmbedding import Attention, DATE
 from ranger import Ranger
-from utils import torch_threshold, fgsm_attack, metrics
+from utils import torch_threshold, fgsm_attack, metrics, metrics_active
 
 df = pd.read_csv('./data/synthetic-imports-declarations.csv', encoding = "ISO-8859-1")
 df = df.dropna(subset=["illicit"])
 df = df.sort_values("sgd.date")
 
 warnings.filterwarnings("ignore")
+
 def load_data(path):
     # load torch dataset 
     with open(path, "rb") as f:
@@ -59,7 +59,7 @@ def load_data(path):
     importer_size = data["importer_num"]
     item_size = data["item_size"]
 
-    # global variables
+    # global variables (xgb_testy: illicit or not)
     xgb_validy = valid_loader.dataset.tensors[-2].detach().numpy()
     xgb_testy = test_loader.dataset.tensors[-2].detach().numpy()
     revenue_valid = valid_loader.dataset.tensors[-1].detach().numpy()
@@ -71,6 +71,22 @@ def load_data(path):
     model_path = "./saved_models/%s%s.pkl" % (model_name,curr_time)
 
     return train_loader, valid_loader, test_loader, leaf_num, importer_size, item_size, xgb_validy, xgb_testy, revenue_valid, revenue_test
+
+
+def evaluate(chosen_rev,chosen_cls,xgb_testy,revenue_test):
+    #get data
+    print()
+    print("--------Evaluating Active DATE model---------")
+
+    # predict test
+    precisions, recalls, f1s, revenues = metrics_active(chosen_rev,chosen_cls,xgb_testy,revenue_test)
+    best_score = f1s[0]
+    # os.system("rm %s"%model_path)
+    # if save_model:
+    #     scroed_name = "./saved_models/%s_%.4f.pkl" % (model_name,overall_f1)
+    #     torch.save(best_model,scroed_name)
+    
+    return precisions, recalls, f1s, revenues
 
 if __name__ == '__main__':
     # Parse argument
@@ -113,7 +129,7 @@ if __name__ == '__main__':
                         )
     parser.add_argument('--beta', type=float, default=0.00, help="Adversarial loss weight")
     parser.add_argument('--head_num', type=int, default=4, help="Number of heads for self attention")
-    parser.add_argument('--use_self', type=int, default=1, help="Wheter to use self attention")
+    parser.add_argument('--use_self', type=int, default=1, help="Whether to use self attention")
     parser.add_argument('--fusion', type=str, choices=["concat","attention"], default="concat", help="Fusion method for final embedding")
     parser.add_argument('--agg', type=str, choices=["sum","max","mean"], default="sum", help="Aggreate type for leaf embedding")
     parser.add_argument('--act', type=str, choices=["mish","relu"], default="relu", help="Activation function")
@@ -137,11 +153,11 @@ if __name__ == '__main__':
     agg = args.agg
     print(args)
 
-    epochs = 20
+    numWeeks = 20
     newly_labeled = None
     start_day = datetime.date(2013, 4, 1)
     end_day = start_day + timedelta(days = 7)
-    for i in range(epochs):
+    for i in range(numWeeks):
         # make dataset
         splitter = ["13-01-01", "13-03-25", "13-03-25", "13-04-01", start_day.strftime('%y-%m-%d'), end_day.strftime('%y-%m-%d')]
 
@@ -150,20 +166,21 @@ if __name__ == '__main__':
         generate_loader.loader()
         # load data
         data = load_data("./torch_data.pickle")
+        revenue_upDATE = []
         train_loader, valid_loader, test_loader, leaf_num, importer_size, item_size, xgb_validy, xgb_testy, revenue_valid, revenue_test = data
+
         # create model
         date_model = DATE_model.VanillaDATE(data)
         # re-train
         date_model.train(args)
         overall_f1, auc, precisions, recalls, f1s, revenues, path = date_model.evaluate(save_model)
-
         # save result
         output_file =  "./results/" + args.output
         print("Saving result...",output_file)
         with open(output_file, 'a') as ff:
             # print(args,file=ff)
             print()
-            print("""Metrics:\nf1:%.4f auc:%.4f\nPr@1:%.4f Pr@2:%.4f Pr@5:%.4f Pr@10:%.4f\nRe@1:%.4f Re@2:%.4f Re@5:%.4f Re@10:%.4f\nRev@1:%.4f Rev@2:%.4f Rev@5:%.4f Rev@10:%.4f""" \
+            print("""Metrics DATE:\nf1:%.4f auc:%.4f\nPr@1:%.4f Pr@2:%.4f Pr@5:%.4f Pr@10:%.4f\nRe@1:%.4f Re@2:%.4f Re@5:%.4f Re@10:%.4f\nRev@1:%.4f Rev@2:%.4f Rev@5:%.4f Rev@10:%.4f""" \
                   % (overall_f1, auc,\
                      precisions[0],precisions[1],precisions[2],precisions[3],\
                      recalls[0],recalls[1],recalls[2],recalls[3],\
@@ -175,18 +192,42 @@ if __name__ == '__main__':
             print(" ".join(output_metric),file=ff)
 
         # selection
-        num_samples = test_loader.dataset.tensors[-1].shape[0]//20
-        badge_sampling = badge.BadgeSampling(path, test_loader, args)
-        chosen = badge_sampling.query(num_samples)
-        print(chosen)      
-  
-        # add new label:
-        indices = [point + offset for point in chosen]
-        added_df = df.iloc[indices]
-        if newly_labeled is None:
-        	newly_labeled= pd.concat([newly_labeled, added_df])
-        else:
-        	newly_labeled = added_df                    
-        # New epoch's starting day
+        active_revs = []
+        active_cls = []
+        for i in [1,2,5,10]:
+            num_samples = int(test_loader.dataset.tensors[-1].shape[0]*(i/100))
+            badge_sampling = badge.BadgeSampling(path, test_loader, args)
+            chosen = badge_sampling.query(num_samples)
+            # print(chosen)      
+      
+            # add new label:
+            indices = [point + offset for point in chosen]
+            added_df = df.iloc[indices]
+            if newly_labeled is None:
+                newly_labeled = pd.concat([newly_labeled, added_df])
+            else:
+                newly_labeled = added_df                    
+            # print(added_df[:5])
+
+            chosen_rev = added_df['revenue']
+            chosen_rev = chosen_rev.transpose().to_numpy()
+
+            chosen_cls = added_df['illicit']
+            chosen_cls = chosen_cls.transpose().to_numpy()
+
+            active_revs.append(chosen_rev)
+            active_cls.append(chosen_cls)
+        # evaluate
+        active_precisions, active_recalls, active_f1s, active_revenues = evaluate(active_revs,active_cls,xgb_testy,revenue_test)
+        print("""Metrics Active DATE:\nPr@1:%.4f Pr@2:%.4f Pr@5:%.4f Pr@10:%.4f\nRe@1:%.4f Re@2:%.4f Re@5:%.4f Re@10:%.4f\nRev@1:%.4f Rev@2:%.4f Rev@5:%.4f Rev@10:%.4f""" \
+                  % (
+                     active_precisions[0],active_precisions[1],active_precisions[2],active_precisions[3],\
+                     active_recalls[0],active_recalls[1],active_recalls[2],active_recalls[3],\
+                     active_revenues[0],active_revenues[1],active_revenues[2],active_revenues[3]
+                     ),
+                     ) 
+
+        # New week's starting day
         start_day = end_day
         end_day = start_day + timedelta(days = 7) 
+        print("===========================================================================================")
