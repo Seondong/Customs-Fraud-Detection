@@ -40,6 +40,7 @@ from sklearn.metrics.pairwise import rbf_kernel as rbf
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import pairwise_distances
 
+from .strategy import Strategy
 # kmeans ++ initialization
 def init_centers(X, K):
     ind = np.argmax([np.linalg.norm(s, 2) for s in X])
@@ -72,36 +73,11 @@ def init_centers(X, K):
     vgt = val[val > 1e-2]
     return indsAll
 
-class BadgeSampling:
+class BadgeSampling(Strategy):
     def __init__(self, model_path, test_loader, args):
-        self.test_loader = test_loader
-        self.dim = args.dim
-        self.model_path = model_path
+        super(BadgeSampling,self).__init__(model_path, test_loader. args)
 
     def query(self, k):
-        gradEmbedding  = self.get_grad_embedding(self.model_path, self.dim, self.test_loader)
+        gradEmbedding  = self.get_grad_embedding()
         chosen = init_centers(gradEmbedding, k)
         return chosen
-
-    def get_grad_embedding(self, model_path, dim, test_loader):
-        embDim = dim
-        best_model = torch.load(model_path)
-        final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(test_loader)
-        num_data = test_loader.dataset.tensors[-1].shape[0]
-        nLab = 2
-        print(len(final_output), hiddens[0].shape, len(hiddens))
-        embedding = np.zeros([num_data, embDim * nLab])
-        with torch.no_grad():
-            for idx, prob in enumerate(final_output):
-                maxInds = np.asarray([0, 0])
-                probs = np.asarray([1 - prob, prob])
-                if prob >= 0.5:
-                    maxInd = 1
-                else:
-                    maxInd = 0
-                for c in range(nLab):
-                    if c == maxInd:
-                        embedding[idx][embDim * c : embDim * (c+1)] = hiddens[idx] * (1 - probs[c])
-                    else:
-                        embedding[idx][embDim * c : embDim * (c+1)] = hiddens[idx] * (0 - probs[c])
-            return embedding

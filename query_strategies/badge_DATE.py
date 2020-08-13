@@ -42,8 +42,7 @@ from sklearn.metrics import pairwise_distances
 from sklearn.preprocessing import normalize
 
 from . import utils
-
-# Get uncertainty
+from .strategy import Strategy
 
 # kmeans ++ initialization
 def init_centers(X, K):
@@ -77,52 +76,21 @@ def init_centers(X, K):
     vgt = val[val > 1e-2]
     return indsAll
 
-class DATEBadgeSampling:
+class DATEBadgeSampling(Strategy):
     def __init__(self, model_path, test_loader, args):
-        self.test_loader = test_loader
-        self.dim = args.dim
-        self.model_path = model_path
+        super(DATEBadgeSampling,self).__init__(model_path, test_loader, args)
 
     def query(self, k):
-        gradEmbedding  = self.get_grad_embedding(self.model_path, self.dim, self.test_loader)
+        gradEmbedding  = self.get_grad_embedding()
+        # normalize
+        gradEmbedding = normalize(gradEmbedding, axis = 1, norm = 'l2')
+        # get uncertainty
+        uncertainty_score = np.asarray(self.get_uncertainty())
+        revs = np.asarray(self.get_revenue())
+        # integrate revenue and uncertainty
+        assert len(gradEmbedding) == len(uncertainty_score) 
+        for idx in range(len(gradEmbedding)):
+            gradEmbedding[idx] = [emb*revs[idx]*uncertainty_score[idx] for emb in gradEmbedding[idx]]
         chosen = init_centers(gradEmbedding, k)
         return chosen
 
-    def get_grad_embedding(self, model_path, dim, test_loader):
-        embDim = dim
-        best_model = torch.load(model_path)
-        final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(test_loader)
-        num_data = test_loader.dataset.tensors[-1].shape[0]
-        nLab = 2
-        print(len(final_output), hiddens[0].shape, len(hiddens))
-        embedding = torch.from_numpy(np.zeros([num_data, embDim * nLab]))
-        with torch.no_grad():
-            for idx, prob in enumerate(final_output):
-                maxInds = np.asarray([0, 0])
-                probs = np.asarray([1 - prob, prob])
-                if prob >= 0.5:
-                    maxInd = 1
-                else:
-                    maxInd = 0
-                for c in range(nLab):
-                    if c == maxInd:
-                        embedding[idx][embDim * c : embDim * (c+1)] = hiddens[idx] * (1 - probs[c])
-                    else:
-                        embedding[idx][embDim * c : embDim * (c+1)] = hiddens[idx] * (0 - probs[c])
-            # Normalize:
-            embedding = normalize(embedding, axis = 1, norm = 'l2')
-            # Integrate revenue and uncertainty:
-
-            with open("./processed_data.pickle","rb") as f :
-                processed_data = pickle.load(f)
- 
-            train = processed_data["raw"]["train"]
-            valid = processed_data["raw"]["valid"]
-            test = processed_data["raw"]["test"]
-
-            uncertainty_score = np.asarray(utils.uncertainty_measurement(train, valid, test, 'feature_importance'))
-            if(len(embedding) == len(uncertainty_score)) :
-                for idx in range(len(embedding)) :
-                    embedding[idx] = uncertainty_score[idx] * embedding[idx]
-
-            return embedding
