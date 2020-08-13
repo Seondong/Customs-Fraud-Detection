@@ -9,7 +9,7 @@ import time
 from collections import defaultdict
 from datetime import timedelta
 import datetime
-from query_strategies import badge, badge_DATE
+from query_strategies import badge, badge_DATE, random_sampling
 import numpy as np
 import torch
 import torch.nn as nn
@@ -130,7 +130,8 @@ if __name__ == '__main__':
     parser.add_argument('--device', type=str, choices=["cuda:0","cuda:1","cpu"], default="cuda:0", help="device name for training")
     parser.add_argument('--output', type=str, default="full.csv", help="Name of output file")
     parser.add_argument('--save', type=int, default=1, help="save model or not")
-
+    parser.add_argument('--sampling', type=str, default = 'badge_DATE', choices=['badge', 'badge_DATE', 'random'], help='Sampling strategy')
+    parser.add_argument('--percentage', type=int, default = 5, help='Percentage of test data need to query')
     # args
     args = parser.parse_args()
     epochs = args.epoch
@@ -145,6 +146,8 @@ if __name__ == '__main__':
     beta = args.beta
     use_self = args.use_self
     agg = args.agg
+    samp = args.sampling
+    perc = args.percentage
     print(args)
 
     numWeeks = 20
@@ -193,9 +196,14 @@ if __name__ == '__main__':
             print(" ".join(output_metric),file=ff)
 
         # selection
-        # testing top 5%
-        num_samples = int(test_loader.dataset.tensors[-1].shape[0]*(5/100))
-        badge_sampling = badge_DATE.DATEBadgeSampling(path, test_loader, args)
+        # testing top perc%
+        num_samples = int(test_loader.dataset.tensors[-1].shape[0]*(perc/100))
+        if samp == 'random':
+            badge_sampling = random_sampling.RandomSampling(path, test_loader, args)            
+        elif samp == 'badge_DATE':
+            badge_sampling = badge_DATE.DATEBadgeSampling(path, test_loader, args)            
+        elif samp == 'badge':
+            badge_sampling = badge.BadgeSampling(path, test_loader, args)
         chosen = badge_sampling.query(num_samples)
         # print(chosen)      
   

@@ -7,7 +7,7 @@ import gc
 from scipy.linalg import det
 from scipy.linalg import pinv as inv
 from copy import deepcopy
-
+import math
 import torch
 from torch import nn
 import torchfile
@@ -90,7 +90,7 @@ class DATEBadgeSampling(Strategy):
         # integrate revenue and uncertainty
         assert len(gradEmbedding) == len(uncertainty_score) 
         for idx in range(len(gradEmbedding)):
-            gradEmbedding[idx] = [emb*revs[idx]*uncertainty_score[idx] for emb in gradEmbedding[idx]]
+            gradEmbedding[idx] = [emb*math.log(1+revs[idx])*uncertainty_score[idx] for emb in gradEmbedding[idx]]
         chosen = init_centers(gradEmbedding, k)
         return chosen
 
