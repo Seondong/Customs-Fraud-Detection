@@ -90,7 +90,7 @@ class DATEBadgeSampling(Strategy):
         # integrate revenue and uncertainty
         assert len(gradEmbedding) == len(uncertainty_score) 
         for idx in range(len(gradEmbedding)):
-            gradEmbedding[idx] = [emb*revs[idx]*uncertainty_score[idx] for emb in gradEmbedding[idx]]
+            gradEmbedding[idx] = [emb*np.log(1+revs[idx])*uncertainty_score[idx] for emb in gradEmbedding[idx]]
         chosen = init_centers(gradEmbedding, k)
         return chosen
 

@@ -94,7 +94,7 @@ class Strategy:
                     maxInd = 0
                 for c in range(nLab):
                     if c == maxInd:
-                        embedding[idx][embDim * c : embDim * (c+1)] = hiddens[idx] * (1 - probs[c])
+                        embedding[idx][embDim * c : embDim * (c+1)] = (hiddens[idx] * (1 - probs[c])).cpu().numpy()
                     else:
-                        embedding[idx][embDim * c : embDim * (c+1)] = hiddens[idx] * (0 - probs[c])
+                        embedding[idx][embDim * c : embDim * (c+1)] = (hiddens[idx] * (0 - probs[c])).cpu().numpy()
             return embedding
