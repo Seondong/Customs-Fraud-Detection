@@ -61,10 +61,10 @@ class Strategy:
         final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(self.test_loader)
         return final_output
 
-    def get_revenue(self):        
+    def get_revenue(self):
         best_model = self.get_model()
         final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(self.test_loader)
-        return revs        
+        return revs
 
     def get_uncertainty(self):
         with open("./processed_data.pickle","rb") as f :
@@ -76,7 +76,12 @@ class Strategy:
 
         uncertainty_score = np.asarray(utils.uncertainty_measurement(train, valid, test, 'feature_importance'))
         return uncertainty_score
-        
+
+    def get_embedding(self):
+        best_model = self.get_model()
+        final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(self.test_loader)
+        return hiddens
+
     def get_grad_embedding(self):
         embDim = self.dim
         best_model = torch.load(self.model_path)
