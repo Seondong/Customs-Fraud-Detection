@@ -104,14 +104,15 @@ def uncertainty_measurement(train, valid, test, option) :
 # -----------------------------------------------
 
 # load preprocessed data
-with open("./processed_data.pickle","rb") as f :
-    processed_data = pickle.load(f)
-print(processed_data.keys())
-print("Finish loading data...")
+if __name__ == '__main__':
+    with open("../processed_data.pickle","rb") as f :
+        processed_data = pickle.load(f)
+    print(processed_data.keys())
+    print("Finish loading data...")
 
-# train/test data 
-train = processed_data["raw"]["train"]
-valid = processed_data["raw"]["valid"]
-test = processed_data["raw"]["test"]
+    # train/test data
+    train = processed_data["raw"]["train"]
+    valid = processed_data["raw"]["valid"]
+    test = processed_data["raw"]["test"]
 
-uncertainty_measurement(train, valid, test, 'feature_importance')
+    uncertainty_measurement(train, valid, test, 'feature_importance')
