@@ -195,7 +195,7 @@ if __name__ == '__main__':
         # selection
         # testing top 5%
         num_samples = int(test_loader.dataset.tensors[-1].shape[0]*(5/100))
-        badge_sampling = badge.BadgeSampling(path, test_loader, args)
+        badge_sampling = badge_DATE.DATEBadgeSampling(path, test_loader, args)
         chosen = badge_sampling.query(num_samples)
         # print(chosen)      
   

@@ -41,6 +41,8 @@ from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import pairwise_distances
 from sklearn.preprocessing import normalize
 
+from . import utils
+
 # Get uncertainty
 
 # kmeans ++ initialization
@@ -93,7 +95,7 @@ class DATEBadgeSampling:
         num_data = test_loader.dataset.tensors[-1].shape[0]
         nLab = 2
         print(len(final_output), hiddens[0].shape, len(hiddens))
-        embedding = np.zeros([num_data, embDim * nLab])
+        embedding = torch.from_numpy(np.zeros([num_data, embDim * nLab]))
         with torch.no_grad():
             for idx, prob in enumerate(final_output):
                 maxInds = np.asarray([0, 0])
@@ -110,5 +112,17 @@ class DATEBadgeSampling:
             # Normalize:
             embedding = normalize(embedding, axis = 1, norm = 'l2')
             # Integrate revenue and uncertainty:
-                
+
+            with open("./processed_data.pickle","rb") as f :
+                processed_data = pickle.load(f)
+ 
+            train = processed_data["raw"]["train"]
+            valid = processed_data["raw"]["valid"]
+            test = processed_data["raw"]["test"]
+
+            uncertainty_score = np.asarray(utils.uncertainty_measurement(train, valid, test, 'feature_importance'))
+            if(len(embedding) == len(uncertainty_score)) :
+                for idx in range(len(embedding)) :
+                    embedding[idx] = uncertainty_score[idx] * embedding[idx]
+
             return embedding
