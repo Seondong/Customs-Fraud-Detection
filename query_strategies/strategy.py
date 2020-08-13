@@ -96,13 +96,13 @@ class Strategy:
                 if self.device == 'cpu':
                     for c in range(nLab):
                         if c == maxInd:
-                            embedding[idx][embDim * c : embDim * (c+1)] = (hiddens[idx] * (1 - probs[c])).cpu().numpy()
-                        else:
-                            embedding[idx][embDim * c : embDim * (c+1)] = (hiddens[idx] * (0 - probs[c])).cpu().numpy()
-                else:
-                    for c in range(nLab):
-                        if c == maxInd:
                             embedding[idx][embDim * c : embDim * (c+1)] = (hiddens[idx] * (1 - probs[c]))
                         else:
                             embedding[idx][embDim * c : embDim * (c+1)] = (hiddens[idx] * (0 - probs[c]))
+                else:
+                    for c in range(nLab):
+                        if c == maxInd:
+                            embedding[idx][embDim * c : embDim * (c+1)] = (hiddens[idx] * (1 - probs[c])).cpu().numpy()
+                        else:
+                            embedding[idx][embDim * c : embDim * (c+1)] = (hiddens[idx] * (0 - probs[c])).cpu().numpy()
             return embedding
