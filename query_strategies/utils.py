@@ -48,7 +48,7 @@ def uncertainty_measurement(train, valid, test, option) :
         xgb_validx = pd.DataFrame(valid_unc, columns = columns)
         xgb_testx = pd.DataFrame(test_unc, columns = columns)
 
-        xgb_clf = XGBClassifier(n_estimators=100)
+        xgb_clf = XGBClassifier(n_estimators=100, n_jobs=-1)
         xgb_clf.fit(xgb_trainx,train[cc].values)
 
         # # evaluate xgboost model
@@ -70,7 +70,7 @@ def uncertainty_measurement(train, valid, test, option) :
 
         # For unseen characters, mark them as uncertain case 
         for idx, cat in enumerate(test[cc[6:]]) :
-            if cat not in train[cc[6:]] :
+            if cat not in set(train[cc[6:]]) :
                 unc['unc.'+cc][idx] = 1
 
 
@@ -84,7 +84,7 @@ def uncertainty_measurement(train, valid, test, option) :
         xgb_testx = pd.DataFrame(test_unc, columns=columns)
         
         # Regression Model
-        xgb_reg = XGBRegressor(n_estimators = 100)
+        xgb_reg = XGBRegressor(n_estimators = 100, n_jobs=-1)
         xgb_reg.fit(xgb_trainx, train[nc].values)
         
         xgb_reg_pred = xgb_reg.predict(xgb_testx)

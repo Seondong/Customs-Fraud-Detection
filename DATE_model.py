@@ -115,16 +115,17 @@ class VanillaDATE:
                 # model output
                 classification_output, regression_output, hidden_vector = model(batch_feature,batch_user,batch_item)
 
-                # FGSM attack
-                adv_vector = fgsm_attack(model,cls_loss_func,hidden_vector,batch_cls,0.01)
-                adv_output = model.module.pred_from_hidden(adv_vector) 
+                # # FGSM attack
+                # adv_vector = fgsm_attack(model,cls_loss_func,hidden_vector,batch_cls,0.01)
+                # adv_output = model.module.pred_from_hidden(adv_vector) 
 
-                # calculate loss
-                adv_loss_func = nn.BCELoss(weight=batch_cls) 
-                adv_loss = beta * adv_loss_func(adv_output,batch_cls) 
+                # # calculate loss
+                # adv_loss_func = nn.BCELoss(weight=batch_cls) 
+                # adv_loss = beta * adv_loss_func(adv_output,batch_cls)
+
                 cls_loss = cls_loss_func(classification_output,batch_cls)
                 revenue_loss = alpha * reg_loss_func(regression_output, batch_reg)
-                loss = cls_loss + revenue_loss + adv_loss
+                loss = cls_loss + revenue_loss
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
