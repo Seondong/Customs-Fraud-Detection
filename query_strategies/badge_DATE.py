@@ -87,10 +87,11 @@ class DATEBadgeSampling(Strategy):
         # get uncertainty
         uncertainty_score = np.asarray(self.get_uncertainty())
         revs = np.asarray(self.get_revenue())
+        print(len(gradEmbedding), revs.shape)
         # integrate revenue and uncertainty
-        assert len(gradEmbedding) == len(uncertainty_score) 
+        assert len(gradEmbedding) == uncertainty_score.shape[0]
         for idx in range(len(gradEmbedding)):
-            gradEmbedding[idx] = [emb*math.log(1+revs[idx])*uncertainty_score[idx] for emb in gradEmbedding[idx]]
+            gradEmbedding[idx] = [emb*math.log(2+revs[idx])*uncertainty_score[idx] for emb in gradEmbedding[idx]]
         chosen = init_centers(gradEmbedding, k)
         return chosen
 
