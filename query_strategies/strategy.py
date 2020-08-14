@@ -14,7 +14,6 @@ import torchfile
 from torch.autograd import Variable
 
 import torch.optim as optim
-import pdb
 from torch.nn import functional as F
 import argparse
 import torch.nn as nn
