@@ -17,51 +17,14 @@ from utils import torch_threshold, fgsm_attack, metrics
 
 warnings.filterwarnings("ignore")
 
-# # load torch dataset 
-# with open("./torch_data.pickle","rb") as f:
-#     data = pickle.load(f)
-
-# # get torch dataset 
-# train_dataset = data["train_dataset"]
-# valid_dataset = data["valid_dataset"]
-# test_dataset = data["test_dataset"]
-
-# # create dataloader
-# batch_size = 256
-# train_loader = Data.DataLoader(
-#     dataset=train_dataset,     
-#     batch_size=batch_size,      
-#     shuffle=True,               
-# )
-# valid_loader = Data.DataLoader(
-#     dataset=valid_dataset,     
-#     batch_size=batch_size,      
-#     shuffle=False,               
-# )
-# test_loader = Data.DataLoader(
-#     dataset=test_dataset,     
-#     batch_size=batch_size,      
-#     shuffle=False,               
-# )
-
-# # parameters for model 
-# leaf_num = data["leaf_num"]
-# importer_size = data["importer_num"]
-# item_size = data["item_size"]
-
-# # global variables
-# xgb_validy = valid_loader.dataset.tensors[-2].detach().numpy()
-# xgb_testy = test_loader.dataset.tensors[-2].detach().numpy()
-# revenue_valid = valid_loader.dataset.tensors[-1].detach().numpy()
-# revenue_test = test_loader.dataset.tensors[-1].detach().numpy()
-
 # model information
 curr_time = str(time.time())
 model_name = "DATE"
 model_path = "./saved_models/%s%s.pkl" % (model_name,curr_time)
 class VanillaDATE:
-    def __init__(self, data):
+    def __init__(self, data, param = None):
         self.data = data
+        self.param = param
     def train(self, args):
         # get data
         train_loader, valid_loader, test_loader, leaf_num, importer_size, item_size, xgb_validy, xgb_testy, revenue_valid, revenue_test = self.data
@@ -78,20 +41,22 @@ class VanillaDATE:
         alpha = args.alpha
         use_self = args.use_self
         agg = args.agg
-        model = DATE(leaf_num,importer_size,item_size,\
+        self.model = DATE(leaf_num,importer_size,item_size,\
                                         dim,head_num,\
                                         fusion_type=fusion,act=act,device=device,\
                                         use_self=use_self,agg_type=agg,
                                         ).to(device)
-        model = nn.DataParallel(model,device_ids=[0,1])
-
-        # initialize parameters
-        for p in model.parameters():
-            if p.dim() > 1:
-                nn.init.xavier_uniform_(p)
-
+        self.model = nn.DataParallel(self.model,device_ids=[0,1])
+        if not self.param:
+            # initialize parameters
+            for p in self.model.parameters():
+                if p.dim() > 1:
+                    nn.init.xavier_uniform_(p)
+        else:
+            for p, q in zip(self.model.parameters(), self.param):
+                p = q
         # optimizer & loss 
-        optimizer = Ranger(model.parameters(), weight_decay=weight_decay,lr=lr)
+        optimizer = Ranger(self.model.parameters(), weight_decay=weight_decay,lr=lr)
         cls_loss_func = nn.BCELoss()
         reg_loss_func = nn.MSELoss()
 
@@ -106,14 +71,14 @@ class VanillaDATE:
 
         for epoch in range(epochs):
             for step, (batch_feature,batch_user,batch_item,batch_cls,batch_reg) in enumerate(train_loader):
-                model.train() # prep to train model
+                self.model.train() # prep to train model
                 batch_feature,batch_user,batch_item,batch_cls,batch_reg =  \
                 batch_feature.to(device), batch_user.to(device), batch_item.to(device),\
                  batch_cls.to(device), batch_reg.to(device)
                 batch_cls,batch_reg = batch_cls.view(-1,1), batch_reg.view(-1,1)
 
                 # model output
-                classification_output, regression_output, hidden_vector = model(batch_feature,batch_user,batch_item)
+                classification_output, regression_output, hidden_vector = self.model(batch_feature,batch_user,batch_item)
 
                 # # FGSM attack
                 # adv_vector = fgsm_attack(model,cls_loss_func,hidden_vector,batch_cls,0.01)
@@ -134,9 +99,9 @@ class VanillaDATE:
                     %(cls_loss.item(),revenue_loss.item(),adv_loss.item(),loss.item()))
                     
             # evaluate 
-            model.eval()
+            self.model.eval()
             print("Validate at epoch %s"%(epoch+1))
-            y_prob, val_loss, _ = model.module.eval_on_batch(valid_loader)
+            y_prob, val_loss, _ = self.model.module.eval_on_batch(valid_loader)
             y_pred_tensor = torch.tensor(y_prob).float().to(device)
             best_threshold, val_score, roc = torch_threshold(y_prob,xgb_validy)
             overall_f1, auc, precisions, recalls, f1s, revenues = metrics(y_prob,xgb_validy,revenue_valid)
@@ -144,15 +109,15 @@ class VanillaDATE:
             print("Over-all F1:%.4f, AUC:%.4f, F1-top:%.4f" % (overall_f1, auc, select_best) )
 
             print("Evaluate at epoch %s"%(epoch+1))
-            y_prob, val_loss, _ = model.module.eval_on_batch(test_loader)
+            y_prob, val_loss, _ = self.model.module.eval_on_batch(test_loader)
             y_pred_tensor = torch.tensor(y_prob).float().to(device)
-            overall_f1, auc, precisions, recalls, f1s, revenues = metrics(y_prob,xgb_testy,revenue_test,best_thresh=best_threshold)
+            overall_f1, auc, precisions, recalls, f1s, revenues = metrics(y_prob,xgb_testy,revenue_test, best_thresh=best_threshold)
             print("Over-all F1:%.4f, AUC:%.4f, F1-top:%.4f" %(overall_f1, auc, np.mean(f1s)) )
 
             # save best model 
             if select_best > global_best_score:
                 global_best_score = select_best
-                torch.save(model,model_path)
+                torch.save(self.model, model_path)
             
              # early stopping 
             if current_score == None:
