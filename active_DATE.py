@@ -16,6 +16,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.data as Data
 import pandas as pd
+import torch
 from model.AttTreeEmbedding import Attention, DATE
 from ranger import Ranger
 from utils import torch_threshold, fgsm_attack, metrics, metrics_active
@@ -132,6 +133,7 @@ if __name__ == '__main__':
     parser.add_argument('--save', type=int, default=1, help="save model or not")
     parser.add_argument('--sampling', type=str, default = 'badge_DATE', choices=['badge', 'badge_DATE', 'random', 'DATE', 'diversity'], help='Sampling strategy')
     parser.add_argument('--percentage', type=int, default = 5, help='Percentage of test data need to query')
+    parser.add_argument('--mode', type=str, default = 'finetune', choices = ['finetune', 'scratch'], help = 'finetune last model or train from scratch')
     # args
     args = parser.parse_args()
     epochs = args.epoch
@@ -148,12 +150,14 @@ if __name__ == '__main__':
     agg = args.agg
     samp = args.sampling
     perc = args.percentage
+    mode = args.mode
     print(args)
 
     numWeeks = 20
     newly_labeled = None
     start_day = datetime.date(2013, 4, 1)
     end_day = start_day + timedelta(days = 7)
+
     for i in range(numWeeks):
         # make dataset
         splitter = ["13-01-01", "13-03-25", "13-03-25", "13-04-01", start_day.strftime('%y-%m-%d'), end_day.strftime('%y-%m-%d')]
@@ -166,8 +170,12 @@ if __name__ == '__main__':
         revenue_upDATE = []
         train_loader, valid_loader, test_loader, leaf_num, importer_size, item_size, xgb_validy, xgb_testy, revenue_valid, revenue_test = data
 
-        # create model
-        date_model = DATE_model.VanillaDATE(data)
+        # create / load model
+        if mode == 'scratch' or i == 0:
+            date_model = DATE_model.VanillaDATE(data)
+        else:
+            model = torch.load(path)
+            date_model = DATE_model.VanillaDATE(data, model.parameters())
         # re-train
         date_model.train(args)
         overall_f1, auc, precisions, recalls, f1s, revenues, path = date_model.evaluate(save_model)
