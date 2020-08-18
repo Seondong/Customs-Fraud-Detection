@@ -9,7 +9,7 @@ import time
 from collections import defaultdict
 from datetime import timedelta
 import datetime
-from query_strategies import badge, badge_DATE, random_sampling, DATE_sampling, diversity
+from query_strategies import badge, badge_DATE, random_sampling, DATE_sampling, diversity, uncertainty
 import numpy as np
 import torch
 import torch.nn as nn
@@ -157,11 +157,14 @@ if __name__ == '__main__':
     newly_labeled = None
     start_day = datetime.date(2013, 4, 1)
     end_day = start_day + timedelta(days = 7)
+    uncertainty_module = None
 
     for i in range(numWeeks):
         # make dataset
         splitter = ["13-01-01", "13-03-25", "13-03-25", "13-04-01", start_day.strftime('%y-%m-%d'), end_day.strftime('%y-%m-%d')]
 
+        if uncertainty_module is None :
+            uncertainty_module = uncertainty.Uncertainty()
         offset = preprocess_data.split_data(df, splitter, newly_labeled)
         print("offset %d" %offset)        
         generate_loader.loader()
