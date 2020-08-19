@@ -40,7 +40,7 @@ from sklearn.metrics.pairwise import rbf_kernel as rbf
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import pairwise_distances
 
-from .strategy import Strategy
+from strategy import Strategy
 # kmeans ++ initialization
 def init_centers(X, K):
     ind = np.argmax([np.linalg.norm(s, 2) for s in X])
@@ -74,8 +74,8 @@ def init_centers(X, K):
     return indsAll
 
 class BadgeSampling(Strategy):
-    def __init__(self, model_path, test_loader, args):
-        super(BadgeSampling,self).__init__(model_path, test_loader, args)
+    def __init__(self, model_path, test_loader, uncertainty_module, args):
+        super(BadgeSampling,self).__init__(model_path, test_loader, uncertainty_module, args)
 
     def query(self, k):
         gradEmbedding  = self.get_grad_embedding()

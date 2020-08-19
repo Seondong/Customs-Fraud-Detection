@@ -14,6 +14,7 @@ class Uncertainty :
         self.regressors = dict()
         self.data = pd.DataFrame(labeled_data, columns = self.column_to_use_unc_measure)
         self.importance_classifier = None
+        self.test_data = None
 
     def train(self) :
         for cc in self.categorical_features :
@@ -29,6 +30,9 @@ class Uncertainty :
             xgb_reg = XGBRegressor(n_jobs=-1)
             xgb_reg.fit(train_set, self.data[nc].values)
             self.regressors[nc] = xgb_reg
+        
+        self.importance_classifier = XGBClassifier(n_jobs=-1)
+        self.importance_classifier.fit(pd.DataFrame(self.data, columns=self.column_to_use_unc_measure), pd.DataFrame(self.data, columns=['illicit']).values.ravel())
 
     def measure(self, test_data, option) :
         unc = pd.DataFrame()
@@ -56,8 +60,7 @@ class Uncertainty :
 
         elif option == 'feature_importance' :
             # Model 2 : Feature importance from illicitness
-            self.importance_classifier = XGBClassifier(n_estimators = 100)
-            self.importance_classifier.fit(pd.DataFrame(self.data, columns=self.column_to_use_unc_measure), pd.DataFrame(self.data, columns=['illicit']).values.ravel())
+            self.importance_classifier.fit(pd.DataFrame(self.data, columns=self.column_to_use_unc_measure), pd.DataFrame(self.data, columns=['illicit']).values.ravel(), xgb_model = self.importance_classifier)
             return unc.dot(self.importance_classifier.feature_importances_ / sum(self.importance_classifier.feature_importances_))
         
     def retrain(self, queried_samples) :

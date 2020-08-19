@@ -43,11 +43,12 @@ from sklearn.preprocessing import normalize
 from . import utils
 
 class Strategy:
-    def __init__(self, model_path, test_loader, args):
+    def __init__(self, model_path, test_loader, uncertainty_module, args):
         self.test_loader = test_loader
         self.dim = args.dim
         self.model_path = model_path
         self.device = args.device
+        self.uncertainty_module = uncertainty_module
 
     def query(self, k):
         pass
@@ -66,6 +67,7 @@ class Strategy:
         return revs
 
     def get_uncertainty(self):
+        """
         with open("./processed_data.pickle","rb") as f :
             processed_data = pickle.load(f)
 
@@ -74,7 +76,8 @@ class Strategy:
         test = processed_data["raw"]["test"]
 
         uncertainty_score = np.asarray(utils.uncertainty_measurement(train, valid, test, 'feature_importance'))
-        return uncertainty_score
+        """
+        return self.uncertainty_module.measure(self.uncertainty_module.test_data ,'feature_importance')
 
     def get_embedding(self):
         best_model = self.get_model()

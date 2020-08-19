@@ -164,9 +164,19 @@ if __name__ == '__main__':
         splitter = ["13-01-01", "13-03-25", "13-03-25", "13-04-01", start_day.strftime('%y-%m-%d'), end_day.strftime('%y-%m-%d')]
 
         if uncertainty_module is None :
-            uncertainty_module = uncertainty.Uncertainty()
+            uncertainty_module = uncertainty.Uncertainty(train_labeled_data)
+            uncertainty_module.train()
+        
         offset = preprocess_data.split_data(df, splitter, newly_labeled)
-        print("offset %d" %offset)        
+        print("offset %d" %offset)
+
+        with open("./processed_data.pickle","rb") as f :
+            processed_data = pickle.load(f)
+
+        train_labeled_data = processed_data["raw"]["train"]
+        test_data = processed_data["raw"]["test"]
+        uncertainty_module.test_data = test_data
+        
         generate_loader.loader()
         # load data
         data = load_data("./torch_data.pickle")
@@ -210,15 +220,15 @@ if __name__ == '__main__':
         # testing top perc%
         num_samples = int(test_loader.dataset.tensors[-1].shape[0]*(perc/100))
         if samp == 'random':
-            sampling = random_sampling.RandomSampling(path, test_loader, args)            
+            sampling = random_sampling.RandomSampling(path, test_loader, uncertainty_module, args)            
         elif samp == 'badge_DATE':
-            sampling = badge_DATE.DATEBadgeSampling(path, test_loader, args)
+            sampling = badge_DATE.DATEBadgeSampling(path, test_loader, uncertainty_module, args)
         elif samp == 'badge':
-            sampling = badge.BadgeSampling(path, test_loader, args)
+            sampling = badge.BadgeSampling(path, test_loader, uncertainty_module, args)
         elif samp == 'DATE':
-            sampling = DATE_sampling.DATESampling(path, test_loader, args)
+            sampling = DATE_sampling.DATESampling(path, test_loader, uncertainty_module, args)
         elif samp == 'diversity':
-            sampling = diversity.DiversitySampling(path, test_loader, args)
+            sampling = diversity.DiversitySampling(path, test_loader, uncertainty_module, args)
         
         chosen = sampling.query(num_samples)
         # print(chosen)      
@@ -231,6 +241,7 @@ if __name__ == '__main__':
         else:
             newly_labeled = added_df                    
         # print(added_df[:5])
+        uncertainty_module.retrain(added_df)
 
         active_rev = added_df['revenue']
         active_rev = active_rev.transpose().to_numpy()
