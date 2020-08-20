@@ -162,10 +162,6 @@ if __name__ == '__main__':
     for i in range(numWeeks):
         # make dataset
         splitter = ["13-01-01", "13-03-25", "13-03-25", "13-04-01", start_day.strftime('%y-%m-%d'), end_day.strftime('%y-%m-%d')]
-
-        if uncertainty_module is None :
-            uncertainty_module = uncertainty.Uncertainty(train_labeled_data)
-            uncertainty_module.train()
         
         offset = preprocess_data.split_data(df, splitter, newly_labeled)
         print("offset %d" %offset)
@@ -175,6 +171,9 @@ if __name__ == '__main__':
 
         train_labeled_data = processed_data["raw"]["train"]
         test_data = processed_data["raw"]["test"]
+        if uncertainty_module is None :
+            uncertainty_module = uncertainty.Uncertainty(train_labeled_data)
+            uncertainty_module.train()
         uncertainty_module.test_data = test_data
         
         generate_loader.loader()
@@ -241,7 +240,7 @@ if __name__ == '__main__':
         else:
             newly_labeled = added_df                    
         # print(added_df[:5])
-        uncertainty_module.retrain(added_df)
+        uncertainty_module.retrain(test_data.iloc[indices - offset])
 
         active_rev = added_df['revenue']
         active_rev = active_rev.transpose().to_numpy()

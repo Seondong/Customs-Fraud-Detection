@@ -40,7 +40,7 @@ from sklearn.metrics.pairwise import rbf_kernel as rbf
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import pairwise_distances
 
-from strategy import Strategy
+from .strategy import Strategy
 # kmeans ++ initialization
 def init_centers(X, K):
     ind = np.argmax([np.linalg.norm(s, 2) for s in X])

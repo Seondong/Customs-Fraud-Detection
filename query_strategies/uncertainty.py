@@ -12,29 +12,35 @@ class Uncertainty :
     def __init__(self, labeled_data) :
         self.classifiers = dict()
         self.regressors = dict()
-        self.data = pd.DataFrame(labeled_data, columns = self.column_to_use_unc_measure)
+        self.data = pd.DataFrame(labeled_data)
         self.importance_classifier = None
         self.test_data = None
 
     def train(self) :
         for cc in self.categorical_features :
+            print('Train for '+cc)
             columns = [col for col in self.column_to_use_unc_measure if col != cc]
             train_set = pd.DataFrame(self.data, columns = columns)
             xgb_clf = XGBClassifier(n_jobs=-1)
             xgb_clf.fit(train_set ,self.data[cc].values)
             self.classifiers[cc] = xgb_clf
+            xgb_clf.save_model(cc+'.model')
         
         for nc in self.numerical_features :
+            print('Train for '+nc)
             columns = [col for col in self.column_to_use_unc_measure if col != nc]
             train_set = pd.DataFrame(self.data, columns = columns)
             xgb_reg = XGBRegressor(n_jobs=-1)
             xgb_reg.fit(train_set, self.data[nc].values)
             self.regressors[nc] = xgb_reg
+            xgb_reg.save_model(nc+'.model')
         
         self.importance_classifier = XGBClassifier(n_jobs=-1)
         self.importance_classifier.fit(pd.DataFrame(self.data, columns=self.column_to_use_unc_measure), pd.DataFrame(self.data, columns=['illicit']).values.ravel())
+        self.importance_classifier.save_model('imp'+'.model')
 
     def measure(self, test_data, option) :
+        print('Uncertainty measure')
         unc = pd.DataFrame()
 
         for cc in self.categorical_features :
@@ -60,19 +66,21 @@ class Uncertainty :
 
         elif option == 'feature_importance' :
             # Model 2 : Feature importance from illicitness
-            self.importance_classifier.fit(pd.DataFrame(self.data, columns=self.column_to_use_unc_measure), pd.DataFrame(self.data, columns=['illicit']).values.ravel(), xgb_model = self.importance_classifier)
             return unc.dot(self.importance_classifier.feature_importances_ / sum(self.importance_classifier.feature_importances_))
         
     def retrain(self, queried_samples) :
         for cc in self.categorical_features :
             columns = [col for col in self.column_to_use_unc_measure if col != cc]
             train_set = pd.DataFrame(queried_samples, columns = columns)
-            self.classifiers[cc].fit(train_set, queried_samples[cc].values, xgb_model = self.classifiers[cc])
+            self.classifiers[cc].fit(train_set, queried_samples[cc].values, xgb_model = cc+'.model')
+            self.classifiers[cc].save_model(cc+'.model')
         
         for nc in self.numerical_features :
             columns = [col for col in self.column_to_use_unc_measure if col != nc]
             train_set = pd.DataFrame(queried_samples, columns = columns)
-            self.regressors[nc].fit(train_set, queried_samples[nc].values, xgb_model = self.regressors[nc])
+            self.regressors[nc].fit(train_set, queried_samples[nc].values, xgb_model = nc+'.model')
+            self.regressors[nc].save_model(nc+'.model')
         
-        self.importance_classifier.fit(pd.DataFrame(queried_samples, columns = self.column_to_use_unc_measure), pd.DataFrame(queried_samples, columns=['illicit']).values.ravel(), xgb_model = self.importance_classifier)
+        self.importance_classifier.fit(pd.DataFrame(queried_samples, columns = self.column_to_use_unc_measure), pd.DataFrame(queried_samples, columns=['illicit']).values.ravel(), xgb_model = 'imp'+'.model')
+        self.importance_classifier.save_model('imp'+'.model')
         self.data.append(pd.DataFrame(queried_samples, columns = self.column_to_use_unc_measure))

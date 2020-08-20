@@ -42,7 +42,7 @@ from sklearn.metrics import pairwise_distances
 from sklearn.preprocessing import normalize
 
 from . import utils
-from strategy import Strategy
+from .strategy import Strategy
 
 # kmeans ++ initialization
 def init_centers(X, K):

@@ -67,16 +67,14 @@ class Strategy:
         return revs
 
     def get_uncertainty(self):
-        """
-        with open("./processed_data.pickle","rb") as f :
-            processed_data = pickle.load(f)
+        # with open("./processed_data.pickle","rb") as f :
+        #     processed_data = pickle.load(f)
 
-        train = processed_data["raw"]["train"]
-        valid = processed_data["raw"]["valid"]
-        test = processed_data["raw"]["test"]
+        # train = processed_data["raw"]["train"]
+        # valid = processed_data["raw"]["valid"]
+        # test = processed_data["raw"]["test"]
 
-        uncertainty_score = np.asarray(utils.uncertainty_measurement(train, valid, test, 'feature_importance'))
-        """
+        # uncertainty_score = np.asarray(utils.uncertainty_measurement(train, valid, test, 'feature_importance'))
         return self.uncertainty_module.measure(self.uncertainty_module.test_data ,'feature_importance')
 
     def get_embedding(self):

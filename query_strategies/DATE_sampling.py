@@ -7,7 +7,7 @@ import gc
 from scipy.linalg import det
 from scipy.linalg import pinv as inv
 from copy import deepcopy
-from strategy import Strategy
+from .strategy import Strategy
 
 class DATESampling(Strategy):
     def __init__(self, model_path, test_loader, uncertainty_module, args):

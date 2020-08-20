@@ -1,6 +1,6 @@
 import numpy as np
 import random
-from strategy import Strategy
+from .strategy import Strategy
 
 class RandomSampling(Strategy):
 	def __init__(self, model_path, test_loader, uncertainty_module, args):

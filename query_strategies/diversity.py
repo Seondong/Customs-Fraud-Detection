@@ -42,7 +42,7 @@ from sklearn.metrics import pairwise_distances
 from sklearn.preprocessing import normalize
 from sklearn.cluster import KMeans
 from . import utils
-from strategy import Strategy
+from .strategy import Strategy
 
 class DiversitySampling(Strategy):
     def __init__(self, model_path, test_loader, uncertainty_module, args):
