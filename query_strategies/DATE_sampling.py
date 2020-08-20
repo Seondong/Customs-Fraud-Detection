@@ -10,8 +10,8 @@ from copy import deepcopy
 from .strategy import Strategy
 
 class DATESampling(Strategy):
-    def __init__(self, model_path, test_loader, args):
-        super(DATESampling,self).__init__(model_path, test_loader, args)
+    def __init__(self, model_path, test_loader, uncertainty_module, args):
+        super(DATESampling,self).__init__(model_path, test_loader, uncertainty_module, args)
 
     def query(self, k):
         output = self.get_output()

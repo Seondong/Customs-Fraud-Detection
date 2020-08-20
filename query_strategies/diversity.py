@@ -45,8 +45,8 @@ from . import utils
 from .strategy import Strategy
 
 class DiversitySampling(Strategy):
-    def __init__(self, model_path, test_loader, args):
-        super(DiversitySampling, self).__init__(model_path, test_loader, args)
+    def __init__(self, model_path, test_loader, uncertainty_module, args):
+        super(DiversitySampling, self).__init__(model_path, test_loader, uncertainty_module, args)
 
     def query(self, k, beta = 5):
         # get embedding
