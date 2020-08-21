@@ -163,18 +163,14 @@ if __name__ == '__main__':
         # make dataset
         splitter = ["13-01-01", "13-03-25", "13-03-25", "13-04-01", start_day.strftime('%y-%m-%d'), end_day.strftime('%y-%m-%d')]
         
-        offset = preprocess_data.split_data(df, splitter, newly_labeled)
+        offset, train_labeled_data, test_data = preprocess_data.split_data(df, splitter, newly_labeled)
         print("offset %d" %offset)
 
-        with open("./processed_data.pickle","rb") as f :
-            processed_data = pickle.load(f)
-
-        train_labeled_data = processed_data["raw"]["train"]
-        test_data = processed_data["raw"]["test"]
-        if uncertainty_module is None :
-            uncertainty_module = uncertainty.Uncertainty(train_labeled_data)
-            uncertainty_module.train()
-        uncertainty_module.test_data = test_data
+        if samp == 'badge_DATE' or samp == 'diversity' :
+            if uncertainty_module is None :
+                uncertainty_module = uncertainty.Uncertainty(train_labeled_data)
+                uncertainty_module.train()
+            uncertainty_module.test_data = test_data
         
         generate_loader.loader()
         # load data
@@ -219,13 +215,13 @@ if __name__ == '__main__':
         # testing top perc%
         num_samples = int(test_loader.dataset.tensors[-1].shape[0]*(perc/100))
         if samp == 'random':
-            sampling = random_sampling.RandomSampling(path, test_loader, uncertainty_module, args)            
+            sampling = random_sampling.RandomSampling(path, test_loader, args)            
         elif samp == 'badge_DATE':
             sampling = badge_DATE.DATEBadgeSampling(path, test_loader, uncertainty_module, args)
         elif samp == 'badge':
-            sampling = badge.BadgeSampling(path, test_loader, uncertainty_module, args)
+            sampling = badge.BadgeSampling(path, test_loader, args)
         elif samp == 'DATE':
-            sampling = DATE_sampling.DATESampling(path, test_loader, uncertainty_module, args)
+            sampling = DATE_sampling.DATESampling(path, test_loader, args)
         elif samp == 'diversity':
             sampling = diversity.DiversitySampling(path, test_loader, uncertainty_module, args)
         

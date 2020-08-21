@@ -207,7 +207,7 @@ def split_data(df, splitter, newly_labeled = None):
     file = open('./processed_data.pickle', 'wb')
     pickle.dump(all_data, file)
     file.close()
-    return offset
+    return offset, train, test
 # def make_current_data(splitter = ["13-01-01", "13-10-01"]):
 
 #     current = df[(df["sgd.date"] >= splitter[0]) & (df["sgd.date"] < splitter[1])]

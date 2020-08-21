@@ -41,12 +41,12 @@ from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import pairwise_distances
 from sklearn.preprocessing import normalize
 from sklearn.cluster import KMeans
-from . import utils
 from .strategy import Strategy
 
 class DiversitySampling(Strategy):
     def __init__(self, model_path, test_loader, uncertainty_module, args):
-        super(DiversitySampling, self).__init__(model_path, test_loader, uncertainty_module, args)
+        super(DiversitySampling, self).__init__(model_path, test_loader, args)
+        self.uncertainty_module = uncertainty_module
 
     def query(self, k, beta = 5):
         # get embedding
@@ -75,3 +75,5 @@ class DiversitySampling(Strategy):
         chosen = [filtered[i] for i in idx]
         return chosen
 
+    def get_uncertainty(self):
+        return self.uncertainty_module.measure(self.uncertainty_module.test_data ,'feature_importance')
