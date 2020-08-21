@@ -235,7 +235,7 @@ if __name__ == '__main__':
         # add new label:
         indices = [point + offset for point in chosen]
         added_df = df.iloc[indices]
-        if newly_labeled is None:
+        if newly_labeled is not None:
             newly_labeled = pd.concat([newly_labeled, added_df])
         else:
             newly_labeled = added_df                    
