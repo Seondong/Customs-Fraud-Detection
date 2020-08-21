@@ -74,8 +74,8 @@ def init_centers(X, K):
     return indsAll
 
 class BadgeSampling(Strategy):
-    def __init__(self, model_path, test_loader, uncertainty_module, args):
-        super(BadgeSampling,self).__init__(model_path, test_loader, uncertainty_module, args)
+    def __init__(self, model_path, test_loader, args):
+        super(BadgeSampling,self).__init__(model_path, test_loader, args)
 
     def query(self, k):
         gradEmbedding  = self.get_grad_embedding()

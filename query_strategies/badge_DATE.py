@@ -41,7 +41,6 @@ from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import pairwise_distances
 from sklearn.preprocessing import normalize
 
-from . import utils
 from .strategy import Strategy
 
 # kmeans ++ initialization
@@ -78,7 +77,8 @@ def init_centers(X, K):
 
 class DATEBadgeSampling(Strategy):
     def __init__(self, model_path, test_loader, uncertainty_module, args):
-        super(DATEBadgeSampling,self).__init__(model_path, test_loader, uncertainty_module, args)
+        super(DATEBadgeSampling,self).__init__(model_path, test_loader, args)
+        self.uncertainty_module = uncertainty_module
 
     def query(self, k):
         gradEmbedding  = self.get_grad_embedding()
@@ -94,4 +94,7 @@ class DATEBadgeSampling(Strategy):
             gradEmbedding[idx] = [emb*math.log(2+revs[idx])*uncertainty_score[idx] for emb in gradEmbedding[idx]]
         chosen = init_centers(gradEmbedding, k)
         return chosen
+
+    def get_uncertainty(self):
+        return self.uncertainty_module.measure(self.uncertainty_module.test_data ,'feature_importance')
 
