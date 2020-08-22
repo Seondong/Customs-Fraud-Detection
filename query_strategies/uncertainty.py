@@ -11,13 +11,13 @@ class Uncertainty :
         'RiskH.HS4', 'RiskH.HS2', 'RiskH.office.id']
     column_to_use_unc_measure = numerical_features + categorical_features
 
-    def __init__(self, labeled_data) :
+    def __init__(self, labeled_data, path = './uncertainty_models/') :
         self.classifiers = dict()
         self.regressors = dict()
         self.data = pd.DataFrame(labeled_data)
         self.importance_classifier = None
         self.test_data = None
-
+        self.path = path
     # Initial training with training data
     def train(self) :
         for cc in self.categorical_features :
@@ -27,7 +27,7 @@ class Uncertainty :
             xgb_clf = XGBClassifier(n_jobs=-1)
             xgb_clf.fit(train_set ,self.data[cc].values)
             self.classifiers[cc] = xgb_clf
-            xgb_clf.save_model(cc+'.model')
+            xgb_clf.save_model(self.path + cc + '.model')
         
         for nc in self.numerical_features :
             print('Train for '+nc)
@@ -36,11 +36,11 @@ class Uncertainty :
             xgb_reg = XGBRegressor(n_jobs=-1)
             xgb_reg.fit(train_set, self.data[nc].values)
             self.regressors[nc] = xgb_reg
-            xgb_reg.save_model(nc+'.model')
+            xgb_reg.save_model(self.path + nc + '.model')
         
         self.importance_classifier = XGBClassifier(n_jobs=-1)
         self.importance_classifier.fit(pd.DataFrame(self.data, columns=self.column_to_use_unc_measure), pd.DataFrame(self.data, columns=['illicit']).values.ravel())
-        self.importance_classifier.save_model('imp'+'.model')
+        self.importance_classifier.save_model(self.path + 'imp' + '.model')
 
     # Measure the uncertainty of given test data from uncertainty module
     def measure(self, test_data, option) :
@@ -81,15 +81,14 @@ class Uncertainty :
         for cc in self.categorical_features :
             columns = [col for col in self.column_to_use_unc_measure if col != cc]
             train_set = pd.DataFrame(queried_samples, columns = columns)
-            self.classifiers[cc].fit(train_set, queried_samples[cc].values, xgb_model = cc+'.model')
-            self.classifiers[cc].save_model(cc+'.model')
+            self.classifiers[cc].fit(train_set, queried_samples[cc].values, xgb_model = self.path + cc +'.model')
+            self.classifiers[cc].save_model(self.path + cc + '.model')
         
         for nc in self.numerical_features :
             columns = [col for col in self.column_to_use_unc_measure if col != nc]
             train_set = pd.DataFrame(queried_samples, columns = columns)
-            self.regressors[nc].fit(train_set, queried_samples[nc].values, xgb_model = nc+'.model')
-            self.regressors[nc].save_model(nc+'.model')
+            self.regressors[nc].fit(train_set, queried_samples[nc].values, xgb_model = self.path + nc+'.model')
+            self.regressors[nc].save_model(self.path + nc + '.model')
         
-        self.importance_classifier.fit(pd.DataFrame(queried_samples, columns = self.column_to_use_unc_measure), pd.DataFrame(queried_samples, columns=['illicit']).values.ravel(), xgb_model = 'imp'+'.model')
-        self.importance_classifier.save_model('imp'+'.model')
+        self.importance_classifier.save_model(self.path + 'imp' + '.model')
         self.data.append(pd.DataFrame(queried_samples, columns = self.column_to_use_unc_measure))
