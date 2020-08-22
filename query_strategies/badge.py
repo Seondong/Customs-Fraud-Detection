@@ -48,7 +48,7 @@ def init_centers(X, K):
     indsAll = [ind]
     centInds = [0.] * len(X)
     cent = 0
-    print('#Samps\tTotal Distance')
+    # print('#Samps\tTotal Distance')
     while len(mu) < K:
         if len(mu) == 1:
             D2 = pairwise_distances(X, mu).ravel().astype(float)
@@ -58,7 +58,7 @@ def init_centers(X, K):
                 if D2[i] >  newD[i]:
                     centInds[i] = cent
                     D2[i] = newD[i]
-        print(str(len(mu)) + '\t' + str(sum(D2)), flush=True)
+        # print(str(len(mu)) + '\t' + str(sum(D2)), flush=True)
         if sum(D2) == 0.0: pdb.set_trace()
         D2 = D2.ravel().astype(float)
         Ddist = (D2 ** 2)/ sum(D2 ** 2)
@@ -80,4 +80,4 @@ class BadgeSampling(Strategy):
     def query(self, k):
         gradEmbedding  = self.get_grad_embedding()
         chosen = init_centers(gradEmbedding, k)
-        return chosen
+        return self.available_indices[chosen].tolist()
