@@ -16,5 +16,5 @@ class DATESampling(Strategy):
     def query(self, k):
         output = self.get_output()
         chosen = np.argpartition(output, -k)[-k:]
-        return chosen
+        return self.available_indices[chosen].tolist()
 

@@ -7,5 +7,4 @@ class RandomSampling(Strategy):
 		super(RandomSampling, self).__init__(model_path, test_loader, args)
 
 	def query(self, k):
-		num_data = self.test_loader.dataset.tensors[-1].shape[0]
-		return random.sample(range(0,num_data-1),k)
+		return np.random.choice(self.available_indices, k, replace = False).tolist()

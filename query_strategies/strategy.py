@@ -46,6 +46,11 @@ class Strategy:
         self.dim = args.dim
         self.model_path = model_path
         self.device = args.device
+        self.num_data = self.test_loader.dataset.tensors[-1].shape[0]
+        self.available_indices = np.arange(self.num_data)
+
+    def set_available_indices(self, unavailable):
+        self.available_indices = np.delete(np.arange(self.num_data), unavailable)
 
     def query(self, k):
         pass
@@ -56,11 +61,12 @@ class Strategy:
     def get_output(self):
         best_model = self.get_model()
         final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(self.test_loader)
-        return final_output
+        return final_output[self.available_indices]
 
     def get_revenue(self):
         best_model = self.get_model()
         final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(self.test_loader)
+        revs = [revs[i] for i in self.available_indices]
         return revs
 
     def get_uncertainty(self):
@@ -69,6 +75,7 @@ class Strategy:
     def get_embedding(self):
         best_model = self.get_model()
         final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(self.test_loader)
+        hiddens = [hiddens[i] for i in self.available_indices]
         return hiddens
 
     def get_grad_embedding(self):
@@ -99,4 +106,4 @@ class Strategy:
                             embedding[idx][embDim * c : embDim * (c+1)] = (hiddens[idx] * (1 - probs[c])).cpu().numpy()
                         else:
                             embedding[idx][embDim * c : embDim * (c+1)] = (hiddens[idx] * (0 - probs[c])).cpu().numpy()
-            return embedding
+            return embedding[self.available_indices].tolist()
