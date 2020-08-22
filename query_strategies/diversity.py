@@ -73,7 +73,8 @@ class DiversitySampling(Strategy):
             idx.append(np.argpartition(dists, 1)[0])
         # map to original
         chosen = [filtered[i] for i in idx]
-        return chosen
+        return self.available_indices[chosen].tolist()
 
     def get_uncertainty(self):
-        return self.uncertainty_module.measure(self.uncertainty_module.test_data ,'feature_importance')
+        uncertainty = self.uncertainty_module.measure(self.uncertainty_module.test_data ,'feature_importance')
+        return np.asarray(uncertainty)[self.available_indices]

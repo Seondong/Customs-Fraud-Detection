@@ -50,7 +50,7 @@ def init_centers(X, K):
     indsAll = [ind]
     centInds = [0.] * len(X)
     cent = 0
-    print('#Samps\tTotal Distance')
+    # print('#Samps\tTotal Distance')
     while len(mu) < K:
         if len(mu) == 1:
             D2 = pairwise_distances(X, mu).ravel().astype(float)
@@ -60,7 +60,7 @@ def init_centers(X, K):
                 if D2[i] >  newD[i]:
                     centInds[i] = cent
                     D2[i] = newD[i]
-        print(str(len(mu)) + '\t' + str(sum(D2)), flush=True)
+        # print(str(len(mu)) + '\t' + str(sum(D2)), flush=True)
         if sum(D2) == 0.0: pdb.set_trace()
         D2 = D2.ravel().astype(float)
         Ddist = (D2 ** 2)/ sum(D2 ** 2)
@@ -85,16 +85,16 @@ class DATEBadgeSampling(Strategy):
         # normalize
         gradEmbedding = normalize(gradEmbedding, axis = 1, norm = 'l2')
         # get uncertainty
-        uncertainty_score = np.asarray(self.get_uncertainty())
+        uncertainty_score = self.get_uncertainty()
         revs = np.asarray(self.get_revenue())
-        print(len(gradEmbedding), revs.shape)
         # integrate revenue and uncertainty
-        assert len(gradEmbedding) == uncertainty_score.shape[0]
+        assert len(gradEmbedding) == len(uncertainty_score)
         for idx in range(len(gradEmbedding)):
             gradEmbedding[idx] = [emb*math.log(2+revs[idx])*uncertainty_score[idx] for emb in gradEmbedding[idx]]
         chosen = init_centers(gradEmbedding, k)
-        return chosen
+        return self.available_indices[chosen].tolist()
 
     def get_uncertainty(self):
-        return self.uncertainty_module.measure(self.uncertainty_module.test_data ,'feature_importance')
+        uncertainty = self.uncertainty_module.measure(self.uncertainty_module.test_data ,'feature_importance')
+        return np.asarray(uncertainty)[self.available_indices]
 
