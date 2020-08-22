@@ -22,9 +22,9 @@ curr_time = str(time.time())
 model_name = "DATE"
 model_path = "./saved_models/%s%s.pkl" % (model_name,curr_time)
 class VanillaDATE:
-    def __init__(self, data, param = None):
+    def __init__(self, data, state_dict = None):
         self.data = data
-        self.param = param
+        self.state_dict = state_dict
     def train(self, args):
         # get data
         train_loader, valid_loader, test_loader, leaf_num, importer_size, item_size, xgb_validy, xgb_testy, revenue_valid, revenue_test = self.data
@@ -47,14 +47,13 @@ class VanillaDATE:
                                         use_self=use_self,agg_type=agg,
                                         ).to(device)
         self.model = nn.DataParallel(self.model,device_ids=[0,1])
-        if not self.param:
+        if not self.state_dict:
             # initialize parameters
             for p in self.model.parameters():
                 if p.dim() > 1:
                     nn.init.xavier_uniform_(p)
         else:
-            for p, q in zip(self.model.parameters(), self.param):
-                p = q
+            self.model.load_state_dict(self.state_dict)
         # optimizer & loss 
         optimizer = Ranger(self.model.parameters(), weight_decay=weight_decay,lr=lr)
         cls_loss_func = nn.BCELoss()
@@ -118,7 +117,7 @@ class VanillaDATE:
             if select_best > global_best_score:
                 global_best_score = select_best
                 torch.save(self.model, model_path)
-            
+                torch.save(self.model.state_dict(), 'params')
              # early stopping 
             if current_score == None:
                 current_score = select_best

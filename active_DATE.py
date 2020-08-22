@@ -188,7 +188,7 @@ if __name__ == '__main__':
                 date_model = DATE_model.VanillaDATE(data)
             else:
                 model = torch.load(path)
-                date_model = DATE_model.VanillaDATE(data, model.parameters())
+                date_model = DATE_model.VanillaDATE(data, model.state_dict())
             # re-train
             date_model.train(args)
             overall_f1, auc, precisions, recalls, f1s, revenues, path = date_model.evaluate(save_model)
