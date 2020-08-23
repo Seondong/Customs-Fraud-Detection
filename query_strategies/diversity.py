@@ -76,5 +76,8 @@ class DiversitySampling(Strategy):
         return self.available_indices[chosen].tolist()
 
     def get_uncertainty(self):
+        if self.uncertainty_module is None :
+            # return np.asarray(self.get_output().apply(lambda x : -1.8*abs(x-0.5) + 1))
+            return np.asarray(-1.8*abs(self.get_output()-0.5) + 1)
         uncertainty = self.uncertainty_module.measure(self.uncertainty_module.test_data ,'feature_importance')
         return np.asarray(uncertainty)[self.available_indices]

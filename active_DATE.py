@@ -137,6 +137,7 @@ if __name__ == '__main__':
     parser.add_argument('--mode', type=str, default = 'finetune', choices = ['finetune', 'scratch'], help = 'finetune last model or train from scratch')
     parser.add_argument('--subsamplings', type=str, default = 'badge_DATE/DATE', help = 'available for hybrid sampling, the list of sub-sampling techniques seperated by /')
     parser.add_argument('--weights', type=str, default = '0.5/0.5', help = 'available for hybrid sampling, the list of weights for sub-sampling techniques seperated by /')
+    parser.add_argument('--uncertainty', type=str, default = 'naive', choices = ['naive', 'self-supervised'], help = 'Uncertainty principle : ambiguity of illicitness or self-supervised manner prediction')
     # args
     args = parser.parse_args()
     epochs = args.epoch
@@ -154,6 +155,7 @@ if __name__ == '__main__':
     samp = args.sampling
     perc = args.percentage
     mode = args.mode
+    unc_mode = args.uncertainty
 
     print(args)
 
@@ -171,11 +173,12 @@ if __name__ == '__main__':
         print("offset %d" %offset)
 
         # get uncertainty from DATE for those needs it
-        if samp in ['badge_DATE', 'diversity', 'hybrid']:
-            if uncertainty_module is None :
-                uncertainty_module = uncertainty.Uncertainty(train_labeled_data, './uncertainty_models/')
-                uncertainty_module.train()
-            uncertainty_module.test_data = test_data
+        if unc_mode == 'self-supervised' :
+            if samp in ['badge_DATE', 'diversity', 'hybrid']:
+                if uncertainty_module is None :
+                    uncertainty_module = uncertainty.Uncertainty(train_labeled_data, './uncertainty_models/')
+                    uncertainty_module.train()
+                uncertainty_module.test_data = test_data
         
         generate_loader.loader()
         # load data
@@ -243,8 +246,9 @@ if __name__ == '__main__':
             newly_labeled = added_df                    
         print(added_df[:5])
         # tune the uncertainty
-        if samp in ['badge_DATE', 'diversity', 'hybrid']:
-            uncertainty_module.retrain(test_data.iloc[indices - offset])
+        if unc_mode == 'self-supervised' :
+            if samp in ['badge_DATE', 'diversity', 'hybrid']:
+                uncertainty_module.retrain(test_data.iloc[indices - offset])
 
         active_rev = added_df['revenue']
         active_rev = active_rev.transpose().to_numpy()
