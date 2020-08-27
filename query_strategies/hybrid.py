@@ -9,6 +9,7 @@ class HybridSampling(Strategy):
 		assert len(subsamps) == len(weights)
 		self.subsamps = subsamps
 		self.weights = weights
+		
 	def query(self, k):
 		ks = [round(k*weight) for weight in self.weights[:-1]]
 		ks.append(k - sum(ks))
