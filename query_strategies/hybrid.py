@@ -9,8 +9,10 @@ class HybridSampling(Strategy):
 		assert len(subsamps) == len(weights)
 		self.subsamps = subsamps
 		self.weights = weights
+		
 	def query(self, k):
-		ks = [int(k*weight) for weight in self.weights]
+		ks = [round(k*weight) for weight in self.weights[:-1]]
+		ks.append(k - sum(ks))
 		chosen = []
 		for subsamp, num_samp in zip(self.subsamps, ks):
 			subsamp.set_available_indices(chosen)
