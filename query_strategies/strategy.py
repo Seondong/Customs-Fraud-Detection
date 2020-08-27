@@ -106,4 +106,4 @@ class Strategy:
                             embedding[idx][embDim * c : embDim * (c+1)] = (hiddens[idx] * (1 - probs[c])).cpu().numpy()
                         else:
                             embedding[idx][embDim * c : embDim * (c+1)] = (hiddens[idx] * (0 - probs[c])).cpu().numpy()
-            return embedding[self.available_indices].tolist()
+            return embedding[self.available_indices]
