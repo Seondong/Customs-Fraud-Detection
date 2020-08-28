@@ -165,6 +165,23 @@ if __name__ == '__main__':
     end_day = start_day + timedelta(days = 7)
     uncertainty_module = None
     path = None
+
+    try:
+        os.mkdir("./" + samp + "_performance")
+    except OSError as e:
+        pass
+    # save query indices
+    try:
+        os.mkdir("./" + samp + "_query_indexes")
+    except OSError as e:
+        pass
+
+    try:
+        os.mkdir("./" + samp + "_query_indexes/" + str(perc))
+    except OSError as e:
+        pass
+
+
     for i in range(numWeeks):
         # make dataset
         splitter = ["13-01-01", "13-03-25", "13-03-25", "13-04-01", start_day.strftime('%y-%m-%d'), end_day.strftime('%y-%m-%d')]
@@ -267,4 +284,12 @@ if __name__ == '__main__':
         # New week's starting day
         start_day = end_day
         end_day = start_day + timedelta(days = 7) 
+
+        with open("./" + samp + "_query_indexes/" + str(perc) + "/"+ "[" + samp + "]" + mode +"_@" + str(perc)+ "_week_" + str(i) + ".csv","w") as queryFiles:
+            wr = csv.writer(queryFiles,delimiter = ",")
+            wr.writerow([i, start_day, end_day,indices])
+
+        with open("./" + samp + "_performance/" + "[" + samp + "]" + mode +"_@" + str(perc) + ".csv","a") as perFiles:
+            wr2 = csv.writer(perFiles,delimiter = ",")
+            wr2.writerow([i, start_day, end_day, active_precisions, active_recalls, active_revenues])
         print("===========================================================================================")
