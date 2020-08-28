@@ -5,7 +5,8 @@ import glob
 import csv
 from scipy.stats import ks_2samp
 import scipy.stats as stats
-# finetune
+
+# scratch directory contains performance files of queries method
 files = glob.glob("./scratch/*.csv")
 print(files)
 '''
