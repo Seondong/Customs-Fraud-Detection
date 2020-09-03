@@ -3,6 +3,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np 
 import pandas as pd 
+from scipy.stats import hmean
 
 
 def find_best_threshold(model,x_list,y_test,best_thresh = None):
@@ -95,7 +96,7 @@ def metrics(y_prob,xgb_testy,revenue_test,best_thresh=None):
         #print(f'Checking top {100-i}% suspicious transactions: {len(y_prob[y_prob > threshold])}')
         precision = np.mean(xgb_testy[y_prob > threshold])
         recall = sum(xgb_testy[y_prob > threshold])/ sum(xgb_testy)
-        f1 = 2*precision*recall/(precision+recall)
+        f1 = hmean([precision, recall])
         revenue_recall = sum(revenue_test[y_prob > threshold]) / sum(revenue_test)
 
         # save results

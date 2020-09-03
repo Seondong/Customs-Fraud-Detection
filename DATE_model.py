@@ -104,7 +104,7 @@ class VanillaDATE:
             y_pred_tensor = torch.tensor(y_prob).float().to(device)
             best_threshold, val_score, roc = torch_threshold(y_prob,xgb_validy)
             overall_f1, auc, precisions, recalls, f1s, revenues = metrics(y_prob,xgb_validy,revenue_valid)
-            select_best = np.mean(f1s)
+            select_best = np.mean(revenues)  # instead of f1s
             print("Over-all F1:%.4f, AUC:%.4f, F1-top:%.4f" % (overall_f1, auc, select_best) )
 
             print("Evaluate at epoch %s"%(epoch+1))
