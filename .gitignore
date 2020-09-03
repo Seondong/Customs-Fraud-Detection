@@ -7,3 +7,4 @@ data/Ndata.merged.anonymized.single_tax_relabeled.csv
 data/data-semisupervised-test-from-170101/
 data/ndata.csv
 nohup.out
+.ipynb_checkpoints/
