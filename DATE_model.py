@@ -13,18 +13,20 @@ import torch.utils.data as Data
 
 from model.AttTreeEmbedding import Attention, DATE
 from ranger import Ranger
-from utils import torch_threshold, fgsm_attack, metrics
+from utils import torch_threshold, metrics
 
 warnings.filterwarnings("ignore")
 
-# model information
-curr_time = str(time.time())
-model_name = "DATE"
-model_path = "./saved_models/%s%s.pkl" % (model_name,curr_time)
+
 class VanillaDATE:
-    def __init__(self, data, state_dict = None):
+    
+    def __init__(self, data, curr_time, state_dict = None):
         self.data = data
+        self.curr_time = curr_time
         self.state_dict = state_dict
+        self.model_name = "DATE"
+        self.model_path = "./intermediary/saved_models/%s-%s.pkl" % (self.model_name,self.curr_time)
+        
     def train(self, args):
         # get data
         train_loader, valid_loader, test_loader, leaf_num, importer_size, item_size, xgb_validy, xgb_testy, revenue_valid, revenue_test = self.data
@@ -85,14 +87,6 @@ class VanillaDATE:
                 # model output
                 classification_output, regression_output, hidden_vector = self.model(batch_feature,batch_user,batch_item)
 
-                # # FGSM attack
-                # adv_vector = fgsm_attack(model,cls_loss_func,hidden_vector,batch_cls,0.01)
-                # adv_output = model.module.pred_from_hidden(adv_vector) 
-
-                # # calculate loss
-                # adv_loss_func = nn.BCELoss(weight=batch_cls) 
-                # adv_loss = beta * adv_loss_func(adv_output,batch_cls)
-
                 cls_loss = cls_loss_func(classification_output,batch_cls)
                 revenue_loss = alpha * reg_loss_func(regression_output, batch_reg)
                 loss = cls_loss + revenue_loss
@@ -110,7 +104,7 @@ class VanillaDATE:
             y_pred_tensor = torch.tensor(y_prob).float().to(device)
             best_threshold, val_score, roc = torch_threshold(y_prob,xgb_validy)
             overall_f1, auc, precisions, recalls, f1s, revenues = metrics(y_prob,xgb_validy,revenue_valid)
-            select_best = np.mean(f1s)
+            select_best = np.mean(revenues)  # instead of f1s
             print("Over-all F1:%.4f, AUC:%.4f, F1-top:%.4f" % (overall_f1, auc, select_best) )
 
             print("Evaluate at epoch %s"%(epoch+1))
@@ -122,7 +116,7 @@ class VanillaDATE:
             # save best model 
             if select_best > global_best_score:
                 global_best_score = select_best
-                torch.save(self.model, model_path)
+                torch.save(self.model, self.model_path)
             
             # early stopping 
             if current_score == None:
@@ -138,13 +132,13 @@ class VanillaDATE:
                 no_improvement = 0
                 current_score = None
 
-    def evaluate(self, save_model):
+    def evaluate(self):
         #get data
         train_loader, valid_loader, test_loader, leaf_num, importer_size, item_size, xgb_validy, xgb_testy, revenue_valid, revenue_test = self.data
         print()
         print("--------Evaluating DATE model---------")
         # create best model
-        best_model = torch.load(model_path)
+        best_model = torch.load(self.model_path)
         best_model.eval()
 
         # get threshold
@@ -155,106 +149,5 @@ class VanillaDATE:
         y_prob, val_loss, _ = best_model.module.eval_on_batch(test_loader)
         overall_f1, auc, precisions, recalls, f1s, revenues = metrics(y_prob,xgb_testy,revenue_test,best_threshold)
         best_score = f1s[0]
-        os.system("rm %s"%model_path)
-        if save_model:
-            scroed_name = "./saved_models/%s_%.4f.pkl" % (model_name,overall_f1)
-            torch.save(best_model,scroed_name)
         
-        return overall_f1, auc, precisions, recalls, f1s, revenues, scroed_name
-
-
-# if __name__ == '__main__':
-#     # Parse argument
-#     if not os.path.exists('./results'):
-#         os.makedirs('./results')
-#     if not os.path.exists('./saved_models'):
-#         os.makedirs('./saved_models')
-
-    
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument('--model_name', 
-#                         type=str, 
-#                         default="DATE", 
-#                         help="Name of model",
-#                         )
-#     parser.add_argument('--epoch', 
-#                         type=int, 
-#                         default=5, 
-#                         help="Number of epochs",
-#                         )
-#     parser.add_argument('--dim', 
-#                         type=int, 
-#                         default=16, 
-#                         help="Hidden layer dimension",
-#                         )
-#     parser.add_argument('--lr', 
-#                         type=float, 
-#                         default=0.005, 
-#                         help="learning rate",
-#                         )
-#     parser.add_argument('--l2',
-#                         type=float,
-#                         default=0.01,
-#                         help="l2 reg",
-#                         )
-#     parser.add_argument('--alpha',
-#                         type=float,
-#                         default=10,
-#                         help="Regression loss weight",
-#                         )
-#     parser.add_argument('--beta', type=float, default=0.00, help="Adversarial loss weight")
-#     parser.add_argument('--head_num', type=int, default=4, help="Number of heads for self attention")
-#     parser.add_argument('--use_self', type=int, default=1, help="Wheter to use self attention")
-#     parser.add_argument('--fusion', type=str, choices=["concat","attention"], default="concat", help="Fusion method for final embedding")
-#     parser.add_argument('--agg', type=str, choices=["sum","max","mean"], default="sum", help="Aggreate type for leaf embedding")
-#     parser.add_argument('--act', type=str, choices=["mish","relu"], default="relu", help="Activation function")
-#     parser.add_argument('--device', type=str, choices=["cuda:0","cuda:1","cpu"], default="cuda:0", help="device name for training")
-#     parser.add_argument('--output', type=str, default="full.csv", help="Name of output file")
-#     parser.add_argument('--save', type=int, default=1, help="save model or not")
-
-#     # args
-#     args = parser.parse_args()
-#     epochs = args.epoch
-#     dim = args.dim
-#     lr = args.lr
-#     weight_decay = args.l2
-#     head_num = args.head_num
-#     save_model = args.save
-#     act = args.act
-#     fusion = args.fusion
-#     alpha = args.alpha
-#     beta = args.beta
-#     use_self = args.use_self
-#     agg = args.agg
-#     print(args)
-#     train(args)
-#     overall_f1, auc, precisions, recalls, f1s, revenues = evaluate(save_model)
-
-#     # save result
-    
-    
-#     output_file =  "./results/" + args.output
-#     print("Saving result...",output_file)
-#     with open(output_file, 'a') as ff:
-#         # print(args,file=ff)
-#         print()
-#         print("""Metrics:\nf1:%.4f auc:%.4f\nPr@1:%.4f Pr@2:%.4f Pr@5:%.4f Pr@10:%.4f\nRe@1:%.4f Re@2:%.4f Re@5:%.4f Re@10:%.4f\nRev@1:%.4f Rev@2:%.4f Rev@5:%.4f Rev@10:%.4f""" \
-#               % (overall_f1, auc,\
-#                  precisions[0],precisions[1],precisions[2],precisions[3],\
-#                  recalls[0],recalls[1],recalls[2],recalls[3],\
-#                  revenues[0],revenues[1],revenues[2],revenues[3]
-#                  ),
-#                  ) 
-#         output_metric = [dim,overall_f1,auc] + precisions + recalls + revenues
-#         output_metric = list(map(str,output_metric))
-#         print(" ".join(output_metric),file=ff)
-        
-#         # print("Model:%s epoch:%d dim:%d lr:%f l2:%f beta:%f heads:%d fusion:%s activation:%s"
-#         #       % (model_name, epochs, dim, lr, weight_decay, beta, head_num,fusion,act),file=ff) 
-#         # print("""Metrics:\nf1:%.4f auc:%.4f\nPr@1:%.4f Pr@2:%.4f Pr@5:%.4f Pr@10:%.4f\nRe@1:%.4f Re@2:%.4f Re@5:%.4f Re@10:%.4f\nRev@1:%.4f Rev@2:%.4f Rev@5:%.4f Rev@10:%.4f"""  \
-#         #       % (overall_f1, auc,\
-#         #          precisions[0],precisions[1],precisions[2],precisions[3],\
-#         #          recalls[0],recalls[1],recalls[2],recalls[3],\
-#         #          revenues[0],revenues[1],revenues[2],revenues[3]
-#         #          ),
-#         #          file=ff)      
+        return overall_f1, auc, precisions, recalls, f1s, revenues, self.model_path

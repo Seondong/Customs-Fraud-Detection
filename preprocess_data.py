@@ -116,26 +116,28 @@ def tag_risky_profiles(df: pd.DataFrame, profile: str, profiles: list or dict, o
         df.loc[:, 'RiskH.'+profile] = df[profile].apply(lambda x: profiles.get(x), overall_ratio_train)
     return df
 
-def split_data(df, splitter, newly_labeled = None):
-    # Dataset settings
-    # data_length = df.shape[0]
-    # train_ratio = 0.6
-    # valid_ratio = 0.8
-    # train_length = int(data_length*train_ratio)
-    # valid_length = int(data_length*valid_ratio)
-
-    # split train/valid/test set
-    # train = df.iloc[:train_length,:]
-    # valid = df.iloc[train_length:valid_length,:]
-    # test = df.iloc[valid_length:,:]
-    train = df[(df["sgd.date"] >= splitter[0]) & (df["sgd.date"] < splitter[1])]
-    valid = df[(df["sgd.date"] >= splitter[2]) & (df["sgd.date"] < splitter[3])]
-    test = df[(df["sgd.date"] >= splitter[4]) & (df["sgd.date"] < splitter[5])]
+def split_data(df, splitter, curr_time, newly_labeled = None):
+    
+    train_start_day = splitter[0].strftime('%y-%m-%d')
+    initial_train_end_day = splitter[1].strftime('%y-%m-%d')
+    valid_start_day = splitter[2].strftime('%y-%m-%d')
+    test_start_day = splitter[3].strftime('%y-%m-%d')
+    test_end_day = splitter[4].strftime('%y-%m-%d')
+    
+    initial_train = df[(df["sgd.date"] >= train_start_day) & (df["sgd.date"] < initial_train_end_day)]
+    
+    test = df[(df["sgd.date"] >= test_start_day) & (df["sgd.date"] < test_end_day)]
     offset = test.index[0]
 
     if newly_labeled is not None:
-        train = pd.concat([train, newly_labeled])
-
+        initial_train = pd.concat([initial_train, newly_labeled])
+        
+    train = initial_train[(initial_train["sgd.date"] < valid_start_day)]
+    valid = initial_train[(initial_train["sgd.date"] >= valid_start_day) & (initial_train["sgd.date"] < test_start_day)]
+    
+#     import pdb
+#     pdb.set_trace()
+    
     # save label data
     train_reg_label = train['revenue'].values
     valid_reg_label = valid['revenue'].values
@@ -204,10 +206,10 @@ def split_data(df, splitter, newly_labeled = None):
     print("Testing:",cnt[1]/cnt[0])
 
     # pickle a variable to a file
-    file = open('./processed_data.pickle', 'wb')
+    file = open('./intermediary/processed_data-'+curr_time+'.pickle', 'wb')
     pickle.dump(all_data, file)
     file.close()
-    return offset, train, test
+    return offset, train, valid, test
 # def make_current_data(splitter = ["13-01-01", "13-10-01"]):
 
 #     current = df[(df["sgd.date"] >= splitter[0]) & (df["sgd.date"] < splitter[1])]

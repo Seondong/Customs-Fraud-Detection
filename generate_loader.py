@@ -10,9 +10,9 @@ import torch
 import torch.utils.data as Data
 import warnings
 warnings.filterwarnings("ignore")
-def loader():
+def loader(curr_time):
     # load preprocessed data
-    with open("./processed_data.pickle","rb") as f :
+    with open("./intermediary/processed_data-"+curr_time+".pickle","rb") as f :
         processed_data = pickle.load(f)
     print(processed_data.keys())
     print("Finish loading data...")
@@ -55,7 +55,7 @@ def loader():
     xgb_auc = roc_auc_score(xgb_testy, test_pred)
     xgb_threshold,_ = find_best_threshold(xgb_clf, xgb_validx, xgb_validy)
     xgb_f1 = find_best_threshold(xgb_clf, xgb_testx, xgb_testy,best_thresh=xgb_threshold)
-    print("AUC = %.4f, F1-score = %.4f" % (xgb_auc, xgb_f1))
+#     print("AUC = %.4f, F1-score = %.4f" % (xgb_auc, xgb_f1))
 
     # Precision and Recall
     y_prob = test_pred
@@ -67,7 +67,7 @@ def loader():
         revenue_recall = sum(revenue_test[y_prob > threshold]) /sum(revenue_test)
         print(f'Precision: {round(precision, 4)}, Recall: {round(recall, 4)}, Seized Revenue (Recall): {round(revenue_recall, 4)}')
 
-    xgb_clf.get_booster().dump_model('xgb_model.txt', with_stats=False)
+    xgb_clf.get_booster().dump_model('./intermediary/xgb_model-'+curr_time+'.txt', with_stats=False)
 
     # Xgboost+LR model 
     from sklearn.linear_model import LogisticRegression
@@ -94,7 +94,7 @@ def loader():
     xgb_auc = roc_auc_score(xgb_testy, test_pred)
     xgb_threshold,_ = find_best_threshold(lr, lr_validx, xgb_validy) # threshold was select from validation set
     xgb_f1 = find_best_threshold(lr, lr_testx, xgb_testy,best_thresh=xgb_threshold) # then applied on test set
-    print("AUC = %.4f, F1-score = %.4f" % (xgb_auc, xgb_f1))
+#     print("AUC = %.4f, F1-score = %.4f" % (xgb_auc, xgb_f1))
 
     # Precision and Recall
     y_prob = test_pred
@@ -176,8 +176,8 @@ def loader():
                       "leaf_num":leaf_num,"importer_num":importer_size,"item_size":item_size}
 
     # save data
-    with open("torch_data.pickle", 'wb') as f:
+    with open("./intermediary/torch_data-"+curr_time+".pickle", 'wb') as f:
         pickle.dump(data4embedding, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-    with open("leaf_index.pickle", "wb") as f:
+    with open("./intermediary/leaf_index-"+curr_time+".pickle", "wb") as f:
         pickle.dump(new_leaf_index, f, protocol=pickle.HIGHEST_PROTOCOL)
