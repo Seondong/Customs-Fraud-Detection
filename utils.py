@@ -4,6 +4,7 @@ from torch.autograd import Variable
 import numpy as np 
 import pandas as pd 
 
+
 def find_best_threshold(model,x_list,y_test,best_thresh = None):
     '''
     dtype model: scikit-learn classifier model
@@ -69,6 +70,7 @@ def process_leaf_idx(X_leaves):
     assert leaves.ravel().max() == total_leaves - 1
     return leaves,total_leaves,new_leaf_index
 
+
 def stratify_sample(y,test_size=0.2,seed=0):
     y_ser = pd.Series(y)
     y_pos = y_ser[y_ser==1]
@@ -79,18 +81,6 @@ def stratify_sample(y,test_size=0.2,seed=0):
     train_idx = np.array([idx for idx in range(y_ser.shape[0]) if idx not in test_idx])
     return train_idx, test_idx
 
-def fgsm_attack(model, loss, images, labels, eps) :
-    # images.requires_grad = True
-    images = Variable(images, requires_grad=True)
-    outputs = model.module.pred_from_hidden(images)
-    
-    model.zero_grad()
-    cost = loss(outputs, labels)
-    cost.backward()
-    attack_images = images + eps * images.grad.sign()
-    # attack_images = images + eps * F.normalize(images.grad.data, dim=0, p=2)
-    # attack_images.requires_grad = False
-    return attack_images
 
 def metrics(y_prob,xgb_testy,revenue_test,best_thresh=None):
     if best_thresh ==None:
@@ -115,6 +105,7 @@ def metrics(y_prob,xgb_testy,revenue_test,best_thresh=None):
         rev.append(revenue_recall)
         # print(f'Precision: {round(precision, 4)}, Recall: {round(recall, 4)}, Seized Revenue (Recall): {round(revenue_recall, 4)}')
     return overall_f1,auc,pr, re, f, rev
+
 
 def metrics_active(active_rev,active_cls,xgb_testy,revenue_test):
     precision = np.count_nonzero(active_cls == 1) / len(active_cls)
