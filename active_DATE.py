@@ -189,6 +189,7 @@ if __name__ == '__main__':
     newly_labeled = None
     uncertainty_module = None
     path = None
+
     
     train_start_day = datetime.date(int(train_begin[:4]), int(train_begin[4:6]), int(train_begin[6:8]))
     test_start_day = datetime.date(int(test_begin[:4]), int(test_begin[4:6]), int(test_begin[6:8]))
@@ -205,6 +206,7 @@ if __name__ == '__main__':
         splitter = [train_start_day, initial_train_end_day, valid_start_day, test_start_day, test_end_day]               
         offset, train_labeled_data, valid_data, test_data = preprocess_data.split_data(df, splitter, curr_time, newly_labeled)
         print(train_labeled_data.shape, test_data.shape)
+
 
         # get uncertainty from DATE for those needs it
         if unc_mode == 'self-supervised' :
@@ -307,8 +309,10 @@ if __name__ == '__main__':
             wr.writerow([i, test_start_day, test_end_day,indices])
 
 
+
         # Renew valid & test period 
         test_start_day = test_end_day
         test_end_day = test_start_day + test_length
         valid_start_day = test_start_day - valid_length
+
         print("===========================================================================================")
