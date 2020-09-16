@@ -186,7 +186,7 @@ if __name__ == '__main__':
     output_file =  "./results/performances/" + args.output + '-' + samp + '-' + str(perc) +".csv"
     with open(output_file, 'a') as ff:
         output_metric_name = ['num_train','num_test','num_select','num_total_newly_labeled','num_test_illicit','test_illicit_rate','upper_bound_recall','upper_bound_rev', 'sampling', 'percentage', 'mode', 'subsamplings', 'weights','unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue']
-        print(" ".join(output_metric_name),file=ff)
+        print(",".join(output_metric_name),file=ff)
 
     numTests = 100
     newly_labeled = None
