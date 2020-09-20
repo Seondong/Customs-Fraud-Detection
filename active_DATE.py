@@ -150,7 +150,7 @@ if __name__ == '__main__':
     parser.add_argument('--test_from', type=str, default = '20160112', help = 'Testing period start from (YYYYMMDD)')
     parser.add_argument('--test_length', type=int, default=3, help='Single testing period length (e.g., 7)')
     parser.add_argument('--valid_length', type=int, default=3, help='Validation period length (e.g., 7)')
-    
+    parser.add_argument('--data', type=str, default='real', choices = ['real', 'synthetic'], help = 'Dataset')
     # args
     args = parser.parse_args()
     epochs = args.epoch
@@ -172,10 +172,13 @@ if __name__ == '__main__':
     test_begin = args.test_from
     test_length = args.test_length
     valid_length = args.valid_length
+    chosen_data = args.data
     
     print(args)
-    
-    df = pd.read_csv('./data/ndata.csv', encoding = "ISO-8859-1")
+    if chosen_data == 'real':
+    	df = pd.read_csv('./data/ndata.csv', encoding = "ISO-8859-1")
+    else:
+    	df = pd.read_csv('./data/synthetic-imports-declarations.csv', encoding = "ISO-8859-1")
     df = df.dropna(subset=["illicit"])
     df = df.sort_values("sgd.date")
     df = df.reset_index(drop=True)
@@ -183,7 +186,7 @@ if __name__ == '__main__':
     output_file =  "./results/performances/" + args.output + '-' + samp + '-' + str(perc) +".csv"
     with open(output_file, 'a') as ff:
         output_metric_name = ['num_train','num_test','num_select','num_total_newly_labeled','num_test_illicit','test_illicit_rate','upper_bound_recall','upper_bound_rev', 'sampling', 'percentage', 'mode', 'subsamplings', 'weights','unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue']
-        print(" ".join(output_metric_name),file=ff)
+        print(",".join(output_metric_name),file=ff)
 
     numTests = 100
     newly_labeled = None
@@ -290,22 +293,22 @@ if __name__ == '__main__':
                      ) 
         
         with open(output_file, 'a') as ff:
-            if mode == 'hybrid':
+            if samp == 'hybrid':
                 subsamplings = args.subsamplings
-                weights = arg.weights
+                weights = args.weights
             else:
                 subsamplings = '-'
                 weights = '-'
             output_metric = [len(train_labeled_data), len(xgb_testy), len(chosen), len(newly_labeled), np.sum(xgb_testy), np.mean(xgb_testy), min(perc/np.mean(xgb_testy)/100, 1), sum(sorted(revenue_test, reverse=True)[:len(chosen)]) / sum(revenue_test), samp, perc, mode, subsamplings, weights, unc_mode, train_start_day.strftime('%y-%m-%d'), valid_start_day.strftime('%y-%m-%d'), test_start_day.strftime('%y-%m-%d'), test_end_day.strftime('%y-%m-%d'), i+1, round(active_precisions,4), round(active_recalls,4), round(active_revenues,4)]
             output_metric = list(map(str,output_metric))
             print(output_metric)
-            print(" ".join(output_metric),file=ff)
+            print(",".join(output_metric),file=ff)
         
         
         output_file_indices =  "./results/query_indices/" + curr_time + '-' + samp + '-' + str(perc) + '-' + mode + "-week-" + str(i) + ".csv"
         
         with open(output_file_indices,"w") as queryFiles:
-            wr = csv.writer(queryFiles,delimiter = ",")
+            wr = csv.writer(queryFiles, delimiter = ",")
             wr.writerow([i, test_start_day, test_end_day,indices])
 
 
