@@ -1,5 +1,6 @@
 import preprocess_data
 import generate_loader
+# import separate_train_test_data, prepare_input_for_DATE, prepare_input_for_SSL
 import DATE_model
 import argparse
 import os
@@ -11,7 +12,7 @@ import time
 from collections import defaultdict
 from datetime import timedelta
 import datetime
-from query_strategies import badge, badge_DATE, random_sampling, DATE_sampling, diversity, uncertainty, hybrid, xgb
+from query_strategies import badge, badge_DATE, random_sampling, DATE_sampling, diversity, uncertainty, hybrid, xgb, xgb_lr, ssl_ae
 import numpy as np
 import torch
 import torch.nn as nn
@@ -141,7 +142,7 @@ if __name__ == '__main__':
     parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
     parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
     parser.add_argument('--output', type=str, default="result"+"-"+curr_time, help="Name of output file")
-    parser.add_argument('--sampling', type=str, default = 'badge_DATE', choices=['badge', 'badge_DATE', 'random', 'DATE', 'diversity', 'hybrid', 'xgb'], help='Sampling strategy')
+    parser.add_argument('--sampling', type=str, default = 'badge_DATE', choices=['badge', 'badge_DATE', 'random', 'DATE', 'diversity', 'hybrid', 'xgb', 'xgb_lr', 'ssl_ae'], help='Sampling strategy')
     parser.add_argument('--initial_inspection_rate', type=int, default=100, help='Initial inspection rate in training data by percentile')
     parser.add_argument('--final_inspection_rate', type=int, default = 5, help='Percentage of test data need to query')
     parser.add_argument('--mode', type=str, default = 'finetune', choices = ['finetune', 'scratch'], help = 'finetune last model or train from scratch')
@@ -196,7 +197,7 @@ if __name__ == '__main__':
     
     output_file =  "./results/performances/" + args.output + '-' + samp + '-' + str(perc) +".csv"
     with open(output_file, 'a') as ff:
-        output_metric_name = ['num_train','num_test','num_select','num_total_newly_labeled','num_test_illicit','test_illicit_rate','upper_bound_recall','upper_bound_rev', 'sampling', 'percentage', 'mode', 'subsamplings', 'weights','unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue']
+        output_metric_name = ['runID', 'num_train','num_valid','num_test','num_select','num_total_newly_labeled','num_test_illicit','test_illicit_rate', 'upper_bound_precision', 'upper_bound_recall','upper_bound_rev', 'sampling', 'initial_inspection_rate', 'final_inspection_rate', 'mode', 'subsamplings', 'weights','unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue', 'norm-precision', 'norm-recall', 'norm-revenue']
         print(",".join(output_metric_name),file=ff)
 
     newly_labeled = None
@@ -221,56 +222,84 @@ if __name__ == '__main__':
 
 
         # get uncertainty from DATE for those needs it
-        if unc_mode == 'self-supervised' :
+        if unc_mode == 'self-supervised':
             if samp in ['badge_DATE', 'diversity', 'hybrid']:
                 if uncertainty_module is None :
                     uncertainty_module = uncertainty.Uncertainty(train_labeled_data, './uncertainty_models/')
                     uncertainty_module.train()
-                uncertainty_module.test_data = test_data
-        
-        generate_loader.loader(curr_time)
-        
-        data = load_data("./intermediary/torch_data-"+curr_time+".pickle")
-        revenue_upDATE = []
-        train_loader, valid_loader, test_loader, leaf_num, importer_size, item_size, xgb_validy, xgb_testy, revenue_valid, revenue_test = data
+                uncertainty_module.test_data = test_data 
         
         
-        # train DATE model only if the sampling strategy is DATE-based one (except random and xgb).
-        if samp not in ['random', 'xgb']:
-            # create / load model
-            if mode == 'scratch' or i == 0:
-                date_model = DATE_model.VanillaDATE(data, curr_time)
-            else:
-                model = torch.load(path)
-                date_model = DATE_model.VanillaDATE(data, curr_time, model.state_dict())
-            # re-train
-            date_model.train(args)
-            overall_f1, auc, precisions, recalls, f1s, revenues, path = date_model.evaluate()
+        _, _, _, _, _, _, revenue_test, _, _, norm_revenue_test, _, _, _, _, _, xgb_testy = generate_loader.separate_train_test_data(curr_time)
+        
+        
+        # Train XGB model only if the sampling strategy is dependent on XGB model.
+        
+        
+        if not semi_supervised:
+            if samp not in ['random']:
+                generate_loader.prepare_input_for_DATE(curr_time)
+                data = load_data("./intermediary/torch_data-"+curr_time+".pickle")
+                train_loader, valid_loader, test_loader, leaf_num, importer_size, item_size, _, _, _, _ = data
 
-            print("===========================================================================================")
-            print("""Metrics DATE:\nf1:%.4f auc:%.4f\nPr@5:%.4f Re@5:%.4fRev@5:%.4f""" \
-                  % (overall_f1, auc,\
-                     precisions[2],recalls[2],revenues[2]
-                     ),
-                     )
+            # Train DATE model only if the sampling strategy is dependent on DATE model (except random and xgb).
+            if samp not in ['random', 'xgb', 'xgb_lr']:
+                # create / load model
+                if mode == 'scratch' or i == 0:
+                    date_model = DATE_model.VanillaDATE(data, curr_time)
+                else:
+                    model = torch.load(path)
+                    date_model = DATE_model.VanillaDATE(data, curr_time, model.state_dict())
+                # re-train
+                date_model.train(args)
+                overall_f1, auc, precisions, recalls, f1s, revenues, path = date_model.evaluate()
 
-        # selection
-        # testing top perc%
-        num_samples = int(test_loader.dataset.tensors[-1].shape[0]*(perc/100))
-        samplers = {
-                'random': random_sampling.RandomSampling(path, test_loader, args),            
-                'badge_DATE': badge_DATE.DATEBadgeSampling(path, test_loader, uncertainty_module, args),
-                'badge': badge.BadgeSampling(path, test_loader, args),
-                'DATE': DATE_sampling.DATESampling(path, test_loader, args),
-                'xgb': xgb.XGBSampling(path, test_loader, args),
-                'diversity': diversity.DiversitySampling(path, test_loader, uncertainty_module, args)}
+                print("===========================================================================================")
+                print("""Metrics DATE:\nf1:%.4f auc:%.4f\nPr@5:%.4f Re@5:%.4fRev@5:%.4f""" \
+                      % (overall_f1, auc,\
+                         precisions[2],recalls[2],revenues[2]
+                         ),
+                         )
+
+        if semi_supervised:
+            if samp in ['ssl_ae']:
+                generate_loader.prepare_input_for_SSL(curr_time)
+                data = load_data("./intermediary/torch_ssl_data-"+curr_time+".pickle")
+                train_loader_labeled, train_loader_unlabeled, valid_loader, test_loader = data
+                       
+
+        # Selection stragies
+        num_samples = int(len(test_data)*perc/100)
+        
+        
+        def initialize_sampler(samp):
+            if samp == 'random':
+                sampler = random_sampling.RandomSampling(path, test_data, None, args)
+            if samp == 'xgb':
+                sampler = xgb.XGBSampling(path, test_data, None, args)
+            if samp == 'xgb_lr':
+                sampler = xgb_lr.XGBLRSampling(path, test_data, None, args)
+            if samp == 'badge':
+                sampler = badge.BadgeSampling(path, test_data, test_loader, args)
+            if samp == 'DATE':
+                sampler = DATE_sampling.DATESampling(path, test_data, test_loader, args)
+            if samp == 'diversity':
+                sampler = diversity.DiversitySampling(path, test_data, test_loader, uncertainty_module, args)
+            if samp == 'badge_DATE':
+                sampler = badge_DATE.DATEBadgeSampling(path, test_data, test_loader, uncertainty_module, args)
+            if samp == 'ssl_ae':
+                sampler = ssl_ae.SSLAutoencoderSampling(path, test_data, test_loader,args)
+            return sampler
+            
+        if samp != 'hybrid':
+            sampler = initialize_sampler(samp)
+        
         if samp == 'hybrid':
-        	subsamps = [samplers[subsamp] for subsamp in args.subsamplings.split("/")]
-        	weights = [float(weight) for weight in args.weights.split("/")]
-        	sampling = hybrid.HybridSampling(path, test_loader, args, subsamps, weights)
-        else:
-        	sampling = samplers[samp]
-        chosen = sampling.query(num_samples)
+            subsamplers = [initialize_sampler(samp) for samp in args.subsamplings.split("/")]
+            weights = [float(weight) for weight in args.weights.split("/")]
+            sampler = hybrid.HybridSampling(path, test_data, test_loader, args, subsamplers, weights)
+        
+        chosen = sampler.query(num_samples)
         print(len(set(chosen)), len(chosen), num_samples)
         assert len(set(chosen)) == num_samples
   
@@ -308,7 +337,18 @@ if __name__ == '__main__':
             else:
                 subsamplings = '-'
                 weights = '-'
-            output_metric = [len(train_labeled_data), len(xgb_testy), len(chosen), len(newly_labeled), np.sum(xgb_testy), np.mean(xgb_testy), min(perc/np.mean(xgb_testy)/100, 1), sum(sorted(revenue_test, reverse=True)[:len(chosen)]) / sum(revenue_test), samp, perc, mode, subsamplings, weights, unc_mode, train_start_day.strftime('%y-%m-%d'), valid_start_day.strftime('%y-%m-%d'), test_start_day.strftime('%y-%m-%d'), test_end_day.strftime('%y-%m-%d'), i+1, round(active_precisions,4), round(active_recalls,4), round(active_revenues,4)]
+                
+            upper_bound_precision = min(100*np.mean(xgb_testy)/perc, 1)
+            upper_bound_recall = min(perc/np.mean(xgb_testy)/100, 1)
+            upper_bound_revenue = sum(sorted(revenue_test, reverse=True)[:len(chosen)]) / sum(revenue_test)
+            norm_precision = active_precisions/upper_bound_precision
+            norm_recall = active_recalls/upper_bound_recall
+            norm_revenue = active_revenues/upper_bound_revenue
+            
+            
+            output_metric = [curr_time, len(train_labeled_data), len(valid_data), len(test_data), len(chosen), len(newly_labeled), np.sum(xgb_testy), np.mean(xgb_testy), upper_bound_precision, upper_bound_recall, upper_bound_revenue, samp, ir_init, perc, mode, subsamplings, weights, unc_mode, train_start_day.strftime('%y-%m-%d'), valid_start_day.strftime('%y-%m-%d'), test_start_day.strftime('%y-%m-%d'), test_end_day.strftime('%y-%m-%d'), i+1, round(active_precisions,4), round(active_recalls,4), round(active_revenues,4), round(norm_precision,4), round(norm_recall,4), round(norm_revenue,4)]
+                
+                
             output_metric = list(map(str,output_metric))
             print(output_metric)
             print(",".join(output_metric),file=ff)
@@ -319,7 +359,6 @@ if __name__ == '__main__':
         with open(output_file_indices,"w") as queryFiles:
             wr = csv.writer(queryFiles, delimiter = ",")
             wr.writerow([i, test_start_day, test_end_day,indices])
-
 
 
         # Renew valid & test period 

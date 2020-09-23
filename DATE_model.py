@@ -79,7 +79,8 @@ class VanillaDATE:
         stop_rounds = 3
         no_improvement = 0
         current_score = None 
-
+        
+        print("Running the DATE model ...")
         for epoch in range(epochs):
             for step, (batch_feature,batch_user,batch_item,batch_cls,batch_reg) in enumerate(train_loader):
                 self.model.train() # prep to train model
@@ -103,6 +104,7 @@ class VanillaDATE:
                     
             # evaluate 
             self.model.eval()
+            print("------------")
             print("Validate at epoch %s"%(epoch+1))
             y_prob, val_loss, _ = self.model.module.eval_on_batch(valid_loader)
             y_pred_tensor = torch.tensor(y_prob).float().to(device)

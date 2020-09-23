@@ -41,13 +41,15 @@ from sklearn.metrics import pairwise_distances
 from sklearn.preprocessing import normalize
 
 class Strategy:
-    def __init__(self, model_path, test_loader, args):
+    def __init__(self, model_path, test_data, test_loader, args):
+        self.test_data = test_data
+        self.num_data = len(self.test_data)
         self.test_loader = test_loader
         self.dim = args.dim
         self.model_path = model_path
         self.device = args.device
-        self.num_data = self.test_loader.dataset.tensors[-1].shape[0]
         self.available_indices = np.arange(self.num_data)
+        
 
     def set_available_indices(self, unavailable):
         self.available_indices = np.delete(np.arange(self.num_data), unavailable)
@@ -84,10 +86,9 @@ class Strategy:
         embDim = self.dim
         best_model = torch.load(self.model_path)
         final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(self.test_loader)
-        num_data = self.test_loader.dataset.tensors[-1].shape[0]
         nLab = 2
         print(len(final_output), hiddens[0].shape, len(hiddens))
-        embedding = np.zeros([num_data, embDim * nLab])
+        embedding = np.zeros([self.num_data, embDim * nLab])
         with torch.no_grad():
             for idx, prob in enumerate(final_output):
                 maxInds = np.asarray([0, 0])

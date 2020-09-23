@@ -7,7 +7,7 @@ import gc
 from scipy.linalg import det
 from scipy.linalg import pinv as inv
 from copy import deepcopy
-
+import math
 import torch
 from torch import nn
 import torchfile
@@ -39,45 +39,40 @@ from sklearn.utils.validation import FLOAT_DTYPES
 from sklearn.metrics.pairwise import rbf_kernel as rbf
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import pairwise_distances
-
+from sklearn.preprocessing import normalize
 from .strategy import Strategy
-# kmeans ++ initialization
-def init_centers(X, K):
-    ind = np.argmax([np.linalg.norm(s, 2) for s in X])
-    mu = [X[ind]]
-    indsAll = [ind]
-    centInds = [0.] * len(X)
-    cent = 0
-    # print('#Samps\tTotal Distance')
-    while len(mu) < K:
-        if len(mu) == 1:
-            D2 = pairwise_distances(X, mu).ravel().astype(float)
-        else:
-            newD = pairwise_distances(X, [mu[-1]]).ravel().astype(float)
-            for i in range(len(X)):
-                if D2[i] >  newD[i]:
-                    centInds[i] = cent
-                    D2[i] = newD[i]
-        # print(str(len(mu)) + '\t' + str(sum(D2)), flush=True)
-        if sum(D2) == 0.0: pdb.set_trace()
-        D2 = D2.ravel().astype(float)
-        Ddist = (D2 ** 2)/ sum(D2 ** 2)
-        customDist = stats.rv_discrete(name='custm', values=(np.arange(len(D2)), Ddist))
-        ind = customDist.rvs(size=1)[0]
-        mu.append(X[ind])
-        indsAll.append(ind)
-        cent += 1
-    gram = np.matmul(X[indsAll], X[indsAll].T)
-    val, _ = np.linalg.eig(gram)
-    val = np.abs(val)
-    vgt = val[val > 1e-2]
-    return indsAll
 
-class BadgeSampling(Strategy):
+
+class SSLAutoencoderSampling(Strategy):
+    
+    
     def __init__(self, model_path, test_data, test_loader, args):
-        super(BadgeSampling,self).__init__(model_path, test_data, test_loader, args)
+        self.model_path = './intermediary/xgb_model-'+args.identifier+'.json'
+        self.identifier = args.identifier
+        super(sslSampling,self).__init__(model_path, test_data, test_loader, args)
+    
+    
+    def get_autoencoder_model(self):
+        xgb_clf = XGBClassifier(n_estimators=100, max_depth=4,n_jobs=-1)
+        xgb_clf.load_model(self.model_path)
+        return xgb_clf
+    
+    
+    def load_test_data(self):
+        _, _, _, _, _, _,_, _, _, _, _, _, _, _, xgb_testx, _ = separate_train_test_data(self.identifier)
+        return xgb_testx
+    
+    
+    def get_ssl_output(self):
+        xgb_clf = self.get_autoencoder_model()
+        xgb_testx = self.load_test_data()
+        final_output = xgb_clf.predict_proba(xgb_testx)[:,1]
+        return final_output[self.available_indices]
 
+    
     def query(self, k):
-        gradEmbedding  = self.get_grad_embedding()
-        chosen = init_centers(gradEmbedding, k)
+        output = self.get_ssl_output()
+        chosen = np.argpartition(output, -k)[-k:]
         return self.available_indices[chosen].tolist()
+   
+
