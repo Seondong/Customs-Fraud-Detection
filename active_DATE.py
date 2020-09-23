@@ -157,7 +157,7 @@ if __name__ == '__main__':
     parser.add_argument('--testnum', type=int, default=100, help='number of tests')
     parser.add_argument('--semi_supervised', type=int, default=0, help='Additionally using uninspected, unlabeled data (1=semi-supervised, 0=fully-supervised')
     parser.add_argument('--identifier', type=str, default=curr_time, help='identifier for each execution')
-    
+
     # args
     args = parser.parse_args()
     epochs = args.epoch
