@@ -94,8 +94,9 @@ def metrics(y_prob,xgb_testy,revenue_test,best_thresh=None):
     for i in [99,98,95,90]:
         threshold = np.percentile(y_prob, i)
         #print(f'Checking top {100-i}% suspicious transactions: {len(y_prob[y_prob > threshold])}')
-        precision = np.mean(xgb_testy[y_prob > threshold])
+        precision = np.nan_to_num(np.mean(xgb_testy[y_prob > threshold]))
         recall = sum(xgb_testy[y_prob > threshold])/ sum(xgb_testy)
+        print(f'For debug: Precision: {round(precision, 4)}, Recall: {round(recall, 4)}')
         f1 = hmean([precision, recall])
         revenue_recall = sum(revenue_test[y_prob > threshold]) / sum(revenue_test)
 
@@ -111,7 +112,7 @@ def metrics(y_prob,xgb_testy,revenue_test,best_thresh=None):
 def metrics_active(active_rev,active_cls,xgb_testy,revenue_test):
     precision = np.count_nonzero(active_cls == 1) / len(active_cls)
     recall = sum(active_cls) / sum(xgb_testy)
-    f1 = 2*precision*recall / (precision+recall)
+    print(f'For debug: Precision: {round(precision, 4)}, Recall: {round(recall, 4)}')
+    f1 = f1 = hmean([precision, recall])
     revenue_recall = sum(active_rev) / sum(revenue_test)
-    
     return precision, recall, f1, revenue_recall

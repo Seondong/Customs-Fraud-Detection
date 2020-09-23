@@ -10,8 +10,10 @@ import torch
 import torch.utils.data as Data
 import warnings
 warnings.filterwarnings("ignore")
-def loader(curr_time):
-    # load preprocessed data
+
+def load_data_for_xgb(curr_time):
+    
+    # prepare data for xgb
     with open("./intermediary/processed_data-"+curr_time+".pickle","rb") as f :
         processed_data = pickle.load(f)
     print(processed_data.keys())
@@ -28,9 +30,11 @@ def loader(curr_time):
                                                 processed_data["revenue"]["test"]
 
     # normalize revenue by f(x) = log(x+1)/max(xi)
-    norm_revenue_train, norm_revenue_test = np.log(revenue_train+1), np.log(revenue_test+1) 
+    norm_revenue_train, norm_revenue_valid, norm_revenue_test = np.log(revenue_train+1), np.log(revenue_valid+1), np.log(revenue_test+1) 
     global_max = max(norm_revenue_train) 
     norm_revenue_train = norm_revenue_train/global_max
+    norm_revenue_valid = norm_revenue_valid/global_max
+    norm_revenue_test = norm_revenue_test/global_max
 
     # Xgboost data 
     xgb_trainx = processed_data["xgboost_data"]["train_x"]
@@ -39,13 +43,23 @@ def loader(curr_time):
     xgb_validy = processed_data["xgboost_data"]["valid_y"]
     xgb_testx = processed_data["xgboost_data"]["test_x"]
     xgb_testy = processed_data["xgboost_data"]["test_y"]
-
-    # build xgboost model
-    print("Training xgboost model...")
+    
     columns = ['fob.value', 'cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'FOBCIFRatio', 'TaxUnitquantity', 'tariff.code', 'HS6', 'HS4', 'HS2', 'SGD.DayofYear', 'SGD.WeekofYear', 'SGD.MonthofYear'] + [col for col in train.columns if 'RiskH' in col] 
     xgb_trainx = pd.DataFrame(xgb_trainx,columns=columns)
     xgb_validx = pd.DataFrame(xgb_validx,columns=columns)
     xgb_testx = pd.DataFrame(xgb_testx,columns=columns)
+    
+    return processed_data, train, valid, test, revenue_train, revenue_valid,revenue_test, norm_revenue_train, norm_revenue_valid, norm_revenue_test, xgb_trainx, xgb_trainy, xgb_validx, xgb_validy, xgb_testx, xgb_testy
+
+
+
+def loader(curr_time):
+    
+    processed_data, train, valid, test, revenue_train, revenue_valid,revenue_test, norm_revenue_train, norm_revenue_valid, norm_revenue_test, xgb_trainx, xgb_trainy, xgb_validx, xgb_validy, xgb_testx, xgb_testy = load_data_for_xgb(curr_time)
+    
+    # build xgboost model
+    print("Training xgboost model...")
+    
     xgb_clf = XGBClassifier(n_estimators=100, max_depth=4,n_jobs=-1)
     xgb_clf.fit(xgb_trainx,xgb_trainy)
 
@@ -66,8 +80,9 @@ def loader(curr_time):
         recall = sum(xgb_testy[y_prob > threshold])/sum(xgb_testy)
         revenue_recall = sum(revenue_test[y_prob > threshold]) /sum(revenue_test)
         print(f'Precision: {round(precision, 4)}, Recall: {round(recall, 4)}, Seized Revenue (Recall): {round(revenue_recall, 4)}')
-
-    xgb_clf.get_booster().dump_model('./intermediary/xgb_model-'+curr_time+'.txt', with_stats=False)
+    
+    xgb_clf.get_booster().dump_model('./intermediary/xgb_model-readable-'+curr_time+'.txt', with_stats=False)
+    xgb_clf.get_booster().save_model('./intermediary/xgb_model-'+curr_time+'.json')
 
     # Xgboost+LR model 
     from sklearn.linear_model import LogisticRegression
@@ -161,8 +176,8 @@ def loader(curr_time):
 
     # revenue data 
     train_label_reg = torch.tensor(norm_revenue_train).float()
-    valid_label_reg = torch.tensor(revenue_valid).float()
-    test_label_reg = torch.tensor(revenue_test).float()
+    valid_label_reg = torch.tensor(norm_revenue_valid).float()
+    test_label_reg = torch.tensor(norm_revenue_test).float()
 
     # create dataloader 
 

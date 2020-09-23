@@ -17,7 +17,6 @@ from utils import torch_threshold, metrics
 
 warnings.filterwarnings("ignore")
 
-
 class VanillaDATE:
     
     def __init__(self, data, curr_time, state_dict = None):
@@ -36,19 +35,24 @@ class VanillaDATE:
         lr = args.lr
         weight_decay = args.l2
         head_num = args.head_num
-        device = args.device
         act = args.act
         fusion = args.fusion
         beta = args.beta
         alpha = args.alpha
         use_self = args.use_self
         agg = args.agg
+        
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        
         self.model = DATE(leaf_num,importer_size,item_size,\
                                         dim,head_num,\
                                         fusion_type=fusion,act=act,device=device,\
                                         use_self=use_self,agg_type=agg,
                                         ).to(device)
-        self.model = nn.DataParallel(self.model,device_ids=[0,1])
+        
+        if torch.cuda.device_count() > 1:
+            self.model = nn.DataParallel(self.model)     
+            
         if not self.state_dict:
             # initialize parameters
             for p in self.model.parameters():

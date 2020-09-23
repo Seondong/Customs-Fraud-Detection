@@ -116,7 +116,28 @@ def tag_risky_profiles(df: pd.DataFrame, profile: str, profiles: list or dict, o
         df.loc[:, 'RiskH.'+profile] = df[profile].apply(lambda x: profiles.get(x), overall_ratio_train)
     return df
 
-def split_data(df, splitter, curr_time, newly_labeled = None):
+
+def mask_labels(df, ir_init):
+    # To do: For more consistent results, we can control the random seed while selecting inspected_id.
+    inspected_id = {}
+    train_id = list(set(df['importer.id']))
+    inspected_id[ir_init] = np.random.choice(train_id, size= int(len(train_id) * ir_init / 100), replace=False)
+    d = {}
+    for id in train_id:
+        d[id] = float('nan')
+    for id in inspected_id[ir_init]:
+        d[id] = 1
+    
+    print('Before masking:\n', df['illicit'].value_counts())
+    df['illicit'] = df['importer.id'].apply(lambda x: d[x]) * df['illicit']
+    df['revenue'] = df['importer.id'].apply(lambda x: d[x]) * df['revenue']
+    print('After masking:\n', df['illicit'].value_counts())
+    return df
+    
+
+
+
+def split_data(df, splitter, curr_time, ir_init, semi_supervised, newly_labeled = None):
     
     train_start_day = splitter[0].strftime('%y-%m-%d')
     initial_train_end_day = splitter[1].strftime('%y-%m-%d')
@@ -130,13 +151,22 @@ def split_data(df, splitter, curr_time, newly_labeled = None):
     offset = test.index[0]
 
     if newly_labeled is not None:
-        initial_train = pd.concat([initial_train, newly_labeled])
+        initial_train = pd.concat([initial_train, newly_labeled])   # Check how to add unlabeled items
         
     train = initial_train[(initial_train["sgd.date"] < valid_start_day)]
     valid = initial_train[(initial_train["sgd.date"] >= valid_start_day) & (initial_train["sgd.date"] < test_start_day)]
     
-#     import pdb
-#     pdb.set_trace()
+    if newly_labeled is None:
+        train = mask_labels(train, ir_init)
+        valid = mask_labels(valid, ir_init)
+    
+    if semi_supervised:
+        pass
+    
+    if not semi_supervised:
+        train = train[train['illicit'].notna()]
+        valid = valid[valid['illicit'].notna()]
+        
     
     # save label data
     train_reg_label = train['revenue'].values
@@ -210,6 +240,7 @@ def split_data(df, splitter, curr_time, newly_labeled = None):
     pickle.dump(all_data, file)
     file.close()
     return offset, train, valid, test
+
 # def make_current_data(splitter = ["13-01-01", "13-10-01"]):
 
 #     current = df[(df["sgd.date"] >= splitter[0]) & (df["sgd.date"] < splitter[1])]

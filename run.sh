@@ -1,0 +1,1 @@
+export CUDA_VISIBLE_DEVICES=0,3 && python active_DATE.py --sampling xgb --mode scratch --train_from 20130101 --test_from 20130201 --test_length 7 --valid_length 15 --initial_inspection_rate 50 --final_inspection_rate 5 --testnum 200 --semi_supervised 0

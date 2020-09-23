@@ -61,6 +61,8 @@ class Strategy:
     def get_output(self):
         best_model = self.get_model()
         final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(self.test_loader)
+#         import pdb
+#         pdb.set_trace()
         return final_output[self.available_indices]
 
     def get_revenue(self):

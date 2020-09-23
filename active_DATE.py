@@ -11,7 +11,7 @@ import time
 from collections import defaultdict
 from datetime import timedelta
 import datetime
-from query_strategies import badge, badge_DATE, random_sampling, DATE_sampling, diversity, uncertainty, hybrid
+from query_strategies import badge, badge_DATE, random_sampling, DATE_sampling, diversity, uncertainty, hybrid, xgb
 import numpy as np
 import torch
 import torch.nn as nn
@@ -75,7 +75,7 @@ def load_data(path):
 def evaluate_upDATE(chosen_rev,chosen_cls,xgb_testy,revenue_test):
     #get data
     print()
-    print("--------Evaluating Active DATE model---------")
+    print("--------Evaluating the model---------")
 
     precisions, recalls, f1s, revenues = metrics_active(chosen_rev,chosen_cls,xgb_testy,revenue_test)
     best_score = f1s
@@ -137,10 +137,13 @@ if __name__ == '__main__':
     parser.add_argument('--fusion', type=str, choices=["concat","attention"], default="concat", help="Fusion method for final embedding")
     parser.add_argument('--agg', type=str, choices=["sum","max","mean"], default="sum", help="Aggreate type for leaf embedding")
     parser.add_argument('--act', type=str, choices=["mish","relu"], default="relu", help="Activation function")
-    parser.add_argument('--device', type=str, choices=["cuda:0","cuda:1","cuda:2","cuda:3","cpu"], default="cuda:0", help="device name for training")
+    
+    parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
+    parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
     parser.add_argument('--output', type=str, default="result"+"-"+curr_time, help="Name of output file")
-    parser.add_argument('--sampling', type=str, default = 'badge_DATE', choices=['badge', 'badge_DATE', 'random', 'DATE', 'diversity', 'hybrid'], help='Sampling strategy')
-    parser.add_argument('--percentage', type=int, default = 5, help='Percentage of test data need to query')
+    parser.add_argument('--sampling', type=str, default = 'badge_DATE', choices=['badge', 'badge_DATE', 'random', 'DATE', 'diversity', 'hybrid', 'xgb'], help='Sampling strategy')
+    parser.add_argument('--initial_inspection_rate', type=int, default=100, help='Initial inspection rate in training data by percentile')
+    parser.add_argument('--final_inspection_rate', type=int, default = 5, help='Percentage of test data need to query')
     parser.add_argument('--mode', type=str, default = 'finetune', choices = ['finetune', 'scratch'], help = 'finetune last model or train from scratch')
     parser.add_argument('--subsamplings', type=str, default = 'badge_DATE/DATE', help = 'available for hybrid sampling, the list of sub-sampling techniques seperated by /')
     parser.add_argument('--weights', type=str, default = '0.5/0.5', help = 'available for hybrid sampling, the list of weights for sub-sampling techniques seperated by /')
@@ -150,6 +153,10 @@ if __name__ == '__main__':
     parser.add_argument('--test_from', type=str, default = '20160112', help = 'Testing period start from (YYYYMMDD)')
     parser.add_argument('--test_length', type=int, default=3, help='Single testing period length (e.g., 7)')
     parser.add_argument('--valid_length', type=int, default=3, help='Validation period length (e.g., 7)')
+    parser.add_argument('--data', type=str, default='real', choices = ['real', 'synthetic'], help = 'Dataset')
+    parser.add_argument('--testnum', type=int, default=100, help='number of tests')
+    parser.add_argument('--semi_supervised', type=int, default=0, help='Additionally using uninspected, unlabeled data (1=semi-supervised, 0=fully-supervised')
+    parser.add_argument('--identifier', type=str, default=curr_time, help='identifier for each execution')
     
     # args
     args = parser.parse_args()
@@ -165,17 +172,24 @@ if __name__ == '__main__':
     use_self = args.use_self
     agg = args.agg
     samp = args.sampling
-    perc = args.percentage
+    ir_init = args.initial_inspection_rate
+    perc = args.final_inspection_rate
     mode = args.mode
     unc_mode = args.uncertainty
     train_begin = args.train_from 
     test_begin = args.test_from
     test_length = args.test_length
     valid_length = args.valid_length
+    chosen_data = args.data
+    numTests = args.testnum
+    semi_supervised = args.semi_supervised
     
     print(args)
     
-    df = pd.read_csv('./data/ndata.csv', encoding = "ISO-8859-1")
+    if chosen_data == 'real':
+        df = pd.read_csv('./data/ndata.csv', encoding = "ISO-8859-1")
+    else:
+        df = pd.read_csv('./data/synthetic-imports-declarations.csv', encoding = "ISO-8859-1")
     df = df.dropna(subset=["illicit"])
     df = df.sort_values("sgd.date")
     df = df.reset_index(drop=True)
@@ -183,14 +197,12 @@ if __name__ == '__main__':
     output_file =  "./results/performances/" + args.output + '-' + samp + '-' + str(perc) +".csv"
     with open(output_file, 'a') as ff:
         output_metric_name = ['num_train','num_test','num_select','num_total_newly_labeled','num_test_illicit','test_illicit_rate','upper_bound_recall','upper_bound_rev', 'sampling', 'percentage', 'mode', 'subsamplings', 'weights','unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue']
-        print(" ".join(output_metric_name),file=ff)
+        print(",".join(output_metric_name),file=ff)
 
-    numTests = 100
     newly_labeled = None
     uncertainty_module = None
     path = None
 
-    
     train_start_day = datetime.date(int(train_begin[:4]), int(train_begin[4:6]), int(train_begin[6:8]))
     test_start_day = datetime.date(int(test_begin[:4]), int(test_begin[4:6]), int(test_begin[6:8]))
     test_length = timedelta(days=test_length)    
@@ -204,7 +216,7 @@ if __name__ == '__main__':
     for i in range(numTests):
         # make dataset                                    
         splitter = [train_start_day, initial_train_end_day, valid_start_day, test_start_day, test_end_day]               
-        offset, train_labeled_data, valid_data, test_data = preprocess_data.split_data(df, splitter, curr_time, newly_labeled)
+        offset, train_labeled_data, valid_data, test_data = preprocess_data.split_data(df, splitter, curr_time, ir_init, semi_supervised, newly_labeled)
         print(train_labeled_data.shape, test_data.shape)
 
 
@@ -221,7 +233,10 @@ if __name__ == '__main__':
         data = load_data("./intermediary/torch_data-"+curr_time+".pickle")
         revenue_upDATE = []
         train_loader, valid_loader, test_loader, leaf_num, importer_size, item_size, xgb_validy, xgb_testy, revenue_valid, revenue_test = data
-        if samp != 'random':
+        
+        
+        # train DATE model only if the sampling strategy is DATE-based one (except random and xgb).
+        if samp not in ['random', 'xgb']:
             # create / load model
             if mode == 'scratch' or i == 0:
                 date_model = DATE_model.VanillaDATE(data, curr_time)
@@ -247,6 +262,7 @@ if __name__ == '__main__':
                 'badge_DATE': badge_DATE.DATEBadgeSampling(path, test_loader, uncertainty_module, args),
                 'badge': badge.BadgeSampling(path, test_loader, args),
                 'DATE': DATE_sampling.DATESampling(path, test_loader, args),
+                'xgb': xgb.XGBSampling(path, test_loader, args),
                 'diversity': diversity.DiversitySampling(path, test_loader, uncertainty_module, args)}
         if samp == 'hybrid':
         	subsamps = [samplers[subsamp] for subsamp in args.subsamplings.split("/")]
@@ -283,29 +299,25 @@ if __name__ == '__main__':
 
         # evaluate
         active_precisions, active_recalls, active_f1s, active_revenues = evaluate_upDATE(active_rev,active_cls,xgb_testy,revenue_test)
-        print("""Metrics Active DATE:\n Pr@5:%.4f Re@5:%.4f Rev@5:%.4f""" \
-                  % (
-                     active_precisions, active_recalls, active_revenues
-                     ),
-                     ) 
+        print(f'Metrics Active DATE:\n Pr@{perc}:{round(active_precisions, 4)}, Re@{perc}:{round(active_recalls, 4)} Rev@{perc}:{round(active_revenues, 4)}') 
         
         with open(output_file, 'a') as ff:
-            if mode == 'hybrid':
+            if samp == 'hybrid':
                 subsamplings = args.subsamplings
-                weights = arg.weights
+                weights = args.weights
             else:
                 subsamplings = '-'
                 weights = '-'
             output_metric = [len(train_labeled_data), len(xgb_testy), len(chosen), len(newly_labeled), np.sum(xgb_testy), np.mean(xgb_testy), min(perc/np.mean(xgb_testy)/100, 1), sum(sorted(revenue_test, reverse=True)[:len(chosen)]) / sum(revenue_test), samp, perc, mode, subsamplings, weights, unc_mode, train_start_day.strftime('%y-%m-%d'), valid_start_day.strftime('%y-%m-%d'), test_start_day.strftime('%y-%m-%d'), test_end_day.strftime('%y-%m-%d'), i+1, round(active_precisions,4), round(active_recalls,4), round(active_revenues,4)]
             output_metric = list(map(str,output_metric))
             print(output_metric)
-            print(" ".join(output_metric),file=ff)
+            print(",".join(output_metric),file=ff)
         
         
         output_file_indices =  "./results/query_indices/" + curr_time + '-' + samp + '-' + str(perc) + '-' + mode + "-week-" + str(i) + ".csv"
         
         with open(output_file_indices,"w") as queryFiles:
-            wr = csv.writer(queryFiles,delimiter = ",")
+            wr = csv.writer(queryFiles, delimiter = ",")
             wr.writerow([i, test_start_day, test_end_day,indices])
 
 
