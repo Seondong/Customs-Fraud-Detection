@@ -76,8 +76,8 @@ def init_centers(X, K):
     return indsAll
 
 class DATEBadgeSampling(Strategy):
-    def __init__(self, model_path, test_loader, uncertainty_module, args):
-        super(DATEBadgeSampling,self).__init__(model_path, test_loader, args)
+    def __init__(self, model_path, test_data, test_loader, uncertainty_module, args):
+        super(DATEBadgeSampling,self).__init__(model_path, test_data, test_loader, args)
         self.uncertainty_module = uncertainty_module
 
     def query(self, k):

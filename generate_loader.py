@@ -11,13 +11,11 @@ import torch.utils.data as Data
 import warnings
 warnings.filterwarnings("ignore")
 
-def load_data_for_xgb(curr_time):
+def separate_train_test_data(curr_time):
     
     # prepare data for xgb
     with open("./intermediary/processed_data-"+curr_time+".pickle","rb") as f :
         processed_data = pickle.load(f)
-    print(processed_data.keys())
-    print("Finish loading data...")
 
     # train/test data 
     train = processed_data["raw"]["train"]
@@ -55,7 +53,7 @@ def load_data_for_xgb(curr_time):
 
 def loader(curr_time):
     
-    processed_data, train, valid, test, revenue_train, revenue_valid,revenue_test, norm_revenue_train, norm_revenue_valid, norm_revenue_test, xgb_trainx, xgb_trainy, xgb_validx, xgb_validy, xgb_testx, xgb_testy = load_data_for_xgb(curr_time)
+    processed_data, train, valid, test, revenue_train, revenue_valid,revenue_test, norm_revenue_train, norm_revenue_valid, norm_revenue_test, xgb_trainx, xgb_trainy, xgb_validx, xgb_validy, xgb_testx, xgb_testy = separate_train_test_data(curr_time)
     
     # build xgboost model
     print("Training xgboost model...")
@@ -84,42 +82,39 @@ def loader(curr_time):
     xgb_clf.get_booster().dump_model('./intermediary/xgb_model-readable-'+curr_time+'.txt', with_stats=False)
     xgb_clf.get_booster().save_model('./intermediary/xgb_model-'+curr_time+'.json')
 
-    # Xgboost+LR model 
-    from sklearn.linear_model import LogisticRegression
-    from sklearn.preprocessing import  OneHotEncoder
+
 
     # get leaf index from xgboost model 
     X_train_leaves = xgb_clf.apply(xgb_trainx)
     X_valid_leaves = xgb_clf.apply(xgb_validx)
     X_test_leaves = xgb_clf.apply(xgb_testx)
-    train_rows = X_train_leaves.shape[0]
 
-    # one-hot encoding for leaf index
-    xgbenc = OneHotEncoder(categories="auto")
-    lr_trainx = xgbenc.fit_transform(X_train_leaves)
-    lr_validx = xgbenc.transform(X_valid_leaves)
-    lr_testx = xgbenc.transform(X_test_leaves)
+#     # one-hot encoding for leaf index
+#     xgbenc = OneHotEncoder(categories="auto")
+#     lr_trainx = xgbenc.fit_transform(X_train_leaves)
+#     lr_validx = xgbenc.transform(X_valid_leaves)
+#     lr_testx = xgbenc.transform(X_test_leaves)
 
-    # model 
-    print("Training Logistic regression model...")
-    lr = LogisticRegression(n_jobs=-1)
-    lr.fit(lr_trainx, xgb_trainy)
-    test_pred = lr.predict_proba(lr_testx)[:,1]
-    print("------Evaluating xgboost+LR model------")
-    xgb_auc = roc_auc_score(xgb_testy, test_pred)
-    xgb_threshold,_ = find_best_threshold(lr, lr_validx, xgb_validy) # threshold was select from validation set
-    xgb_f1 = find_best_threshold(lr, lr_testx, xgb_testy,best_thresh=xgb_threshold) # then applied on test set
-#     print("AUC = %.4f, F1-score = %.4f" % (xgb_auc, xgb_f1))
+#     # model 
+#     print("Training Logistic regression model...")
+#     lr = LogisticRegression(n_jobs=-1)
+#     lr.fit(lr_trainx, xgb_trainy)
+#     test_pred = lr.predict_proba(lr_testx)[:,1]
+#     print("------Evaluating xgboost+LR model------")
+#     xgb_auc = roc_auc_score(xgb_testy, test_pred)
+#     xgb_threshold,_ = find_best_threshold(lr, lr_validx, xgb_validy) # threshold was select from validation set
+#     xgb_f1 = find_best_threshold(lr, lr_testx, xgb_testy,best_thresh=xgb_threshold) # then applied on test set
+# #     print("AUC = %.4f, F1-score = %.4f" % (xgb_auc, xgb_f1))
 
-    # Precision and Recall
-    y_prob = test_pred
-    for i in [99,98,95,90]:
-        threshold = np.percentile(y_prob, i)
-        print(f'Checking top {100-i}% suspicious transactions: {len(y_prob[y_prob > threshold])}')
-        precision = np.mean(xgb_testy[y_prob > threshold])
-        recall = sum(xgb_testy[y_prob > threshold])/sum(xgb_testy)
-        revenue_recall = sum(revenue_test[y_prob > threshold]) /sum(revenue_test)
-        print(f'Precision: {round(precision, 4)}, Recall: {round(recall, 4)}, Seized Revenue (Recall): {round(revenue_recall, 4)}')
+#     # Precision and Recall
+#     y_prob = test_pred
+#     for i in [99,98,95,90]:
+#         threshold = np.percentile(y_prob, i)
+#         print(f'Checking top {100-i}% suspicious transactions: {len(y_prob[y_prob > threshold])}')
+#         precision = np.mean(xgb_testy[y_prob > threshold])
+#         recall = sum(xgb_testy[y_prob > threshold])/sum(xgb_testy)
+#         revenue_recall = sum(revenue_test[y_prob > threshold]) /sum(revenue_test)
+#         print(f'Precision: {round(precision, 4)}, Recall: {round(recall, 4)}, Seized Revenue (Recall): {round(revenue_recall, 4)}')
 
     # user & item information 
     train_raw_importers = train['importer.id'].values

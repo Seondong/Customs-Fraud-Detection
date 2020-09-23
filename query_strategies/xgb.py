@@ -4,14 +4,14 @@ import sys
 sys.path.append("..")
 from .strategy import Strategy
 from xgboost import XGBClassifier
-from generate_loader import load_data_for_xgb
+from generate_loader import separate_train_test_data
 
 
 class XGBSampling(Strategy):
-    def __init__(self, model_path, test_loader, args):
+    def __init__(self, model_path, test_data, test_loader, args):
         self.model_path = './intermediary/xgb_model-'+args.identifier+'.json'
         self.identifier = args.identifier
-        super(XGBSampling, self).__init__(self.model_path, test_loader, args)
+        super(XGBSampling, self).__init__(self.model_path, test_data, test_loader, args)
     
     
     def get_xgb_model(self):
@@ -21,7 +21,7 @@ class XGBSampling(Strategy):
     
     
     def load_test_data(self):
-        _, _, _, _, _, _,_, _, _, _, _, _, _, _, xgb_testx, _ = load_data_for_xgb(self.identifier)
+        _, _, _, _, _, _,_, _, _, _, _, _, _, _, xgb_testx, _ = separate_train_test_data(self.identifier)
         return xgb_testx
     
     

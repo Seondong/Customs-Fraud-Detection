@@ -44,8 +44,8 @@ from sklearn.cluster import KMeans
 from .strategy import Strategy
 
 class DiversitySampling(Strategy):
-    def __init__(self, model_path, test_loader, uncertainty_module, args):
-        super(DiversitySampling, self).__init__(model_path, test_loader, args)
+    def __init__(self, model_path, test_data, test_loader, uncertainty_module, args):
+        super(DiversitySampling, self).__init__(model_path, test_data, test_loader, args)
         self.uncertainty_module = uncertainty_module
 
     def query(self, k, beta = 5):
