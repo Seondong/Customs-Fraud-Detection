@@ -226,11 +226,10 @@ if __name__ == '__main__':
                 if uncertainty_module is None :
                     uncertainty_module = uncertainty.Uncertainty(train_labeled_data, './uncertainty_models/')
                     uncertainty_module.train()
-                uncertainty_module.test_data = test_data
+                uncertainty_module.test_data = test_data 
         
         
-        
-        _, _, _, _, _, _,_, _, _, norm_revenue_test, _, _, _, _, _, xgb_testy = generate_loader.separate_train_test_data(curr_time)
+        _, _, _, _, _, _, revenue_test, _, _, norm_revenue_test, _, _, _, _, _, xgb_testy = generate_loader.separate_train_test_data(curr_time)
         
         
         # Train XGB model only if the sampling strategy is dependent on XGB model.
@@ -317,7 +316,7 @@ if __name__ == '__main__':
         active_cls = active_cls.transpose().to_numpy()
 
         # evaluate
-        active_precisions, active_recalls, active_f1s, active_revenues = evaluate_upDATE(active_rev,active_cls,xgb_testy,norm_revenue_test)
+        active_precisions, active_recalls, active_f1s, active_revenues = evaluate_upDATE(active_rev,active_cls,xgb_testy,revenue_test)
         print(f'Metrics Active DATE:\n Pr@{perc}:{round(active_precisions, 4)}, Re@{perc}:{round(active_recalls, 4)} Rev@{perc}:{round(active_revenues, 4)}') 
         
         with open(output_file, 'a') as ff:
@@ -330,7 +329,7 @@ if __name__ == '__main__':
                 
             
             upper_bound_recall = min(perc/np.mean(xgb_testy)/100, 1)
-            upper_bound_revenue = sum(sorted(norm_revenue_test, reverse=True)[:len(chosen)]) / sum(norm_revenue_test)
+            upper_bound_revenue = sum(sorted(revenue_test, reverse=True)[:len(chosen)]) / sum(revenue_test)
             norm_precision = active_precisions*perc/100/np.mean(xgb_testy)
             norm_recall = active_recalls/upper_bound_recall
             norm_revenue = active_revenues/upper_bound_revenue
