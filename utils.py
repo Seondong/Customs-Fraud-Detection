@@ -104,7 +104,7 @@ def metrics(y_prob,xgb_testy,revenue_test,best_thresh=None):
         pr.append(precision)
         re.append(recall)
         f.append(f1)
-        rev.append(revenue_recall)
+        rev.append(revenue)
     return overall_f1,auc,pr, re, f, rev
 
 
