@@ -27,22 +27,16 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     dtype df: dataframe
     rtype df: dataframe
     """
-    df = df.dropna(subset=['fob.value', 'total.taxes']) # Remove 170 rows which does not have FOB, CIF value.
+    df = df.dropna(subset=['cif.value', 'total.taxes', 'quantity'])
     df.loc[:, 'Unitprice'] = df['cif.value']/df['quantity']
     df.loc[:, 'WUnitprice'] = df['cif.value']/df['gross.weight']
     df.loc[:, 'TaxRatio'] = df['total.taxes'] / df['cif.value']
     df.loc[:, 'TaxUnitquantity'] = df['total.taxes'] / df['quantity']
-    df.loc[:, 'FOBCIFRatio'] = df['fob.value']/df['cif.value']
     df.loc[:, 'HS6'] = df['tariff.code'].apply(lambda x: int(x // 10000))
     df.loc[:, 'HS4'] = df['HS6'].apply(lambda x: int(x // 100))
     df.loc[:, 'HS2'] = df['HS4'].apply(lambda x: int(x // 100))
-    # Factor some thing
-    df.loc[:, 'HS6.Origin'] = [str(i)+'&'+j for i, j in zip(df['HS6'], df['country'])]
 
     
-# #     Made a general function "merge_attributes" for supporting any combination
-
-# #     Generated all possible combinations, But the final AUC is smaller than just adding three combinations active below.
 #     candFeaturesCombine = ['office.id','importer.id','country','HS6','declarant.id']
 #     for subset in combinations(candFeaturesCombine, 2):
 #         merge_attributes(df, *subset)
@@ -53,6 +47,7 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     merge_attributes(df, 'office.id','importer.id')
     merge_attributes(df, 'office.id','HS6')
     merge_attributes(df, 'office.id','country')
+    merge_attributes(df, 'HS6','country')
     
     df['sgd.date'] = df['sgd.date'].apply(lambda x: dt.strptime(x, '%y-%m-%d'))
     df.loc[:, 'SGD.DayofYear'] = df['sgd.date'].dt.dayofyear
@@ -137,7 +132,9 @@ def mask_labels(df, ir_init):
 
 
 
-def split_data(df, splitter, curr_time, ir_init, semi_supervised, newly_labeled = None):
+def split_data(data, splitter, curr_time, ir_init, semi_supervised, newly_labeled = None):
+    
+    df = data.df
     
     train_start_day = splitter[0].strftime('%y-%m-%d')
     initial_train_end_day = splitter[1].strftime('%y-%m-%d')
@@ -149,7 +146,7 @@ def split_data(df, splitter, curr_time, ir_init, semi_supervised, newly_labeled 
     
     test = df[(df["sgd.date"] >= test_start_day) & (df["sgd.date"] < test_end_day)]
     offset = test.index[0]
-
+    
     if newly_labeled is not None:
         initial_train = pd.concat([initial_train, newly_labeled])   # Check how to add unlabeled items
         
@@ -191,7 +188,7 @@ def split_data(df, splitter, curr_time, ir_init, semi_supervised, newly_labeled 
 
     # Add a few more risky profiles
     risk_profiles = {}
-    profile_candidates = ['importer.id', 'declarant.id', 'HS6.Origin', 'tariff.code', 'quantity', 'HS6', 'HS4', 'HS2', 'office.id'] + [col for col in train.columns if '&' in col]
+    profile_candidates = data.profile_candidates + [col for col in train.columns if '&' in col]
 
     for profile in profile_candidates:
         option = 'topk'
@@ -201,7 +198,7 @@ def split_data(df, splitter, curr_time, ir_init, semi_supervised, newly_labeled 
         test = tag_risky_profiles(test, profile, risk_profiles[profile], option=option)
 
     # Features to use in a classifier
-    column_to_use = ['fob.value', 'cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'FOBCIFRatio', 'TaxUnitquantity', 'tariff.code', 'HS6', 'HS4', 'HS2', 'SGD.DayofYear', 'SGD.WeekofYear', 'SGD.MonthofYear'] + [col for col in train.columns if 'RiskH' in col] 
+    column_to_use = ['cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'TaxUnitquantity', 'tariff.code', 'HS6', 'HS4', 'HS2', 'SGD.DayofYear', 'SGD.WeekofYear', 'SGD.MonthofYear'] + [col for col in train.columns if 'RiskH' in col] 
     X_train = train[column_to_use].values
     X_valid = valid[column_to_use].values
     X_test = test[column_to_use].values
@@ -236,7 +233,7 @@ def split_data(df, splitter, curr_time, ir_init, semi_supervised, newly_labeled 
     print("Testing:",cnt[1]/cnt[0])
 
     # pickle a variable to a file
-    file = open('./intermediary/processed_data-'+curr_time+'.pickle', 'wb')
+    file = open('./intermediary/processed_data/processed_data-'+curr_time+'.pickle', 'wb')
     pickle.dump(all_data, file)
     file.close()
     return offset, train, valid, test

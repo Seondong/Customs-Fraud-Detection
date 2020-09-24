@@ -17,6 +17,9 @@ from utils import torch_threshold, metrics
 
 warnings.filterwarnings("ignore")
 
+
+
+        
 class VanillaDATE:
     
     def __init__(self, data, curr_time, state_dict = None):
@@ -68,6 +71,7 @@ class VanillaDATE:
             self.model.load_state_dict(state)
         # optimizer & loss 
         optimizer = Ranger(self.model.parameters(), weight_decay=weight_decay,lr=lr)
+
         cls_loss_func = nn.BCELoss()
         reg_loss_func = nn.MSELoss()
 
