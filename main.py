@@ -230,8 +230,10 @@ if __name__ == '__main__':
     # Customs selection simulation for long term
     for i in range(numTests):
         # make dataset                                    
-        splitter = [train_start_day, initial_train_end_day, valid_start_day, test_start_day, test_end_day]               
+        splitter = [train_start_day, initial_train_end_day, valid_start_day, test_start_day, test_end_day]
+ 
         offset, train_labeled_data, valid_data, test_data = preprocess_data.split_data(data, splitter, curr_time, ir_init, semi_supervised, newly_labeled)
+               
         logger.info('%s, %s', train_labeled_data.shape, test_data.shape)
         
 
