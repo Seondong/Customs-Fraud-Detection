@@ -176,7 +176,5 @@ def prepare_input_for_SSL(curr_time):
     with open("./intermediary/torch_ssl_data-"+curr_time+".pickle", 'wb') as f:
         pickle.dump(data4embedding, f, protocol=pickle.HIGHEST_PROTOCOL)
         
-    pass
-        
 
 

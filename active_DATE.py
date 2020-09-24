@@ -197,7 +197,7 @@ if __name__ == '__main__':
     
     output_file =  "./results/performances/" + args.output + '-' + samp + '-' + str(perc) +".csv"
     with open(output_file, 'a') as ff:
-        output_metric_name = ['runID', 'num_train','num_valid','num_test','num_select','num_total_newly_labeled','num_test_illicit','test_illicit_rate','upper_bound_recall','upper_bound_rev', 'sampling', 'initial_inspection_rate', 'final_inspection_rate', 'mode', 'subsamplings', 'weights','unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue', 'norm-precision', 'norm-recall', 'norm-revenue']
+        output_metric_name = ['runID', 'num_train','num_valid','num_test','num_select','num_total_newly_labeled','num_test_illicit','test_illicit_rate', 'upper_bound_precision', 'upper_bound_recall','upper_bound_rev', 'sampling', 'initial_inspection_rate', 'final_inspection_rate', 'mode', 'subsamplings', 'weights','unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue', 'norm-precision', 'norm-recall', 'norm-revenue']
         print(",".join(output_metric_name),file=ff)
 
     newly_labeled = None
@@ -338,15 +338,17 @@ if __name__ == '__main__':
                 subsamplings = '-'
                 weights = '-'
                 
-            
+            upper_bound_precision = min(100*np.mean(xgb_testy)/perc, 1)
             upper_bound_recall = min(perc/np.mean(xgb_testy)/100, 1)
             upper_bound_revenue = sum(sorted(revenue_test, reverse=True)[:len(chosen)]) / sum(revenue_test)
-            norm_precision = active_precisions*perc/100/np.mean(xgb_testy)
+            norm_precision = active_precisions/upper_bound_precision
             norm_recall = active_recalls/upper_bound_recall
             norm_revenue = active_revenues/upper_bound_revenue
             
-            output_metric = [curr_time, len(train_labeled_data), len(valid_data), len(test_data), len(chosen), len(newly_labeled), np.sum(xgb_testy), np.mean(xgb_testy), upper_bound_recall, upper_bound_revenue, samp, ir_init, perc, mode, subsamplings, weights, unc_mode, train_start_day.strftime('%y-%m-%d'), valid_start_day.strftime('%y-%m-%d'), test_start_day.strftime('%y-%m-%d'), test_end_day.strftime('%y-%m-%d'), i+1, round(active_precisions,4), round(active_recalls,4), round(active_revenues,4), round(norm_precision,4), round(norm_recall,4), round(norm_revenue,4)]
-                             
+            
+            output_metric = [curr_time, len(train_labeled_data), len(valid_data), len(test_data), len(chosen), len(newly_labeled), np.sum(xgb_testy), np.mean(xgb_testy), upper_bound_precision, upper_bound_recall, upper_bound_revenue, samp, ir_init, perc, mode, subsamplings, weights, unc_mode, train_start_day.strftime('%y-%m-%d'), valid_start_day.strftime('%y-%m-%d'), test_start_day.strftime('%y-%m-%d'), test_end_day.strftime('%y-%m-%d'), i+1, round(active_precisions,4), round(active_recalls,4), round(active_revenues,4), round(norm_precision,4), round(norm_recall,4), round(norm_revenue,4)]
+                
+                
             output_metric = list(map(str,output_metric))
             print(output_metric)
             print(",".join(output_metric),file=ff)
@@ -357,7 +359,6 @@ if __name__ == '__main__':
         with open(output_file_indices,"w") as queryFiles:
             wr = csv.writer(queryFiles, delimiter = ",")
             wr.writerow([i, test_start_day, test_end_day,indices])
-
 
 
         # Renew valid & test period 
