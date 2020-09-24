@@ -11,6 +11,7 @@ import torch.utils.data as Data
 import warnings
 warnings.filterwarnings("ignore")
 
+
 def separate_train_test_data(curr_time):
     
     # prepare data for xgb
@@ -51,71 +52,50 @@ def separate_train_test_data(curr_time):
 
 
 
-def loader(curr_time):
+def prepare_input_for_DATE(curr_time):
     
+    def _run_XGB():
+        
+        # build xgboost model
+        print("Training xgboost model...")
+
+        xgb_clf = XGBClassifier(n_estimators=100, max_depth=4,n_jobs=-1)
+        xgb_clf.fit(xgb_trainx,xgb_trainy)
+
+        # evaluate xgboost model
+        print("------Evaluating xgboost model------")
+        test_pred = xgb_clf.predict_proba(xgb_testx)[:,1]
+        xgb_auc = roc_auc_score(xgb_testy, test_pred)
+        xgb_threshold,_ = find_best_threshold(xgb_clf, xgb_validx, xgb_validy)
+        xgb_f1 = find_best_threshold(xgb_clf, xgb_testx, xgb_testy,best_thresh=xgb_threshold)
+        print("AUC = %.4f, F1-score = %.4f" % (xgb_auc, xgb_f1))
+
+        # Precision and Recall
+        y_prob = test_pred
+        for i in [99,98,95,90]:
+            threshold = np.percentile(y_prob, i)
+            print(f'Checking top {100-i}% suspicious transactions: {len(y_prob[y_prob > threshold])}')
+            precision = np.mean(xgb_testy[y_prob > threshold])
+            recall = sum(xgb_testy[y_prob > threshold])/sum(xgb_testy)
+            revenue_recall = sum(revenue_test[y_prob > threshold]) /sum(revenue_test)
+            print(f'Precision: {round(precision, 4)}, Recall: {round(recall, 4)}, Seized Revenue (Recall): {round(revenue_recall, 4)}')
+
+        xgb_clf.get_booster().dump_model('./intermediary/xgb_model-readable-'+curr_time+'.txt', with_stats=False)
+        xgb_clf.get_booster().save_model('./intermediary/xgb_model-'+curr_time+'.json')
+    
+        return xgb_clf
+
+
+
     processed_data, train, valid, test, revenue_train, revenue_valid,revenue_test, norm_revenue_train, norm_revenue_valid, norm_revenue_test, xgb_trainx, xgb_trainy, xgb_validx, xgb_validy, xgb_testx, xgb_testy = separate_train_test_data(curr_time)
     
-    # build xgboost model
-    print("Training xgboost model...")
+    xgb_clf = _run_XGB()
     
-    xgb_clf = XGBClassifier(n_estimators=100, max_depth=4,n_jobs=-1)
-    xgb_clf.fit(xgb_trainx,xgb_trainy)
-
-    # evaluate xgboost model
-    print("------Evaluating xgboost model------")
-    test_pred = xgb_clf.predict_proba(xgb_testx)[:,1]
-    xgb_auc = roc_auc_score(xgb_testy, test_pred)
-    xgb_threshold,_ = find_best_threshold(xgb_clf, xgb_validx, xgb_validy)
-    xgb_f1 = find_best_threshold(xgb_clf, xgb_testx, xgb_testy,best_thresh=xgb_threshold)
-#     print("AUC = %.4f, F1-score = %.4f" % (xgb_auc, xgb_f1))
-
-    # Precision and Recall
-    y_prob = test_pred
-    for i in [99,98,95,90]:
-        threshold = np.percentile(y_prob, i)
-        print(f'Checking top {100-i}% suspicious transactions: {len(y_prob[y_prob > threshold])}')
-        precision = np.mean(xgb_testy[y_prob > threshold])
-        recall = sum(xgb_testy[y_prob > threshold])/sum(xgb_testy)
-        revenue_recall = sum(revenue_test[y_prob > threshold]) /sum(revenue_test)
-        print(f'Precision: {round(precision, 4)}, Recall: {round(recall, 4)}, Seized Revenue (Recall): {round(revenue_recall, 4)}')
-    
-    xgb_clf.get_booster().dump_model('./intermediary/xgb_model-readable-'+curr_time+'.txt', with_stats=False)
-    xgb_clf.get_booster().save_model('./intermediary/xgb_model-'+curr_time+'.json')
-
-
-
     # get leaf index from xgboost model 
     X_train_leaves = xgb_clf.apply(xgb_trainx)
     X_valid_leaves = xgb_clf.apply(xgb_validx)
     X_test_leaves = xgb_clf.apply(xgb_testx)
-
-#     # one-hot encoding for leaf index
-#     xgbenc = OneHotEncoder(categories="auto")
-#     lr_trainx = xgbenc.fit_transform(X_train_leaves)
-#     lr_validx = xgbenc.transform(X_valid_leaves)
-#     lr_testx = xgbenc.transform(X_test_leaves)
-
-#     # model 
-#     print("Training Logistic regression model...")
-#     lr = LogisticRegression(n_jobs=-1)
-#     lr.fit(lr_trainx, xgb_trainy)
-#     test_pred = lr.predict_proba(lr_testx)[:,1]
-#     print("------Evaluating xgboost+LR model------")
-#     xgb_auc = roc_auc_score(xgb_testy, test_pred)
-#     xgb_threshold,_ = find_best_threshold(lr, lr_validx, xgb_validy) # threshold was select from validation set
-#     xgb_f1 = find_best_threshold(lr, lr_testx, xgb_testy,best_thresh=xgb_threshold) # then applied on test set
-# #     print("AUC = %.4f, F1-score = %.4f" % (xgb_auc, xgb_f1))
-
-#     # Precision and Recall
-#     y_prob = test_pred
-#     for i in [99,98,95,90]:
-#         threshold = np.percentile(y_prob, i)
-#         print(f'Checking top {100-i}% suspicious transactions: {len(y_prob[y_prob > threshold])}')
-#         precision = np.mean(xgb_testy[y_prob > threshold])
-#         recall = sum(xgb_testy[y_prob > threshold])/sum(xgb_testy)
-#         revenue_recall = sum(revenue_test[y_prob > threshold]) /sum(revenue_test)
-#         print(f'Precision: {round(precision, 4)}, Recall: {round(recall, 4)}, Seized Revenue (Recall): {round(revenue_recall, 4)}')
-
+    
     # user & item information 
     train_raw_importers = train['importer.id'].values
     train_raw_items = train['tariff.code'].values
@@ -180,8 +160,6 @@ def loader(curr_time):
     valid_dataset = Data.TensorDataset(valid_leaves,valid_user,valid_item,valid_label_cls,valid_label_reg)
     test_dataset = Data.TensorDataset(test_leaves,test_user,test_item,test_label_cls,test_label_reg)
 
-
-
     data4embedding = {"train_dataset":train_dataset,"valid_dataset":valid_dataset,"test_dataset":test_dataset,\
                       "leaf_num":leaf_num,"importer_num":importer_size,"item_size":item_size}
 
@@ -191,3 +169,14 @@ def loader(curr_time):
 
     with open("./intermediary/leaf_index-"+curr_time+".pickle", "wb") as f:
         pickle.dump(new_leaf_index, f, protocol=pickle.HIGHEST_PROTOCOL)
+        
+        
+def prepare_input_for_SSL(curr_time):
+    
+    with open("./intermediary/torch_ssl_data-"+curr_time+".pickle", 'wb') as f:
+        pickle.dump(data4embedding, f, protocol=pickle.HIGHEST_PROTOCOL)
+        
+    pass
+        
+
+
