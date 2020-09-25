@@ -231,8 +231,11 @@ if __name__ == '__main__':
     for i in range(numTests):
         # make dataset                                    
         splitter = [train_start_day, initial_train_end_day, valid_start_day, test_start_day, test_end_day]
- 
-        offset, train_labeled_data, valid_data, test_data = preprocess_data.split_data(data, splitter, curr_time, ir_init, semi_supervised, newly_labeled)
+         
+        if semi_supervised:
+            offset, train_labeled_data, valid_data, test_data = preprocess_data.split_data_semi(data, splitter, curr_time, ir_init, semi_supervised, newly_labeled)
+        if not semi_supervised:
+            offset, train_labeled_data, valid_data, test_data = preprocess_data.split_data(data, splitter, curr_time, ir_init, semi_supervised, newly_labeled)
                
         logger.info('%s, %s', train_labeled_data.shape, test_data.shape)
         
@@ -246,7 +249,11 @@ if __name__ == '__main__':
                 uncertainty_module.test_data = test_data 
         
         
-        _, _, _, _, _, _, revenue_test, _, _, norm_revenue_test, _, _, _, _, _, xgb_testy = generate_loader.separate_train_test_data(curr_time)
+        if semi_supervised:
+            _, _, _, _, _, _, revenue_test, _, _, norm_revenue_test, _, _, _, _, _, xgb_testy = generate_loader.separate_train_test_data_semi(curr_time)
+            
+        if not semi_supervised:
+            _, _, _, _, _, _, revenue_test, _, _, norm_revenue_test, _, _, _, _, _, xgb_testy = generate_loader.separate_train_test_data(curr_time)
         
         
         # Train XGB model only if the sampling strategy is dependent on XGB model.

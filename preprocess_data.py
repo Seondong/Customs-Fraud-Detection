@@ -50,6 +50,8 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     merge_attributes(df, 'HS6','country')
     
     df['sgd.date'] = df['sgd.date'].apply(lambda x: dt.strptime(x, '%y-%m-%d'))
+#     import pdb
+#     pdb.set_trace()
     df.loc[:, 'SGD.DayofYear'] = df['sgd.date'].dt.dayofyear
     df.loc[:, 'SGD.WeekofYear'] = df['sgd.date'].dt.weekofyear
     df.loc[:, 'SGD.MonthofYear'] = df['sgd.date'].dt.month
@@ -234,6 +236,121 @@ def split_data(data, splitter, curr_time, ir_init, semi_supervised, newly_labele
 
     # pickle a variable to a file
     file = open('./intermediary/processed_data/processed_data-'+curr_time+'.pickle', 'wb')
+    pickle.dump(all_data, file)
+    file.close()
+    return offset, train, valid, test
+
+
+
+
+
+def split_data_semi(data, splitter, curr_time, ir_init, semi_supervised, newly_labeled = None):
+    
+    df = data.df
+    
+    train_start_day = splitter[0].strftime('%y-%m-%d')
+    initial_train_end_day = splitter[1].strftime('%y-%m-%d')
+    valid_start_day = splitter[2].strftime('%y-%m-%d')
+    test_start_day = splitter[3].strftime('%y-%m-%d')
+    test_end_day = splitter[4].strftime('%y-%m-%d')
+    
+    initial_train = df[(df["sgd.date"] >= train_start_day) & (df["sgd.date"] < initial_train_end_day)]
+    
+    test = df[(df["sgd.date"] >= test_start_day) & (df["sgd.date"] < test_end_day)]
+    offset = test.index[0]
+    
+    if newly_labeled is not None:
+        initial_train = pd.concat([initial_train, newly_labeled])   # Check how to add unlabeled items
+        
+    train = initial_train[(initial_train["sgd.date"] < valid_start_day)]
+    valid = initial_train[(initial_train["sgd.date"] >= valid_start_day) & (initial_train["sgd.date"] < test_start_day)]
+    
+    if newly_labeled is None:
+        train = mask_labels(train, ir_init)
+        valid = mask_labels(valid, ir_init)
+    
+    if semi_supervised:
+        train = train[train['illicit'].notna()]
+        train_unlab = train[train['illicit'].isna()]
+    
+    if not semi_supervised:
+        train = train[train['illicit'].notna()]
+        valid = valid[valid['illicit'].notna()]
+                      
+    # save label data
+    train_reg_label = train['revenue'].values
+    valid_reg_label = valid['revenue'].values
+    test_reg_label = test['revenue'].values
+    train_cls_label = train["illicit"].values
+    valid_cls_label = valid["illicit"].values
+    test_cls_label = test["illicit"].values
+
+    # Run preprocessing
+    train = preprocess(train)
+    train_unlab = preprocess(train_unlab)
+    valid = preprocess(valid)
+    test = preprocess(test)
+
+    # save labels
+    train_reg_label = train['revenue'].values
+    valid_reg_label = valid['revenue'].values
+    test_reg_label = test['revenue'].values
+    train_cls_label = train["illicit"].values
+    valid_cls_label = valid["illicit"].values
+    test_cls_label = test["illicit"].values
+
+    # Add a few more risky profiles
+    risk_profiles = {}
+    profile_candidates = data.profile_candidates + [col for col in train.columns if '&' in col]
+
+    for profile in profile_candidates:
+        option = 'topk'
+        risk_profiles[profile] = find_risk_profile(train, profile, 0.1, 10, option=option)
+        train = tag_risky_profiles(train, profile, risk_profiles[profile], option=option)
+        train_unlab = tag_risky_profiles(train_unlab, profile, risk_profiles[profile], option=option)
+        valid = tag_risky_profiles(valid, profile, risk_profiles[profile], option=option)
+        test = tag_risky_profiles(test, profile, risk_profiles[profile], option=option)
+
+    # Features to use in a classifier
+    column_to_use = ['cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'TaxUnitquantity', 'tariff.code', 'HS6', 'HS4', 'HS2', 'SGD.DayofYear', 'SGD.WeekofYear', 'SGD.MonthofYear'] + [col for col in train.columns if 'RiskH' in col] 
+    X_train = train[column_to_use].values
+    x_train_unlab = train_unlab[column_to_use].values
+    X_valid = valid[column_to_use].values
+    X_test = test[column_to_use].values
+    print("Data size:")
+    print(train.shape, valid.shape,test.shape)
+
+    # impute nan
+    X_train = np.nan_to_num(X_train, 0)
+    X_train_unlab = np.nan_to_num(X_train_unlab, 0)
+    X_valid = np.nan_to_num(X_valid, 0)
+    X_test = np.nan_to_num(X_test, 0)
+
+    # store all data in a dictionary
+    all_data = {"raw":{"train":train,"train_unlab":train_unlab,"valid":valid,"test":test},
+     "xgboost_data":{"train_x":X_train,"train_y":train_cls_label,\
+                     "train_unlab_x":X_train_unlab,\
+                     "valid_x":X_valid,"valid_y":valid_cls_label,\
+                     "test_x":X_test,"test_y":test_cls_label},
+     "revenue":{"train":train_reg_label,"valid":valid_reg_label,"test":test_reg_label}}
+
+    # make sure the data size are correct
+    print("Checking data size...")
+    print(X_train.shape[0], train_cls_label.shape, train_reg_label.shape)
+    print(X_valid.shape[0], valid_cls_label.shape, valid_reg_label.shape)
+    print(X_test.shape[0], test_cls_label.shape, test_reg_label.shape)
+
+    from collections import Counter
+    print("Checking label distribution")
+    cnt = Counter(train_cls_label)
+    print("Training:",cnt[1]/cnt[0])
+    cnt = Counter(valid_cls_label)
+    print("Validation:",cnt[1]/cnt[0])
+    cnt = Counter(test_cls_label)
+    print("Testing:",cnt[1]/cnt[0])
+
+    # pickle a variable to a file
+    file = open('./intermediary/processed_data/processed_data_ssl-'+curr_time+'.pickle', 'wb')
     pickle.dump(all_data, file)
     file.close()
     return offset, train, valid, test

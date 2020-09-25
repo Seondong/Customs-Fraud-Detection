@@ -52,6 +52,47 @@ def separate_train_test_data(curr_time):
 
 
 
+def separate_train_test_data_semi(curr_time):
+    
+    # prepare data for xgb
+    with open("./intermediary/processed_data/processed_data_ssl-"+curr_time+".pickle","rb") as f :
+        processed_data = pickle.load(f)
+
+    # train/test data 
+    train = processed_data["raw"]["train"]
+    valid = processed_data["raw"]["valid"]
+    test = processed_data["raw"]["test"]
+
+    # Revenue data for regression target 
+    revenue_train, revenue_valid,revenue_test = processed_data["revenue"]["train"],\
+                                                processed_data["revenue"]["valid"],\
+                                                processed_data["revenue"]["test"]
+
+    # normalize revenue by f(x) = log(x+1)/max(xi)
+    norm_revenue_train, norm_revenue_valid, norm_revenue_test = np.log(revenue_train+1), np.log(revenue_valid+1), np.log(revenue_test+1) 
+    global_max = max(norm_revenue_train) 
+    norm_revenue_train = norm_revenue_train/global_max
+    norm_revenue_valid = norm_revenue_valid/global_max
+    norm_revenue_test = norm_revenue_test/global_max
+
+    # Xgboost data 
+    xgb_trainx = processed_data["xgboost_data"]["train_x"]
+    xgb_trainy = processed_data["xgboost_data"]["train_y"]
+    xgb_validx = processed_data["xgboost_data"]["valid_x"]
+    xgb_validy = processed_data["xgboost_data"]["valid_y"]
+    xgb_testx = processed_data["xgboost_data"]["test_x"]
+    xgb_testy = processed_data["xgboost_data"]["test_y"]
+    
+    columns = ['cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'TaxUnitquantity', 'tariff.code', 'HS6', 'HS4', 'HS2', 'SGD.DayofYear', 'SGD.WeekofYear', 'SGD.MonthofYear'] + [col for col in train.columns if 'RiskH' in col] 
+    xgb_trainx = pd.DataFrame(xgb_trainx,columns=columns)
+    xgb_validx = pd.DataFrame(xgb_validx,columns=columns)
+    xgb_testx = pd.DataFrame(xgb_testx,columns=columns)
+    
+    return processed_data, train, valid, test, revenue_train, revenue_valid,revenue_test, norm_revenue_train, norm_revenue_valid, norm_revenue_test, xgb_trainx, xgb_trainy, xgb_validx, xgb_validy, xgb_testx, xgb_testy
+
+
+
+
 def prepare_input_for_DATE(curr_time):
     
     def _run_XGB():
@@ -174,7 +215,7 @@ def prepare_input_for_DATE(curr_time):
 def prepare_input_for_SSL(curr_time):
     
     # prepare data for xgb
-    with open("./intermediary/processed_data/processed_data-"+curr_time+".pickle","rb") as f :
+    with open("./intermediary/processed_data/processed_data_ssl-"+curr_time+".pickle","rb") as f :
         processed_data = pickle.load(f)
     
     # train/test data 

@@ -71,7 +71,7 @@ class VanillaDATE:
             self.model.load_state_dict(state)
         # optimizer & loss 
         optimizer = Ranger(self.model.parameters(), weight_decay=weight_decay,lr=lr)
-
+        
         cls_loss_func = nn.BCELoss()
         reg_loss_func = nn.MSELoss()
 
@@ -95,7 +95,7 @@ class VanillaDATE:
 
                 # model output
                 classification_output, regression_output, hidden_vector = self.model(batch_feature,batch_user,batch_item)
-
+                
                 cls_loss = cls_loss_func(classification_output,batch_cls)
                 revenue_loss = alpha * reg_loss_func(regression_output, batch_reg)
                 loss = cls_loss + revenue_loss
