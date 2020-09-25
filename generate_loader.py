@@ -15,7 +15,7 @@ warnings.filterwarnings("ignore")
 def separate_train_test_data(curr_time):
     
     # prepare data for xgb
-    with open("./intermediary/processed_data-"+curr_time+".pickle","rb") as f :
+    with open("./intermediary/processed_data/processed_data-"+curr_time+".pickle","rb") as f :
         processed_data = pickle.load(f)
 
     # train/test data 
@@ -43,12 +43,53 @@ def separate_train_test_data(curr_time):
     xgb_testx = processed_data["xgboost_data"]["test_x"]
     xgb_testy = processed_data["xgboost_data"]["test_y"]
     
-    columns = ['fob.value', 'cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'FOBCIFRatio', 'TaxUnitquantity', 'tariff.code', 'HS6', 'HS4', 'HS2', 'SGD.DayofYear', 'SGD.WeekofYear', 'SGD.MonthofYear'] + [col for col in train.columns if 'RiskH' in col] 
+    columns = ['cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'TaxUnitquantity', 'tariff.code', 'HS6', 'HS4', 'HS2', 'SGD.DayofYear', 'SGD.WeekofYear', 'SGD.MonthofYear'] + [col for col in train.columns if 'RiskH' in col] 
     xgb_trainx = pd.DataFrame(xgb_trainx,columns=columns)
     xgb_validx = pd.DataFrame(xgb_validx,columns=columns)
     xgb_testx = pd.DataFrame(xgb_testx,columns=columns)
     
     return processed_data, train, valid, test, revenue_train, revenue_valid,revenue_test, norm_revenue_train, norm_revenue_valid, norm_revenue_test, xgb_trainx, xgb_trainy, xgb_validx, xgb_validy, xgb_testx, xgb_testy
+
+
+
+def separate_train_test_data_semi(curr_time):
+    
+    # prepare data for xgb
+    with open("./intermediary/processed_data/processed_data_ssl-"+curr_time+".pickle","rb") as f :
+        processed_data = pickle.load(f)
+
+    # train/test data 
+    train = processed_data["raw"]["train"]
+    valid = processed_data["raw"]["valid"]
+    test = processed_data["raw"]["test"]
+
+    # Revenue data for regression target 
+    revenue_train, revenue_valid,revenue_test = processed_data["revenue"]["train"],\
+                                                processed_data["revenue"]["valid"],\
+                                                processed_data["revenue"]["test"]
+
+    # normalize revenue by f(x) = log(x+1)/max(xi)
+    norm_revenue_train, norm_revenue_valid, norm_revenue_test = np.log(revenue_train+1), np.log(revenue_valid+1), np.log(revenue_test+1) 
+    global_max = max(norm_revenue_train) 
+    norm_revenue_train = norm_revenue_train/global_max
+    norm_revenue_valid = norm_revenue_valid/global_max
+    norm_revenue_test = norm_revenue_test/global_max
+
+    # Xgboost data 
+    xgb_trainx = processed_data["xgboost_data"]["train_x"]
+    xgb_trainy = processed_data["xgboost_data"]["train_y"]
+    xgb_validx = processed_data["xgboost_data"]["valid_x"]
+    xgb_validy = processed_data["xgboost_data"]["valid_y"]
+    xgb_testx = processed_data["xgboost_data"]["test_x"]
+    xgb_testy = processed_data["xgboost_data"]["test_y"]
+    
+    columns = ['cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'TaxUnitquantity', 'tariff.code', 'HS6', 'HS4', 'HS2', 'SGD.DayofYear', 'SGD.WeekofYear', 'SGD.MonthofYear'] + [col for col in train.columns if 'RiskH' in col] 
+    xgb_trainx = pd.DataFrame(xgb_trainx,columns=columns)
+    xgb_validx = pd.DataFrame(xgb_validx,columns=columns)
+    xgb_testx = pd.DataFrame(xgb_testx,columns=columns)
+    
+    return processed_data, train, valid, test, revenue_train, revenue_valid,revenue_test, norm_revenue_train, norm_revenue_valid, norm_revenue_test, xgb_trainx, xgb_trainy, xgb_validx, xgb_validy, xgb_testx, xgb_testy
+
 
 
 
@@ -68,7 +109,7 @@ def prepare_input_for_DATE(curr_time):
         xgb_auc = roc_auc_score(xgb_testy, test_pred)
         xgb_threshold,_ = find_best_threshold(xgb_clf, xgb_validx, xgb_validy)
         xgb_f1 = find_best_threshold(xgb_clf, xgb_testx, xgb_testy,best_thresh=xgb_threshold)
-        print("AUC = %.4f, F1-score = %.4f" % (xgb_auc, xgb_f1))
+#         print("AUC = %.4f, F1-score = %.4f" % (xgb_auc, xgb_f1))
 
         # Precision and Recall
         y_prob = test_pred
@@ -80,9 +121,9 @@ def prepare_input_for_DATE(curr_time):
             revenue_recall = sum(revenue_test[y_prob > threshold]) /sum(revenue_test)
             print(f'Precision: {round(precision, 4)}, Recall: {round(recall, 4)}, Seized Revenue (Recall): {round(revenue_recall, 4)}')
 
-        xgb_clf.get_booster().dump_model('./intermediary/xgb_model-readable-'+curr_time+'.txt', with_stats=False)
-        xgb_clf.get_booster().save_model('./intermediary/xgb_model-'+curr_time+'.json')
-    
+        xgb_clf.get_booster().dump_model('./intermediary/xgb_models/xgb_model-readable-'+curr_time+'.txt', with_stats=False)
+        xgb_clf.get_booster().save_model('./intermediary/xgb_models/xgb_model-'+curr_time+'.json')
+ 
         return xgb_clf
 
 
@@ -164,16 +205,34 @@ def prepare_input_for_DATE(curr_time):
                       "leaf_num":leaf_num,"importer_num":importer_size,"item_size":item_size}
 
     # save data
-    with open("./intermediary/torch_data-"+curr_time+".pickle", 'wb') as f:
+    with open("./intermediary/torch_data/torch_data-"+curr_time+".pickle", 'wb') as f:
         pickle.dump(data4embedding, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-    with open("./intermediary/leaf_index-"+curr_time+".pickle", "wb") as f:
+    with open("./intermediary/leaf_indices/leaf_index-"+curr_time+".pickle", "wb") as f:
         pickle.dump(new_leaf_index, f, protocol=pickle.HIGHEST_PROTOCOL)
         
         
 def prepare_input_for_SSL(curr_time):
+    # Not finished
     
-    with open("./intermediary/torch_ssl_data-"+curr_time+".pickle", 'wb') as f:
+    # prepare data for xgb
+    with open("./intermediary/processed_data/processed_data_ssl-"+curr_time+".pickle","rb") as f :
+        processed_data = pickle.load(f)
+    
+    # train/test data 
+    train = processed_data["raw"]["train"]
+    train_unlab = processed_data["raw"]["train_unlab"]
+    valid = processed_data["raw"]["valid"]
+    test = processed_data["raw"]["test"]
+    unsupervised_data = pd.concat((train,train_unlab))
+    
+    # Revenue data for regression target 
+    revenue_train, revenue_valid,revenue_test = processed_data["revenue"]["train"],\
+                                                processed_data["revenue"]["valid"],\
+                                                processed_data["revenue"]["test"]
+    
+    
+    with open("./intermediary/torch_data/torch_ssl_data-"+curr_time+".pickle", 'wb') as f:
         pickle.dump(data4embedding, f, protocol=pickle.HIGHEST_PROTOCOL)
         
 

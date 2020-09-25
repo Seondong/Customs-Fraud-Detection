@@ -16,20 +16,20 @@ def find_best_threshold(model,x_list,y_test,best_thresh = None):
     '''
     y_pred_prob = model.predict_proba(x_list)[:,1]
     threshold_list = np.arange(0.1,0.6,0.1)
-    best_f1 = 0
+    best_auc = 0
     if best_thresh ==None:
         for th in threshold_list:
             y_pred_label = (y_pred_prob > th)*1 
-            f_score = f1_score(y_test,y_pred_label)
-            if f_score > best_f1:
-                best_f1 = f_score
+            auc_score = roc_auc_score(y_test,y_pred_label)
+            if auc_score > best_auc:
+                best_auc = auc_score
                 best_thresh = th 
-        return best_thresh, best_f1
+        return best_thresh, best_auc
     else:
         y_pred_label = (y_pred_prob > best_thresh)*1 
-        best_f1 = f1_score(y_test,y_pred_label)
-    print("F1-scre equals to:%.4f"%(best_f1))
-    return best_f1
+        best_auc = roc_auc_score(y_test,y_pred_label)
+    print("AUC-score equals to:%.4f"%(best_auc))
+    return best_auc
 
 
 def torch_threshold(y_pred_prob,y_test,best_thresh = None):
@@ -113,5 +113,7 @@ def metrics_active(active_rev,active_cls,xgb_testy,revenue_test):
     recall = sum(active_cls) / sum(xgb_testy)
     f1 = f1 = hmean([precision, recall])
     revenue = sum(active_rev) / sum(revenue_test)
+    print()
+    print("--------Evaluating the model---------")
     print('Precision: %.4f, Recall: %.4f, Revenue: %.4f' % (precision, recall, revenue))
     return precision, recall, f1, revenue

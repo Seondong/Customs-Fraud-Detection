@@ -47,7 +47,7 @@ class SSLAutoencoderSampling(Strategy):
     
     
     def __init__(self, model_path, test_data, test_loader, args):
-        self.model_path = './intermediary/xgb_model-'+args.identifier+'.json'
+        self.model_path = './intermediary/xgb_model/xgb_model-'+args.identifier+'.json'
         self.identifier = args.identifier
         super(sslSampling,self).__init__(model_path, test_data, test_loader, args)
     

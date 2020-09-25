@@ -140,6 +140,8 @@ class DATE(nn.Module):
             revs.extend(y_pred_rev)
             hiddens.extend(hidden)
             # compute classification loss
+            print('!!!!!!!!!!!!!!!!!!!')
+            print(y_pred_prob, batch_cls)
             cls_losses = nn.BCELoss()(y_pred_prob,batch_cls)
             cls_loss.append(cls_losses.item())
 

@@ -9,7 +9,7 @@ from generate_loader import separate_train_test_data
 
 class XGBSampling(Strategy):
     def __init__(self, model_path, test_data, test_loader, args):
-        self.model_path = './intermediary/xgb_model-'+args.identifier+'.json'
+        self.model_path = './intermediary/xgb_models/xgb_model-'+args.identifier+'.json'
         self.identifier = args.identifier
         super(XGBSampling, self).__init__(self.model_path, test_data, test_loader, args)
     

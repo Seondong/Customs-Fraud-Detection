@@ -2,9 +2,10 @@ results/
 __pycache__
 intermediary/
 uncertainty_models/
-data/NTMdata.csv
-data/Ndata.merged.anonymized.single_tax_relabeled.csv
-data/data-semisupervised-test-from-170101/
+data/raw_datas/
+data/mdata.csv
 data/ndata.csv
+data/tdata.csv
+data/NTMdata.csv
 nohup.out
 .ipynb_checkpoints/
