@@ -213,6 +213,7 @@ def prepare_input_for_DATE(curr_time):
         
         
 def prepare_input_for_SSL(curr_time):
+    # Not finished
     
     # prepare data for xgb
     with open("./intermediary/processed_data/processed_data_ssl-"+curr_time+".pickle","rb") as f :

@@ -50,8 +50,8 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     merge_attributes(df, 'HS6','country')
     
     df['sgd.date'] = df['sgd.date'].apply(lambda x: dt.strptime(x, '%y-%m-%d'))
-#     import pdb
-#     pdb.set_trace()
+    import pdb
+    pdb.set_trace()
     df.loc[:, 'SGD.DayofYear'] = df['sgd.date'].dt.dayofyear
     df.loc[:, 'SGD.WeekofYear'] = df['sgd.date'].dt.weekofyear
     df.loc[:, 'SGD.MonthofYear'] = df['sgd.date'].dt.month
