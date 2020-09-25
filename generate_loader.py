@@ -123,7 +123,7 @@ def prepare_input_for_DATE(curr_time):
 
         xgb_clf.get_booster().dump_model('./intermediary/xgb_models/xgb_model-readable-'+curr_time+'.txt', with_stats=False)
         xgb_clf.get_booster().save_model('./intermediary/xgb_models/xgb_model-'+curr_time+'.json')
-    
+ 
         return xgb_clf
 
 

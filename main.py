@@ -1,6 +1,7 @@
 import logging
 import preprocess_data
 import generate_loader
+# import separate_train_test_data, prepare_input_for_DATE, prepare_input_for_SSL
 import DATE_model
 import argparse
 import os
@@ -13,6 +14,7 @@ import dataset
 from collections import defaultdict
 from datetime import timedelta
 import datetime
+from query_strategies import badge, badge_DATE, random_sampling, DATE_sampling, diversity, uncertainty, hybrid, xgb, xgb_lr, ssl_ae
 import numpy as np
 import torch
 import torch.utils.data as Data
@@ -290,7 +292,6 @@ if __name__ == '__main__':
                 torchdata = load_data("./intermediary/torch_data/torch_ssl_data-"+curr_time+".pickle")
                 train_loader_labeled, train_loader_unlabeled, valid_loader, test_loader = torchdata
                        
-
         # Selection stragies
         num_samples = int(len(test_data)*perc/100)
         
