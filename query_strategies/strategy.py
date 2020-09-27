@@ -20,6 +20,7 @@ import torch.nn as nn
 from collections import OrderedDict
 from scipy import stats
 import time
+import math
 import numpy as np
 import scipy.sparse as sp
 from itertools import product
@@ -49,6 +50,7 @@ class Strategy:
         self.model_path = model_path
         self.device = args.device
         self.available_indices = np.arange(self.num_data)
+        self.rev_func = args.rev_func 
         
 
     def set_available_indices(self, unavailable):
@@ -57,6 +59,10 @@ class Strategy:
     def query(self, k):
         pass
 
+    def rev_score(self):
+        if self.rev_func == 'log':
+            return lambda x: math.log(2+x)
+        return lambda x: x
     def get_model(self):
         return torch.load(self.model_path)
 

@@ -11,6 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.data as Data
 
+from model.utils import FocalLoss
 from model.AttTreeEmbedding import Attention, DATE
 from ranger import Ranger
 from utils import torch_threshold, metrics
@@ -44,17 +45,20 @@ class VanillaDATE:
         alpha = args.alpha
         use_self = args.use_self
         agg = args.agg
+        closs = args.closs
+        rloss = args.rloss
         
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
         self.model = DATE(leaf_num,importer_size,item_size,\
                                         dim,head_num,\
                                         fusion_type=fusion,act=act,device=device,\
-                                        use_self=use_self,agg_type=agg,
+                                        use_self=use_self,agg_type=agg,\
+                                        cls_loss_func=closs, reg_loss_func=rloss,
                                         ).to(device)
         
-        if torch.cuda.device_count() > 1:
-            self.model = nn.DataParallel(self.model)     
+        # if torch.cuda.device_count() > 1:
+        self.model = nn.DataParallel(self.model)     
             
         if not self.state_dict:
             # initialize parameters
@@ -72,8 +76,8 @@ class VanillaDATE:
         # optimizer & loss 
         optimizer = Ranger(self.model.parameters(), weight_decay=weight_decay,lr=lr)
         
-        cls_loss_func = nn.BCELoss()
-        reg_loss_func = nn.MSELoss()
+        self.cls_loss_func = closs
+        self.reg_loss_func = rloss
 
         # save best model
         global_best_score = 0
@@ -96,9 +100,18 @@ class VanillaDATE:
                 # model output
                 classification_output, regression_output, hidden_vector = self.model(batch_feature,batch_user,batch_item)
                 
-                cls_loss = cls_loss_func(classification_output,batch_cls)
-                revenue_loss = alpha * reg_loss_func(regression_output, batch_reg)
-                loss = cls_loss + revenue_loss
+                if self.cls_loss_func == 'bce':
+                    cls_loss = nn.BCELoss()(classification_output,batch_cls)
+                if self.cls_loss_func == 'focal':
+                    cls_loss = FocalLoss()(classification_output, batch_cls)
+
+                # compute regression loss 
+                if self.reg_loss_func == 'full':
+                    revenue_loss = nn.MSELoss()(regression_output, batch_reg)
+                if self.reg_loss_func == 'masked':
+                    revenue_loss = torch.mean(nn.MSELoss(reduction = 'none')(regression_output, batch_reg)*batch_cls)
+
+                loss = cls_loss + alpha*revenue_loss
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -124,10 +137,9 @@ class VanillaDATE:
             print("Over-all F1:%.4f, AUC:%.4f, F1-top:%.4f" %(overall_f1, auc, np.mean(f1s)) )
 
             # save best model 
-            if select_best > global_best_score:
+            if select_best >= global_best_score:
                 global_best_score = select_best
                 torch.save(self.model, self.model_path)
-            
             # early stopping 
             if current_score == None:
                 current_score = select_best

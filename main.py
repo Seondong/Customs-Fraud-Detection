@@ -149,6 +149,7 @@ if __name__ == '__main__':
     parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
     parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
     parser.add_argument('--output', type=str, default="result"+"-"+curr_time, help="Name of output file")
+
     parser.add_argument('--sampling', type=str, default = 'badge_DATE', choices=['badge', 'badge_DATE', 'random', 'DATE', 'diversity', 'hybrid', 'xgb', 'xgb_lr', 'ssl_ae'], help='Sampling strategy')
     parser.add_argument('--initial_inspection_rate', type=int, default=100, help='Initial inspection rate in training data by percentile')
     parser.add_argument('--final_inspection_rate', type=int, default = 5, help='Percentage of test data need to query')
@@ -156,6 +157,10 @@ if __name__ == '__main__':
     parser.add_argument('--subsamplings', type=str, default = 'badge_DATE/DATE', help = 'available for hybrid sampling, the list of sub-sampling techniques seperated by /')
     parser.add_argument('--weights', type=str, default = '0.5/0.5', help = 'available for hybrid sampling, the list of weights for sub-sampling techniques seperated by /')
     parser.add_argument('--uncertainty', type=str, default = 'naive', choices = ['naive', 'self-supervised'], help = 'Uncertainty principle : ambiguity of illicitness or self-supervised manner prediction')
+    parser.add_argument('--rev_func', type=str, default = 'log', choices = ['log'], help = 'Uncertainty principle : ambiguity of illicitness or self-supervised manner prediction')
+    parser.add_argument('--closs', type=str, default = 'bce', choices = ['bce', 'focal'], help = 'Classification loss function')
+    parser.add_argument('--rloss', type=str, default = 'full', choices = ['full', 'masked'], help = 'Regression loss function')
+
     parser.add_argument('--train_from', type=str, default = '20160105', help = 'Training period start from (YYYYMMDD)')
     parser.add_argument('--test_from', type=str, default = '20160112', help = 'Testing period start from (YYYYMMDD)')
     parser.add_argument('--test_length', type=int, default=3, help='Single testing period length (e.g., 7)')

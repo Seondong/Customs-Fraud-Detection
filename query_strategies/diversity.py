@@ -55,7 +55,7 @@ class DiversitySampling(Strategy):
         uncertainty_score = self.get_uncertainty()
         revs = self.get_revenue()
         # get score
-        score = [i[0] * math.log(2+i[1]) for i in zip(uncertainty_score, revs)]
+        score = [i[0] * self.rev_score()(i[1]) for i in zip(uncertainty_score, revs)]
         # select beta*k best score
         filtered = np.argpartition(score, -beta*k)[-beta*k:].tolist()
         # get actual data:
