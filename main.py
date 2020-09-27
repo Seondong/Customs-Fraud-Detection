@@ -14,16 +14,18 @@ import dataset
 from collections import defaultdict
 from datetime import timedelta
 import datetime
-from query_strategies import badge, badge_DATE, random_sampling, DATE_sampling, diversity, uncertainty, hybrid, xgb, xgb_lr, ssl_ae
+from query_strategies import badge, badge_DATE, random_sampling, DATE_sampling, diversity, uncertainty, hybrid, xgb, xgb_lr, ssl_ae, tabnet
 import numpy as np
 import torch
 import torch.utils.data as Data
 import pandas as pd
 import torch
+from pytorch_tabnet.tab_model import TabNetClassifier, TabNetRegressor
 from model.AttTreeEmbedding import Attention, DATE
 from ranger import Ranger
 from utils import torch_threshold, metrics, metrics_active
 from query_strategies import badge, badge_DATE, random_sampling, DATE_sampling, diversity, uncertainty, hybrid, xgb, xgb_lr, ssl_ae
+
 warnings.filterwarnings("ignore")
 
 def make_logger(curr_time, name=None):
@@ -127,6 +129,8 @@ if __name__ == '__main__':
         os.makedirs('./intermediary/torch_data')
     if not os.path.exists('./intermediary/xgb_models'):
         os.makedirs('./intermediary/xgb_models')
+    if not os.path.exists('./intermediary/tn_models'):
+        os.makedirs('./intermediary/tn_models')
     if not os.path.exists('./uncertainty_models'):
         os.makedirs('./uncertainty_models')
     
@@ -150,7 +154,7 @@ if __name__ == '__main__':
     parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
     parser.add_argument('--output', type=str, default="result"+"-"+curr_time, help="Name of output file")
 
-    parser.add_argument('--sampling', type=str, default = 'badge_DATE', choices=['badge', 'badge_DATE', 'random', 'DATE', 'diversity', 'hybrid', 'xgb', 'xgb_lr', 'ssl_ae'], help='Sampling strategy')
+    parser.add_argument('--sampling', type=str, default = 'badge_DATE', choices=['badge', 'badge_DATE', 'random', 'DATE', 'diversity', 'hybrid', 'xgb', 'xgb_lr', 'ssl_ae', 'tabnet'], help='Sampling strategy')
     parser.add_argument('--initial_inspection_rate', type=int, default=100, help='Initial inspection rate in training data by percentile')
     parser.add_argument('--final_inspection_rate', type=int, default = 5, help='Percentage of test data need to query')
     parser.add_argument('--mode', type=str, default = 'finetune', choices = ['finetune', 'scratch'], help = 'finetune last model or train from scratch')
@@ -267,13 +271,16 @@ if __name__ == '__main__':
         
         
         if not semi_supervised:
-            if samp not in ['random']:
+            if samp == 'tabnet':
+                generate_loader.prepare_input_for_tabnet(curr_time)
+
+            if samp not in ['random', 'tabnet']:
                 generate_loader.prepare_input_for_DATE(curr_time)
                 torchdata = load_data("./intermediary/torch_data/torch_data-"+curr_time+".pickle")
                 train_loader, valid_loader, test_loader, leaf_num, importer_size, item_size, _, _, _, _ = torchdata
 
-            # Train DATE model only if the sampling strategy is dependent on DATE model (except random and xgb).
-            if samp not in ['random', 'xgb', 'xgb_lr']:
+            # Train DATE model only if the sampling strategy is dependent on DATE model (except random, xgb and tabnet).
+            if samp not in ['random', 'xgb', 'xgb_lr', 'tabnet']:
                 # create / load model
                 if mode == 'scratch' or i == 0:
                     date_model = DATE_model.VanillaDATE(torchdata, curr_time)
@@ -290,6 +297,8 @@ if __name__ == '__main__':
                          precisions[2],recalls[2],revenues[2]
                          ),
                          )
+
+            	
 
         if semi_supervised:
             if samp in ['ssl_ae']:
@@ -318,6 +327,8 @@ if __name__ == '__main__':
                 sampler = badge_DATE.DATEBadgeSampling(path, test_data, test_loader, uncertainty_module, args)
             if samp == 'ssl_ae':
                 sampler = ssl_ae.SSLAutoencoderSampling(path, test_data, test_loader,args)
+            if samp == 'tabnet':
+                sampler = tabnet.TabnetSampling(path, test_data, None, args)            
             return sampler
             
         if samp != 'hybrid':

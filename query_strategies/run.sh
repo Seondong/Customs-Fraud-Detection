@@ -1,1 +1,0 @@
-python main.py --data synthetic --semi_supervised 0 --sampling badge_DATE --subsamplings badge_DATE/DATE --weights 0.1/0.9 --mode finetune --train_from 20130101 --test_from 20131101 --test_length 7 --valid_length 7 --initial_inspection_rate 5 --final_inspection_rate 5 --testnum 200 --epoch 5 --device cpu

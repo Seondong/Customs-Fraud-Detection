@@ -4,6 +4,7 @@ import pickle
 import copy
 import os 
 from xgboost import XGBClassifier
+from pytorch_tabnet.tab_model import TabNetClassifier
 from utils import find_best_threshold,process_leaf_idx,stratify_sample
 from sklearn.metrics import f1_score,roc_auc_score
 import torch
@@ -211,7 +212,42 @@ def prepare_input_for_DATE(curr_time):
     with open("./intermediary/leaf_indices/leaf_index-"+curr_time+".pickle", "wb") as f:
         pickle.dump(new_leaf_index, f, protocol=pickle.HIGHEST_PROTOCOL)
         
+def prepare_input_for_tabnet(curr_time):
+    
+    def _run_tabnet():
         
+        # build tabnet model
+        print("Training tabnet model...")
+        tn_clf = TabNetClassifier()
+        tn_clf.fit(xgb_trainx.values, xgb_trainy, xgb_validx.values, xgb_validy)
+
+        # evaluate tabnet model
+        print("------Evaluating tabnet model------")
+        test_pred = tn_clf.predict_proba(xgb_testx.values)[:,1]
+        print(test_pred, xgb_testy)
+        tn_auc = roc_auc_score(xgb_testy, test_pred)
+        tn_threshold,_ = find_best_threshold(tn_clf, xgb_validx.values, xgb_validy)
+        tn_f1 = find_best_threshold(tn_clf, xgb_testx.values, xgb_testy, best_thresh=tn_threshold)
+
+        # Precision and Recall
+        y_prob = test_pred
+        for i in [99,98,95,90]:
+            threshold = np.percentile(y_prob, i)
+            print(f'Checking top {100-i}% suspicious transactions: {len(y_prob[y_prob > threshold])}')
+            precision = np.mean(xgb_testy[y_prob > threshold])
+            recall = sum(xgb_testy[y_prob > threshold])/sum(xgb_testy)
+            revenue_recall = sum(revenue_test[y_prob > threshold]) /sum(revenue_test)
+            print(f'Precision: {round(precision, 4)}, Recall: {round(recall, 4)}, Seized Revenue (Recall): {round(revenue_recall, 4)}')
+        # with open('./intermediary/tn_models/tn_model-readable-'+curr_time+'.txt', 'w') as f:
+        #     pickle.dump(str(tn_clf), f)
+        with open('./intermediary/tn_models/tn_model-'+curr_time+'.pkl', 'wb') as f:
+            pickle.dump(tn_clf, f)
+ 
+        return tn_clf
+
+    processed_data, train, valid, test, revenue_train, revenue_valid,revenue_test, norm_revenue_train, norm_revenue_valid, norm_revenue_test, xgb_trainx, xgb_trainy, xgb_validx, xgb_validy, xgb_testx, xgb_testy = separate_train_test_data(curr_time)
+    tn_clf = _run_tabnet()
+
 def prepare_input_for_SSL(curr_time):
     # Not finished
     
