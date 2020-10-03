@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.utils.data as Data
 import numpy as np 
 from torch_multi_head_attention import MultiHeadAttention
+from .utils import FocalLoss
 
 class Mish(nn.Module):
     def __init__(self):
@@ -61,9 +62,9 @@ class Attention(nn.Module):
         return attention_vec, attention_weight
 
 
-class DATE(nn.Module):
-    def __init__(self,max_leaf,importer_size,item_size,dim,head_num=4,fusion_type="concat",act="relu",device="cpu",use_self=True,agg_type="sum"):
-        super(DATE, self).__init__()
+class DATEModel(nn.Module):
+    def __init__(self,max_leaf,importer_size,item_size,dim,head_num=4,fusion_type="concat",act="relu",device="cpu",use_self=True,agg_type="sum", cls_loss_func = 'bce', reg_loss_func = 'full'):
+        super(DATEModel, self).__init__()
         self.d = dim
         self.device = device
         if act == "relu":
@@ -91,6 +92,10 @@ class DATE(nn.Module):
         self.hidden = nn.Linear(dim,dim)
         self.output_cls_layer = nn.Linear(dim,1)
         self.output_reg_layer = nn.Linear(dim,1)
+        
+        # Loss function
+        self.reg_loss_func = reg_loss_func 
+        self.cls_loss_func = cls_loss_func 
     
     def forward(self,feature,uid,item_id):
         leaf_vectors = self.leaf_embedding(feature)
@@ -139,14 +144,19 @@ class DATE(nn.Module):
             y_pred_prob, y_pred_rev, hidden = self.forward(batch_feature,batch_user,batch_item)
             revs.extend(y_pred_rev)
             hiddens.extend(hidden)
+            
             # compute classification loss
-            print('!!!!!!!!!!!!!!!!!!!')
-            print(y_pred_prob, batch_cls)
-            cls_losses = nn.BCELoss()(y_pred_prob,batch_cls)
+            if self.cls_loss_func == 'bce':
+                cls_losses = nn.BCELoss()(y_pred_prob,batch_cls)
+            if self.cls_loss_func == 'focal':
+                cls_losses = FocalLoss()(y_pred_prob, batch_cls)
             cls_loss.append(cls_losses.item())
 
             # compute regression loss 
-            reg_losses = nn.MSELoss()(y_pred_rev, batch_reg)
+            if self.reg_loss_func == 'full':
+                reg_losses = nn.MSELoss()(y_pred_rev, batch_reg)
+            if self.reg_loss_func == 'masked':
+                reg_losses = torch.mean(nn.MSELoss(reduction = 'none')(y_pred_rev, batch_reg)*batch_cls)
             reg_loss.append(reg_losses.item())
 
             # store predicted probability 

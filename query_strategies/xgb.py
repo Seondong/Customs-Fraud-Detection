@@ -4,35 +4,68 @@ import sys
 sys.path.append("..")
 from .strategy import Strategy
 from xgboost import XGBClassifier
-from generate_loader import separate_train_test_data
 
 
 class XGBSampling(Strategy):
-    def __init__(self, model_path, test_data, test_loader, args):
-        self.model_path = './intermediary/xgb_models/xgb_model-'+args.identifier+'.json'
-        self.identifier = args.identifier
-        super(XGBSampling, self).__init__(self.model_path, test_data, test_loader, args)
+    """ XGBoost strategy: Using XGB classification probability to measure fraudness of imports """
+    
+    def __init__(self, data, args):
+        super(XGBSampling, self).__init__(data, args)
     
     
-    def get_xgb_model(self):
-        xgb_clf = XGBClassifier(n_estimators=100, max_depth=4,n_jobs=-1)
-        xgb_clf.load_model(self.model_path)
-        return xgb_clf
+    def train_model(self):
+        """ Get trained model """
+        print("Training XGBoost model...")
+        self.xgb = XGBClassifier(n_estimators=100, max_depth=4, n_jobs=-1)
+        self.xgb.fit(self.data.dftrainx_lab,self.data.train_cls_label)
+        
+        if self.args.save:
+            self.xgb.get_booster().dump_model('./intermediary/xgb_models/xgb_model-readable-'+self.args.identifier+'.txt', with_stats=False)
+            self.xgb.get_booster().save_model('./intermediary/xgb_models/xgb_model-'+self.args.identifier+'.json')
+        
     
-    
-    def load_test_data(self):
-        _, _, _, _, _, _,_, _, _, _, _, _, _, _, xgb_testx, _ = separate_train_test_data(self.identifier)
-        return xgb_testx
-    
-    
-    def get_xgb_output(self):
-        xgb_clf = self.get_xgb_model()
-        xgb_testx = self.load_test_data()
-        final_output = xgb_clf.predict_proba(xgb_testx)[:,1]
-        return final_output[self.available_indices]
+    def predict_frauds(self):
+        """ Prediction for new dataset (test_model) """
+        self.y_prob = self.xgb.predict_proba(self.data.dftestx)[:,1]
         
         
     def query(self, k):
-        output = self.get_xgb_output()
-        chosen = np.argpartition(output, -k)[-k:]
+        self.train_model()
+        self.predict_frauds()
+        chosen = np.argpartition(self.y_prob, -k)[-k:]
         return self.available_indices[chosen].tolist()
+    
+    
+    
+    
+    ############ Code block for further debugging
+    #      def _run_XGB():
+        
+#         self.model = XGBClassifier(n_estimators=100, max_depth=4,n_jobs=-1)
+#         self.model.fit(xgb_trainx,xgb_trainy)
+        
+#         # evaluate xgboost model
+#         print("------Evaluating xgboost model------")
+#         test_pred = self.model.predict_proba(xgb_testx)[:,1]
+#         xgb_auc = roc_auc_score(xgb_testy, test_pred)
+#         xgb_threshold,_ = find_best_threshold(self.model, xgb_validx, xgb_validy)
+#         xgb_f1 = find_best_threshold(self.model, xgb_testx, xgb_testy,best_thresh=xgb_threshold)
+#         print("AUC = %.4f, F1-score = %.4f" % (xgb_auc, xgb_f1))
+
+#         # Precision and Recall
+#         y_prob = test_pred
+#         for i in [99,98,95,90]:
+#             threshold = np.percentile(y_prob, i)
+#             print(f'Checking top {100-i}% suspicious transactions: {len(y_prob[y_prob > threshold])}')
+#             precision = np.mean(xgb_testy[y_prob > threshold])
+#             recall = sum(xgb_testy[y_prob > threshold])/sum(xgb_testy)
+#             revenue_recall = sum(revenue_test[y_prob > threshold]) /sum(revenue_test)
+#             print(f'Precision: {round(precision, 4)}, Recall: {round(recall, 4)}, Seized Revenue (Recall): {round(revenue_recall, 4)}')
+
+#         self.model.get_booster().dump_model('./intermediary/xgb_models/xgb_model-readable-'+curr_time+'.txt', with_stats=False)
+#         self.model.get_booster().save_model('./intermediary/xgb_models/xgb_model-'+curr_time+'.json')
+ 
+#         return self.model
+
+
+#         self.model_path = './intermediary/xgb_models/xgb_model-'+args.identifier+'.json'

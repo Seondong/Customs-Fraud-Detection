@@ -1,61 +1,35 @@
 import numpy as np
-from torch.utils.data import DataLoader
-import pickle
-from scipy.spatial.distance import cosine
 import sys
 import gc
-from scipy.linalg import det
-from scipy.linalg import pinv as inv
-from copy import deepcopy
-import math
-import torch
-from torch import nn
-import torchfile
-from torch.autograd import Variable
-
-import torch.optim as optim
-import pdb
-from torch.nn import functional as F
-import argparse
-import torch.nn as nn
-from collections import OrderedDict
-from scipy import stats
-import time
-import numpy as np
-import scipy.sparse as sp
-from itertools import product
-from sklearn.base import BaseEstimator, ClusterMixin, TransformerMixin
-from sklearn.metrics.pairwise import euclidean_distances
-from sklearn.metrics.pairwise import pairwise_distances_argmin_min
-from sklearn.utils.extmath import row_norms, squared_norm, stable_cumsum
-from sklearn.utils.sparsefuncs_fast import assign_rows_csr
-from sklearn.utils.sparsefuncs import mean_variance_axis
-from sklearn.utils.validation import _num_samples
-from sklearn.utils import check_array
-from sklearn.utils import gen_batches
-from sklearn.utils import check_random_state
-from sklearn.utils.validation import check_is_fitted
-from sklearn.utils.validation import FLOAT_DTYPES
-from sklearn.metrics.pairwise import rbf_kernel as rbf
-from sklearn.exceptions import ConvergenceWarning
-from sklearn.metrics import pairwise_distances
-from sklearn.preprocessing import normalize
 from sklearn.cluster import KMeans
-from .strategy import Strategy
+from .DATE import DATESampling
 
-class DiversitySampling(Strategy):
-    def __init__(self, model_path, test_data, test_loader, uncertainty_module, args):
-        super(DiversitySampling, self).__init__(model_path, test_data, test_loader, args)
+
+class DiversitySampling(DATESampling):
+    """ Diversity strategy: Using DATE embedding, then select centroid by KMeans.
+        In this way, we can guarantee diverse imports for next inspection. """
+    
+    def __init__(self, data, args, uncertainty_module):
+        super(DiversitySampling, self).__init__(data, args)
         self.uncertainty_module = uncertainty_module
 
-    def query(self, k, beta = 5):
-        # get embedding
+
+    def get_uncertainty(self):
+        if self.uncertainty_module is None :
+            # return np.asarray(self.get_output().apply(lambda x : -1.8*abs(x-0.5) + 1))
+            return np.asarray(-1.8*abs(self.get_output()-0.5) + 1)
+        uncertainty = self.uncertainty_module.measure(self.uncertainty_module.test_data ,'feature_importance')
+        return np.asarray(uncertainty)[self.available_indices]
+    
+    
+    def diversity_sampling(self, k, beta=5):
+        # Get embedding from DATE, run diversity strategy
         emb = self.get_embedding()
         # get uncertainty and revenue
         uncertainty_score = self.get_uncertainty()
         revs = self.get_revenue()
         # get score
-        score = [i[0] * math.log(2+i[1]) for i in zip(uncertainty_score, revs)]
+        score = [i[0] * self.rev_score()(i[1]) for i in zip(uncertainty_score, revs)]
         # select beta*k best score
         filtered = np.argpartition(score, -beta*k)[-beta*k:].tolist()
         # get actual data:
@@ -73,11 +47,15 @@ class DiversitySampling(Strategy):
             idx.append(np.argpartition(dists, 1)[0])
         # map to original
         chosen = [filtered[i] for i in idx]
+        return chosen
+    
+    
+    def query(self, k):
+        self.train_xgb_model()
+        self.prepare_DATE_input()
+        self.train_DATE_model()
+        chosen = self.diversity_sampling(k)
         return self.available_indices[chosen].tolist()
-
-    def get_uncertainty(self):
-        if self.uncertainty_module is None :
-            # return np.asarray(self.get_output().apply(lambda x : -1.8*abs(x-0.5) + 1))
-            return np.asarray(-1.8*abs(self.get_output()-0.5) + 1)
-        uncertainty = self.uncertainty_module.measure(self.uncertainty_module.test_data ,'feature_importance')
-        return np.asarray(uncertainty)[self.available_indices]
+        
+        
+        

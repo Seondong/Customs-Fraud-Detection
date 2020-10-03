@@ -5,7 +5,7 @@ import torch.utils.data as Data
 import numpy as np 
 
 class MultiTreeEmbeddingClassifier(nn.Module):
-    def __init__(self,max_leaf,dim,forest_pooling="max",device="cuda:0"):
+    def __init__(self,max_leaf,dim,forest_pooling="max",device="cuda:0", cls_loss_func = 'bce', reg_loss_func = 'full'):
         super(MultiTreeEmbeddingClassifier, self).__init__()
         self.d = dim
         self.device = device
@@ -14,6 +14,8 @@ class MultiTreeEmbeddingClassifier(nn.Module):
         self.output_cls_layer = nn.Linear(dim,1)
         self.output_reg_layer = nn.Linear(dim,1)
         self.pooling = forest_pooling
+        self.cls_loss_func = cls_loss_func
+        self.reg_loss_func = reg_loss_func
     
     def forward(self,x):
         leaf_vectors = self.leaf_embedding(x)
@@ -44,11 +46,18 @@ class MultiTreeEmbeddingClassifier(nn.Module):
             y_pred_prob, y_pred_rev = self.forward(batch_feature)
 
             # compute classification loss
-            cls_losses = nn.BCELoss()(y_pred_prob,batch_cls)
-            cls_loss.append(cls_losses.item())
+            if self.cls_loss_func == 'bce':
+                cls_losses = nn.BCELoss()(y_pred_prob,batch_cls)
+            if self.cls_loss_func == 'focal':
+                cls_losses = FocalLoss()(y_pred_prob,batch_cls)
 
             # compute regression loss 
-            reg_losses = nn.MSELoss()(y_pred_rev, batch_reg)
+            if self.reg_loss_func == 'full':
+                reg_losses = nn.MSELoss()(y_pred_rev, batch_reg)
+            if self.reg_loss_func == 'mask':
+                reg_losses = torch.mean(nn.MSELoss(reduction = 'none')(y_pred_rev, batch_reg)*batch_cls)
+            
+            cls_loss.append(cls_losses.item())
             reg_loss.append(reg_losses.item())
 
             # store predicted probability 

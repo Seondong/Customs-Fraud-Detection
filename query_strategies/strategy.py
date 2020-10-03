@@ -19,6 +19,7 @@ import argparse
 import torch.nn as nn
 from collections import OrderedDict
 from scipy import stats
+import math
 import time
 import numpy as np
 import scipy.sparse as sp
@@ -41,25 +42,43 @@ from sklearn.metrics import pairwise_distances
 from sklearn.preprocessing import normalize
 
 class Strategy:
-    def __init__(self, model_path, test_data, test_loader, args):
-        self.test_data = test_data
-        self.num_data = len(self.test_data)
-        self.test_loader = test_loader
-        self.dim = args.dim
-        self.model_path = model_path
-        self.device = args.device
+    def __init__(self, data, args):  # model_path, test_data, test_loader
+        self.data = data
+        self.args = args
+        self.num_data = len(self.data.test)
         self.available_indices = np.arange(self.num_data)
+        self.rev_func = args.rev_func 
+        
+#         self.test_loader = test_loader
+#         self.model_path = model_path
+#         self.device = args.device
         
 
     def set_available_indices(self, unavailable):
         self.available_indices = np.delete(np.arange(self.num_data), unavailable)
 
+        
     def query(self, k):
         pass
 
+    
     def get_model(self):
         return torch.load(self.model_path)
-
+    
+    
+    def get_embedding(self):
+        best_model = self.get_model()
+        final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(self.test_loader)
+        hiddens = [hiddens[i] for i in self.available_indices]
+        return hiddens
+    
+    
+    def rev_score(self):
+        if self.rev_func == 'log':
+            return lambda x: math.log(2+x)
+        return lambda x: x
+    
+    
     def get_output(self):
         best_model = self.get_model()
         final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(self.test_loader)
@@ -67,25 +86,22 @@ class Strategy:
 #         pdb.set_trace()
         return final_output[self.available_indices]
 
+
     def get_revenue(self):
         best_model = self.get_model()
         final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(self.test_loader)
         revs = [revs[i] for i in self.available_indices]
         return revs
 
+    
     def get_uncertainty(self):
         pass
 
-    def get_embedding(self):
-        best_model = self.get_model()
-        final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(self.test_loader)
-        hiddens = [hiddens[i] for i in self.available_indices]
-        return hiddens
 
     def get_grad_embedding(self):
-        embDim = self.dim
+        embDim = self.args.dim
         best_model = torch.load(self.model_path)
-        final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(self.test_loader)
+        final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(self.data.test_loader)
         nLab = 2
         print(len(final_output), hiddens[0].shape, len(hiddens))
         embedding = np.zeros([self.num_data, embDim * nLab])

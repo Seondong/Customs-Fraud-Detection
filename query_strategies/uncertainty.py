@@ -5,9 +5,9 @@ from xgboost import XGBClassifier, XGBRegressor
 class Uncertainty :
 
     # Features to use : If we use the real data, please fit the feature names properly.
-    numerical_features = ['fob.value', 'cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'FOBCIFRatio', 'TaxUnitquantity']
+    numerical_features = ['fob.value', 'cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'TaxUnitquantity']
     categorical_features = ['RiskH.importer.id', 'RiskH.declarant.id',
-        'RiskH.HS6.Origin', 'RiskH.tariff.code', 'RiskH.HS6',
+        'RiskH.office.id&HS6', 'RiskH.tariff.code', 'RiskH.HS6',
         'RiskH.HS4', 'RiskH.HS2', 'RiskH.office.id']
     column_to_use_unc_measure = numerical_features + categorical_features
 

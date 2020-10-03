@@ -1,5 +1,7 @@
 results/
 __pycache__
+model/__pycache__
+query_strategies/__pycache__
 intermediary/
 uncertainty_models/
 data/raw_datas/
@@ -9,3 +11,4 @@ data/tdata.csv
 data/NTMdata.csv
 nohup.out
 .ipynb_checkpoints/
+gpu.sh
