@@ -3,8 +3,8 @@ import random
 from .strategy import Strategy
 
 class HybridSampling(Strategy):
-	def __init__(self, model_path, test_data, test_loader, args, subsamps, weights):
-		super(HybridSampling, self).__init__(model_path, test_data, test_loader, args)
+	def __init__(self, data, args, subsamps, weights):
+		super(HybridSampling, self).__init__(data, args)
 		assert sum(weights) == 1
 		assert len(subsamps) == len(weights)
 		self.subsamps = subsamps

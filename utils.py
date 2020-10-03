@@ -16,15 +16,20 @@ def find_best_threshold(model,x_list,y_test,best_thresh = None):
     '''
     y_pred_prob = model.predict_proba(x_list)[:,1]
     threshold_list = np.arange(0.1,0.6,0.1)
-    best_auc = 0
+    best_auc = 0.5    # 0.5 is random for AUC.
+    
     if best_thresh ==None:
         for th in threshold_list:
             y_pred_label = (y_pred_prob > th)*1 
-            auc_score = roc_auc_score(y_test,y_pred_label)
+            try:
+                auc_score = roc_auc_score(y_test,y_pred_prob)
+            except ValueError:
+                auc_score = 0.5
             if auc_score > best_auc:
                 best_auc = auc_score
                 best_thresh = th 
         return best_thresh, best_auc
+    
     else:
         y_pred_label = (y_pred_prob > best_thresh)*1 
         best_auc = roc_auc_score(y_test,y_pred_label)
@@ -35,6 +40,7 @@ def find_best_threshold(model,x_list,y_test,best_thresh = None):
 def torch_threshold(y_pred_prob,y_test,best_thresh = None):
     threshold_list = np.arange(0.1,0.6,0.1)
     best_f1 = 0
+    
     if best_thresh == None:
         for th in threshold_list:
             y_pred_label = (y_pred_prob > th)*1 
@@ -42,13 +48,22 @@ def torch_threshold(y_pred_prob,y_test,best_thresh = None):
             if f_score > best_f1:
                 best_f1 = f_score
                 best_thresh = th 
-        return best_thresh, best_f1, roc_auc_score(y_test, y_pred_prob)
+        try:
+            roc_auc = roc_auc_score(y_test, y_pred_prob)
+        except ValueError:
+            roc_auc = 0.5
+        return best_thresh, best_f1, roc_auc
+    
     else:
         y_pred_label = (y_pred_prob > best_thresh)*1 
         best_f1 = f1_score(y_test,y_pred_label)
-        return best_f1, roc_auc_score(y_test, y_pred_prob)
+        try:
+            roc_auc = roc_auc_score(y_test, y_pred_prob)
+        except ValueError:
+            roc_auc = 0.5
+        return best_f1, roc_auc    
 
-
+    
 def process_leaf_idx(X_leaves): 
     '''
     Since the xgboost output represent leaf index for each tree
@@ -88,17 +103,20 @@ def metrics(y_prob,xgb_testy,revenue_test,best_thresh=None):
         _,overall_f1,auc = torch_threshold(y_prob,xgb_testy,best_thresh)
     else:
         overall_f1,auc = torch_threshold(y_prob,xgb_testy,best_thresh)
-     # Seized revenue 
-    # Precision and Recall
+#     import pdb
+#     pdb.set_trace()
     pr, re, f, rev = [], [], [], []
     for i in [99,98,95,90]:
         threshold = np.percentile(y_prob, i)
-        #print(f'Checking top {100-i}% suspicious transactions: {len(y_prob[y_prob > threshold])}')
-        precision = np.nan_to_num(np.mean(xgb_testy[y_prob > threshold]))
+        precision = xgb_testy[y_prob > threshold].mean()
         recall = sum(xgb_testy[y_prob > threshold])/ sum(xgb_testy)
-        f1 = hmean([precision, recall])
+        try:
+            f1 = hmean([precision, recall])
+        except ValueError:
+            f1 = 0
+            
         revenue = sum(revenue_test[y_prob > threshold]) / sum(revenue_test)
-        print(f'Checking top {100-i}% suspicious transactions:')
+        print(f'Checking top {100-i}% suspicious transactions: {len(y_prob[y_prob > threshold])}')
         print('Precision: %.4f, Recall: %.4f, Revenue: %.4f' % (precision, recall, revenue))
         # save results
         pr.append(precision)
@@ -111,7 +129,10 @@ def metrics(y_prob,xgb_testy,revenue_test,best_thresh=None):
 def metrics_active(active_rev,active_cls,xgb_testy,revenue_test):
     precision = np.count_nonzero(active_cls == 1) / len(active_cls)
     recall = sum(active_cls) / sum(xgb_testy)
-    f1 = f1 = hmean([precision, recall])
+    try:
+        f1 = hmean([precision, recall])
+    except ValueError:
+        f1 = 0
     revenue = sum(active_rev) / sum(revenue_test)
     print()
     print("--------Evaluating the model---------")

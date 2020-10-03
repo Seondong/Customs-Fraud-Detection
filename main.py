@@ -1,8 +1,4 @@
 import logging
-import preprocess_data
-import generate_loader
-# import separate_train_test_data, prepare_input_for_DATE, prepare_input_for_SSL
-import DATE_model
 import argparse
 import os
 import csv
@@ -11,20 +7,21 @@ import pickle
 import warnings
 import time 
 import dataset
+import sys
 from collections import defaultdict
 from datetime import timedelta
 import datetime
-from query_strategies import badge, badge_DATE, random_sampling, DATE_sampling, diversity, uncertainty, hybrid, xgb, xgb_lr, ssl_ae
+from query_strategies import badge, bATE, random, DATE, diversity, uncertainty, hybrid, xgb, xgb_lr, ssl_ae, tabnet
 import numpy as np
 import torch
 import torch.utils.data as Data
 import pandas as pd
 import torch
-from model.AttTreeEmbedding import Attention, DATE
+from model.AttTreeEmbedding import Attention, DATEModel
 from ranger import Ranger
 from utils import torch_threshold, metrics, metrics_active
-from query_strategies import badge, badge_DATE, random_sampling, DATE_sampling, diversity, uncertainty, hybrid, xgb, xgb_lr, ssl_ae
 warnings.filterwarnings("ignore")
+from pytorch_tabnet.tab_model import TabNetClassifier, TabNetRegressor
 
 def make_logger(curr_time, name=None):
     
@@ -49,51 +46,9 @@ def make_logger(curr_time, name=None):
     
     return logger
 
-    
-def load_data(path):
-    # load torch dataset 
-    with open(path, "rb") as f:
-        data = pickle.load(f)
-
-    # get torch dataset
-    train_dataset = data["train_dataset"]
-    valid_dataset = data["valid_dataset"]
-    test_dataset = data["test_dataset"]
-
-    # create dataloader
-    batch_size = 256
-    train_loader = Data.DataLoader(
-        dataset=train_dataset,     
-        batch_size=batch_size,      
-        shuffle=True,               
-    )
-    valid_loader = Data.DataLoader(
-        dataset=valid_dataset,     
-        batch_size=batch_size,      
-        shuffle=False,               
-    )
-    test_loader = Data.DataLoader(
-        dataset=test_dataset,     
-        batch_size=batch_size,      
-        shuffle=False,               
-    )
-
-    # parameters for model 
-    leaf_num = data["leaf_num"]
-    importer_size = data["importer_num"]
-    item_size = data["item_size"]
-
-    # global variables (xgb_testy: illicit or not)
-    xgb_validy = valid_loader.dataset.tensors[-2].detach().numpy()
-    xgb_testy = test_loader.dataset.tensors[-2].detach().numpy()
-    revenue_valid = valid_loader.dataset.tensors[-1].detach().numpy()
-    revenue_test = test_loader.dataset.tensors[-1].detach().numpy()
-
-    return train_loader, valid_loader, test_loader, leaf_num, importer_size, item_size, xgb_validy, xgb_testy, revenue_valid, revenue_test
-
 
 def evaluate_upDATE(chosen_rev,chosen_cls,xgb_testy,revenue_test):
-    #get data
+    # get data
     logger.info("--------Evaluating the model---------")
 
     precisions, recalls, f1s, revenues = metrics_active(chosen_rev,chosen_cls,xgb_testy,revenue_test)
@@ -101,6 +56,20 @@ def evaluate_upDATE(chosen_rev,chosen_cls,xgb_testy,revenue_test):
     
     return precisions, recalls, f1s, revenues
 
+
+def inspection_plan(rate_init, rate_final, numWeeks, option):
+    ### Inspection plan for next n weeks
+    if option == 'direct_decay':
+        return np.linspace(rate_final, rate_final, numWeeks)
+    
+    if option == 'linear_decay':
+        return np.linspace(rate_init, rate_final, numWeeks)
+    
+    if option == 'fast_linear_decay':
+        first_half = np.linspace(rate_init, rate_final, numWeeks // 2)
+        second_half = np.linspace(rate_final, rate_final, numWeeks - len(first_half))
+        return np.concatenate((first_half, second_half))
+    
 
 if __name__ == '__main__':
     
@@ -129,12 +98,13 @@ if __name__ == '__main__':
         os.makedirs('./intermediary/xgb_models')
     if not os.path.exists('./uncertainty_models'):
         os.makedirs('./uncertainty_models')
+    if not os.path.exists('./intermediary/tn_models'):
+        os.makedirs('./intermediary/tn_models')
     
     logger = make_logger(curr_time)
     
     # Parse argument
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_name', type=str, default="DATE", help="Name of the model")
     parser.add_argument('--epoch', type=int, default=5, help="Number of epochs")
     parser.add_argument('--dim', type=int, default=16, help="Hidden layer dimension")
     parser.add_argument('--lr', type=float, default=0.005, help="learning rate")
@@ -149,23 +119,28 @@ if __name__ == '__main__':
     parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
     parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
     parser.add_argument('--output', type=str, default="result"+"-"+curr_time, help="Name of output file")
-    parser.add_argument('--sampling', type=str, default = 'badge_DATE', choices=['badge', 'badge_DATE', 'random', 'DATE', 'diversity', 'hybrid', 'xgb', 'xgb_lr', 'ssl_ae'], help='Sampling strategy')
+    parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'hybrid', 'tabnet', 'ssl_ae'], help='Sampling strategy')
     parser.add_argument('--initial_inspection_rate', type=int, default=100, help='Initial inspection rate in training data by percentile')
     parser.add_argument('--final_inspection_rate', type=int, default = 5, help='Percentage of test data need to query')
+    parser.add_argument('--inspection_plan', type=str, default = 'direct_decay', choices=['direct_decay','linear_decay','fast_linear_decay'], help='Inspection rate decaying option for simulation time')
     parser.add_argument('--mode', type=str, default = 'finetune', choices = ['finetune', 'scratch'], help = 'finetune last model or train from scratch')
-    parser.add_argument('--subsamplings', type=str, default = 'badge_DATE/DATE', help = 'available for hybrid sampling, the list of sub-sampling techniques seperated by /')
+    parser.add_argument('--subsamplings', type=str, default = 'bATE/DATE', help = 'available for hybrid sampling, the list of sub-sampling techniques seperated by /')
     parser.add_argument('--weights', type=str, default = '0.5/0.5', help = 'available for hybrid sampling, the list of weights for sub-sampling techniques seperated by /')
     parser.add_argument('--uncertainty', type=str, default = 'naive', choices = ['naive', 'self-supervised'], help = 'Uncertainty principle : ambiguity of illicitness or self-supervised manner prediction')
+    parser.add_argument('--rev_func', type=str, default = 'log', choices = ['log'], help = 'Uncertainty principle : ambiguity of illicitness or self-supervised manner prediction')
+    parser.add_argument('--closs', type=str, default = 'bce', choices = ['bce', 'focal'], help = 'Classification loss function')
+    parser.add_argument('--rloss', type=str, default = 'full', choices = ['full', 'masked'], help = 'Regression loss function')
     parser.add_argument('--train_from', type=str, default = '20160105', help = 'Training period start from (YYYYMMDD)')
     parser.add_argument('--test_from', type=str, default = '20160112', help = 'Testing period start from (YYYYMMDD)')
     parser.add_argument('--test_length', type=int, default=3, help='Single testing period length (e.g., 7)')
     parser.add_argument('--valid_length', type=int, default=3, help='Validation period length (e.g., 7)')
     parser.add_argument('--data', type=str, default='real-n', choices = ['synthetic', 'real-n', 'real-m', 'real-t', 'real-k', 'real-c'], help = 'Dataset')
-    parser.add_argument('--testnum', type=int, default=100, help='number of tests')
-    parser.add_argument('--semi_supervised', type=int, default=0, help='Additionally using uninspected, unlabeled data (1=semi-supervised, 0=fully-supervised')
+    parser.add_argument('--numweeks', type=int, default=100, help='number of test weeks (week if test_length = 7)')
+    parser.add_argument('--semi_supervised', type=int, default=0, help='Additionally using uninspected, unlabeled data (1=semi-supervised, 0=fully-supervised)')
     parser.add_argument('--identifier', type=str, default=curr_time, help='identifier for each execution')
+    parser.add_argument('--save', type=int, default=0, help='Save intermediary files (1=save, 0=not save)')
     
-    # args
+    # Arguments
     args = parser.parse_args()
     epochs = args.epoch
     dim = args.dim
@@ -179,8 +154,9 @@ if __name__ == '__main__':
     use_self = args.use_self
     agg = args.agg
     samp = args.sampling
-    ir_init = args.initial_inspection_rate
-    perc = args.final_inspection_rate
+    initial_inspection_rate = args.initial_inspection_rate
+    final_inspection_rate = args.final_inspection_rate
+    inspection_rate_option = args.inspection_plan
     mode = args.mode
     unc_mode = args.uncertainty
     train_begin = args.train_from 
@@ -188,13 +164,14 @@ if __name__ == '__main__':
     test_length = args.test_length
     valid_length = args.valid_length
     chosen_data = args.data
-    numTests = args.testnum
+    numWeeks = args.numweeks
     semi_supervised = args.semi_supervised
+    save = args.save
     
     logger.info(args)
     
     
-        
+    # Load datasets 
     if chosen_data == 'synthetic':
         data = dataset.Syntheticdata(path='./data/synthetic-imports-declarations.csv')
     elif chosen_data == 'real-n':
@@ -209,110 +186,74 @@ if __name__ == '__main__':
         data = dataset.Cdata(path='./data/cdata.csv')  
     
         
-    
-    output_file =  "./results/performances/" + args.output + '-' + samp + '-' + str(perc) +".csv"
-    
+    # Saving simulation results: Output file will be saved under ./results/performances/ directory
+    output_file =  "./results/performances/" + args.output + '-' + samp + '-' + str(final_inspection_rate) +".csv"
     with open(output_file, 'a') as ff:
-        output_metric_name = ['runID', 'data', 'num_train','num_valid','num_test','num_select','num_total_newly_labeled','num_test_illicit','test_illicit_rate', 'upper_bound_precision', 'upper_bound_recall','upper_bound_rev', 'sampling', 'initial_inspection_rate', 'final_inspection_rate', 'mode', 'subsamplings', 'weights','unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue', 'norm-precision', 'norm-recall', 'norm-revenue']
+        output_metric_name = ['runID', 'data', 'num_train','num_valid','num_test','num_select','num_inspected','num_uninspected','num_test_illicit','test_illicit_rate', 'upper_bound_precision', 'upper_bound_recall','upper_bound_rev', 'sampling', 'initial_inspection_rate', 'current_inspection_rate', 'final_inspection_rate', 'inspection_rate_option', 'mode', 'subsamplings', 'weights','unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue', 'norm-precision', 'norm-recall', 'norm-revenue', 'save']
         print(",".join(output_metric_name),file=ff)
 
-    newly_labeled = None
-    uncertainty_module = None
     path = None
-
+    uncertainty_module = None
+    
+    # Initial dataset split
     train_start_day = datetime.date(int(train_begin[:4]), int(train_begin[4:6]), int(train_begin[6:8]))
     test_start_day = datetime.date(int(test_begin[:4]), int(test_begin[4:6]), int(test_begin[6:8]))
     test_length = timedelta(days=test_length)    
     test_end_day = test_start_day + test_length
     valid_length = timedelta(days=valid_length)
     valid_start_day = test_start_day - valid_length
-    initial_train_end_day = test_start_day
+    data.split(train_start_day, valid_start_day, test_start_day, test_end_day, valid_length, test_length, args)
+    confirmed_inspection_plan = inspection_plan(initial_inspection_rate, final_inspection_rate, numWeeks, inspection_rate_option)
+    logger.info('Inspection rate for testing periods: %s', confirmed_inspection_plan)
     
-    
-    # Customs selection simulation for long term
-    for i in range(numTests):
-        # make dataset                                    
-        splitter = [train_start_day, initial_train_end_day, valid_start_day, test_start_day, test_end_day]
-         
-        if semi_supervised:
-            offset, train_labeled_data, valid_data, test_data = preprocess_data.split_data_semi(data, splitter, curr_time, ir_init, semi_supervised, newly_labeled)
-        if not semi_supervised:
-            offset, train_labeled_data, valid_data, test_data = preprocess_data.split_data(data, splitter, curr_time, ir_init, semi_supervised, newly_labeled)
-               
-        logger.info('%s, %s', train_labeled_data.shape, test_data.shape)
+    # Customs selection simulation for long term (if test_length = 7 days, simulate for numWeeks)
+    for i in range(numWeeks):
         
-
-        # get uncertainty from DATE for those needs it
+        if test_start_day.strftime('%y-%m-%d') > max(data.df["sgd.date"]):
+            logger.info('Simulation period is over.')
+            logger.info('Terminating ...')
+            sys.exit()
+        
+                
+        # Feature engineering for train, valid, test data
+        data.episode = i
+        data.featureEngineering()
+        current_inspection_rate = confirmed_inspection_plan[i]  # ToDo: Add multiple decaying strategy
+        print(i, current_inspection_rate)
+        logger.info('%s, %s', data.train_lab.shape, data.test.shape)
+        
+        
+        # Initialize unceratinty module for some cases
         if unc_mode == 'self-supervised':
-            if samp in ['badge_DATE', 'diversity', 'hybrid']:
+            if samp in ['bATE', 'diversity', 'hybrid']:
                 if uncertainty_module is None :
-                    uncertainty_module = uncertainty.Uncertainty(train_labeled_data, './uncertainty_models/')
+                    uncertainty_module = uncertainty.Uncertainty(data.train_lab, './uncertainty_models/')
                     uncertainty_module.train()
-                uncertainty_module.test_data = test_data 
-        
-        
-        if semi_supervised:
-            _, _, _, _, _, _, revenue_test, _, _, norm_revenue_test, _, _, _, _, _, xgb_testy = generate_loader.separate_train_test_data_semi(curr_time)
-            
-        if not semi_supervised:
-            _, _, _, _, _, _, revenue_test, _, _, norm_revenue_test, _, _, _, _, _, xgb_testy = generate_loader.separate_train_test_data(curr_time)
-        
-        
-        # Train XGB model only if the sampling strategy is dependent on XGB model.
-        
-        
-        if not semi_supervised:
-            if samp not in ['random']:
-                generate_loader.prepare_input_for_DATE(curr_time)
-                torchdata = load_data("./intermediary/torch_data/torch_data-"+curr_time+".pickle")
-                train_loader, valid_loader, test_loader, leaf_num, importer_size, item_size, _, _, _, _ = torchdata
-
-            # Train DATE model only if the sampling strategy is dependent on DATE model (except random and xgb).
-            if samp not in ['random', 'xgb', 'xgb_lr']:
-                # create / load model
-                if mode == 'scratch' or i == 0:
-                    date_model = DATE_model.VanillaDATE(torchdata, curr_time)
-                else:
-                    model = torch.load(path)
-                    date_model = DATE_model.VanillaDATE(torchdata, curr_time, model.state_dict())
-                # re-train
-                date_model.train(args)
-                overall_f1, auc, precisions, recalls, f1s, revenues, path = date_model.evaluate()
-
-                logger.info("===========================================================================================")
-                logger.info("""Metrics DATE:\nf1:%.4f auc:%.4f\nPr@5:%.4f Re@5:%.4fRev@5:%.4f""" \
-                      % (overall_f1, auc,\
-                         precisions[2],recalls[2],revenues[2]
-                         ),
-                         )
-
-        if semi_supervised:
-            if samp in ['ssl_ae']:
-                generate_loader.prepare_input_for_SSL(curr_time)
-                torchdata = load_data("./intermediary/torch_data/torch_ssl_data-"+curr_time+".pickle")
-                train_loader_labeled, train_loader_unlabeled, valid_loader, test_loader = torchdata
+                uncertainty_module.test_data = data.test 
                        
+        
+        num_samples = int(len(data.test)*current_inspection_rate/100)
+        
         # Selection stragies
-        num_samples = int(len(test_data)*perc/100)
-        
-        
         def initialize_sampler(samp):
             if samp == 'random':
-                sampler = random_sampling.RandomSampling(path, test_data, None, args)
+                sampler = random.RandomSampling(data, args)
             if samp == 'xgb':
-                sampler = xgb.XGBSampling(path, test_data, None, args)
+                sampler = xgb.XGBSampling(data, args)
             if samp == 'xgb_lr':
-                sampler = xgb_lr.XGBLRSampling(path, test_data, None, args)
+                sampler = xgb_lr.XGBLRSampling(data, args)
             if samp == 'badge':
-                sampler = badge.BadgeSampling(path, test_data, test_loader, args)
+                sampler = badge.BadgeSampling(data, args)
             if samp == 'DATE':
-                sampler = DATE_sampling.DATESampling(path, test_data, test_loader, args)
+                sampler = DATE.DATESampling(data, args)
             if samp == 'diversity':
-                sampler = diversity.DiversitySampling(path, test_data, test_loader, uncertainty_module, args)
-            if samp == 'badge_DATE':
-                sampler = badge_DATE.DATEBadgeSampling(path, test_data, test_loader, uncertainty_module, args)
+                sampler = diversity.DiversitySampling(data, args, uncertainty_module)
+            if samp == 'bATE':
+                sampler = bATE.bATESampling(data, args, uncertainty_module)
             if samp == 'ssl_ae':
-                sampler = ssl_ae.SSLAutoencoderSampling(path, test_data, test_loader,args)
+                sampler = ssl_ae.SSLAutoencoderSampling(data, args)
+            if samp == 'tabnet':
+                sampler = tabnet.TabnetSampling(data, args)
             return sampler
             
         if samp != 'hybrid':
@@ -321,41 +262,37 @@ if __name__ == '__main__':
         if samp == 'hybrid':
             subsamplers = [initialize_sampler(samp) for samp in args.subsamplings.split("/")]
             weights = [float(weight) for weight in args.weights.split("/")]
-            sampler = hybrid.HybridSampling(path, test_data, test_loader, args, subsamplers, weights)
+            sampler = hybrid.HybridSampling(data, args, subsamplers, weights)
         
         chosen = sampler.query(num_samples)
         logger.info("%s, %s, %s", len(set(chosen)), len(chosen), num_samples)
         assert len(set(chosen)) == num_samples
   
-        # add new label:    
-        indices = [point + offset for point in chosen]
-        
-        added_df = data.df.iloc[indices]
-        
-#         import pdb
-#         pdb.set_trace()
-    
-        if newly_labeled is not None:
-            newly_labeled = pd.concat([newly_labeled, added_df])
-        else:
-            newly_labeled = added_df
-            
-        logger.debug(added_df[:5])
-        # tune the uncertainty
-        
-        if unc_mode == 'self-supervised' :
-            if samp in ['badge_DATE', 'diversity', 'hybrid']:
-                uncertainty_module.retrain(test_data.iloc[indices - offset])
 
-        active_rev = added_df['revenue']
+        # Indices of sampled imports (Considered as fraud by model) -> This will be inspected thus annotated.    
+        indices = [point + data.offset for point in chosen]
+        
+        inspected_imports = data.df.iloc[indices]
+        uninspected_imports = data.df.loc[set(data.test.index)-set(inspected_imports.index)]
+        uninspected_imports['illicit'] = float('nan')
+        uninspected_imports['revenue'] = float('nan')
+           
+                
+        logger.debug(inspected_imports[:5])
+        
+        # tune the uncertainty
+        if unc_mode == 'self-supervised' and samp in ['bATE', 'diversity', 'hybrid']:
+            uncertainty_module.retrain(data.test.iloc[indices - data.offset])
+        
+        # Evaluation
+        active_rev = inspected_imports['revenue']
         active_rev = active_rev.transpose().to_numpy()
 
-        active_cls = added_df['illicit']
+        active_cls = inspected_imports['illicit']
         active_cls = active_cls.transpose().to_numpy()
 
-        # evaluate
-        active_precisions, active_recalls, active_f1s, active_revenues = evaluate_upDATE(active_rev,active_cls,xgb_testy,revenue_test)
-        logger.info(f'Metrics Active DATE:\n Pr@{perc}:{round(active_precisions, 4)}, Re@{perc}:{round(active_recalls, 4)} Rev@{perc}:{round(active_revenues, 4)}') 
+        active_precisions, active_recalls, active_f1s, active_revenues = evaluate_upDATE(active_rev,active_cls,data.test_cls_label,data.test_reg_label)
+        logger.info(f'Metrics Active DATE:\n Pr@{current_inspection_rate}:{round(active_precisions, 4)}, Re@{current_inspection_rate}:{round(active_recalls, 4)} Rev@{current_inspection_rate}:{round(active_revenues, 4)}') 
         
         with open(output_file, 'a') as ff:
             if samp == 'hybrid':
@@ -365,15 +302,15 @@ if __name__ == '__main__':
                 subsamplings = '-'
                 weights = '-'
                 
-            upper_bound_precision = min(100*np.mean(xgb_testy)/perc, 1)
-            upper_bound_recall = min(perc/np.mean(xgb_testy)/100, 1)
-            upper_bound_revenue = sum(sorted(revenue_test, reverse=True)[:len(chosen)]) / sum(revenue_test)
+            upper_bound_precision = min(100*np.mean(data.test_cls_label)/current_inspection_rate, 1)
+            upper_bound_recall = min(current_inspection_rate/np.mean(data.test_cls_label)/100, 1)
+            upper_bound_revenue = sum(sorted(data.test_reg_label, reverse=True)[:len(chosen)]) / sum(data.test_reg_label)
             norm_precision = active_precisions/upper_bound_precision
             norm_recall = active_recalls/upper_bound_recall
             norm_revenue = active_revenues/upper_bound_revenue
             
             
-            output_metric = [curr_time, chosen_data, len(train_labeled_data), len(valid_data), len(test_data), len(chosen), len(newly_labeled), np.sum(xgb_testy), np.mean(xgb_testy), upper_bound_precision, upper_bound_recall, upper_bound_revenue, samp, ir_init, perc, mode, subsamplings, weights, unc_mode, train_start_day.strftime('%y-%m-%d'), valid_start_day.strftime('%y-%m-%d'), test_start_day.strftime('%y-%m-%d'), test_end_day.strftime('%y-%m-%d'), i+1, round(active_precisions,4), round(active_recalls,4), round(active_revenues,4), round(norm_precision,4), round(norm_recall,4), round(norm_revenue,4)]
+            output_metric = [curr_time, chosen_data, len(data.train_lab), len(data.valid_lab), len(data.test), len(chosen), len(inspected_imports), len(uninspected_imports), np.sum(data.test_cls_label), np.mean(data.test_cls_label), upper_bound_precision, upper_bound_recall, upper_bound_revenue, samp, initial_inspection_rate, current_inspection_rate, final_inspection_rate, inspection_rate_option, mode, subsamplings, weights, unc_mode, train_start_day.strftime('%y-%m-%d'), valid_start_day.strftime('%y-%m-%d'), test_start_day.strftime('%y-%m-%d'), test_end_day.strftime('%y-%m-%d'), i+1, round(active_precisions,4), round(active_recalls,4), round(active_revenues,4), round(norm_precision,4), round(norm_recall,4), round(norm_revenue,4), save]
                 
                 
             output_metric = list(map(str,output_metric))
@@ -381,16 +318,24 @@ if __name__ == '__main__':
             print(",".join(output_metric),file=ff)
         
         
-        output_file_indices =  "./results/query_indices/" + curr_time + '-' + samp + '-' + str(perc) + '-' + mode + "-week-" + str(i) + ".csv"
+        output_file_indices =  "./results/query_indices/" + curr_time + '-' + samp + '-' + str(current_inspection_rate) + '-' + mode + "-week-" + str(i) + ".csv"
         
         with open(output_file_indices,"w") as queryFiles:
             wr = csv.writer(queryFiles, delimiter = ",")
             wr.writerow([i, test_start_day, test_end_day,indices])
 
 
-        # Renew valid & test period 
+        # Renew valid & test period & dataset
+        if i == numWeeks - 1:
+            logger.info('Simulation period is over.')
+            logger.info('Terminating ...')
+            sys.exit()
+            
         test_start_day = test_end_day
         test_end_day = test_start_day + test_length
         valid_start_day = test_start_day - valid_length
-
+        data.update(inspected_imports, uninspected_imports, test_start_day, test_end_day, valid_start_day)
+        
+        
+        
         logger.info("===========================================================================================")

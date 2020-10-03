@@ -1,46 +1,9 @@
 import numpy as np
-from torch.utils.data import DataLoader
-import pickle
-from scipy.spatial.distance import cosine
-import sys
-import gc
-from scipy.linalg import det
-from scipy.linalg import pinv as inv
-from copy import deepcopy
-
-import torch
-from torch import nn
-import torchfile
-from torch.autograd import Variable
-
-import torch.optim as optim
-import pdb
-from torch.nn import functional as F
-import argparse
-import torch.nn as nn
-from collections import OrderedDict
 from scipy import stats
-import time
-import numpy as np
-import scipy.sparse as sp
-from itertools import product
-from sklearn.base import BaseEstimator, ClusterMixin, TransformerMixin
-from sklearn.metrics.pairwise import euclidean_distances
-from sklearn.metrics.pairwise import pairwise_distances_argmin_min
-from sklearn.utils.extmath import row_norms, squared_norm, stable_cumsum
-from sklearn.utils.sparsefuncs_fast import assign_rows_csr
-from sklearn.utils.sparsefuncs import mean_variance_axis
-from sklearn.utils.validation import _num_samples
-from sklearn.utils import check_array
-from sklearn.utils import gen_batches
-from sklearn.utils import check_random_state
-from sklearn.utils.validation import check_is_fitted
-from sklearn.utils.validation import FLOAT_DTYPES
-from sklearn.metrics.pairwise import rbf_kernel as rbf
-from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import pairwise_distances
+from .DATE import DATESampling
 
-from .strategy import Strategy
+
 # kmeans ++ initialization
 def init_centers(X, K):
     ind = np.argmax([np.linalg.norm(s, 2) for s in X])
@@ -73,11 +36,21 @@ def init_centers(X, K):
     vgt = val[val > 1e-2]
     return indsAll
 
-class BadgeSampling(Strategy):
-    def __init__(self, model_path, test_data, test_loader, args):
-        super(BadgeSampling,self).__init__(model_path, test_data, test_loader, args)
+
+class BadgeSampling(DATESampling):
+    """ BADGE strategy: BADGE model uses the embeddings of the base model (DATE) and find the most diverse imports by KMeans++.
+        Reference: Deep Batch Active Learning by Diverse, Uncertain Gradient Lower Bounds; ICLR 2020 """
+    
+    def __init__(self, data, args):
+        super(BadgeSampling,self).__init__(data, args)
 
     def query(self, k):
+        # Train DATE model
+        self.train_xgb_model()
+        self.prepare_DATE_input()
+        self.train_DATE_model()
+        
+        # Get embeddings from DATE, run BADGE strategy
         gradEmbedding  = self.get_grad_embedding()
         chosen = init_centers(gradEmbedding, k)
         return self.available_indices[chosen].tolist()
