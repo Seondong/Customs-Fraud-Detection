@@ -23,6 +23,7 @@ from utils import torch_threshold, metrics, metrics_active
 warnings.filterwarnings("ignore")
 from pytorch_tabnet.tab_model import TabNetClassifier, TabNetRegressor
 
+
 def make_logger(curr_time, name=None):
     
     # five levels of logging: DEBUG, INFO, WARNING, ERROR, CRITICAL (from mild to severe)
@@ -96,6 +97,8 @@ if __name__ == '__main__':
         os.makedirs('./intermediary/torch_data')
     if not os.path.exists('./intermediary/xgb_models'):
         os.makedirs('./intermediary/xgb_models')
+    if not os.path.exists('./intermediary/tn_models'):
+        os.makedirs('./intermediary/tn_models')
     if not os.path.exists('./uncertainty_models'):
         os.makedirs('./uncertainty_models')
     if not os.path.exists('./intermediary/tn_models'):
@@ -222,7 +225,6 @@ if __name__ == '__main__':
         print(i, current_inspection_rate)
         logger.info('%s, %s', data.train_lab.shape, data.test.shape)
         
-        
         # Initialize unceratinty module for some cases
         if unc_mode == 'self-supervised':
             if samp in ['bATE', 'diversity', 'hybrid']:
@@ -230,7 +232,6 @@ if __name__ == '__main__':
                     uncertainty_module = uncertainty.Uncertainty(data.train_lab, './uncertainty_models/')
                     uncertainty_module.train()
                 uncertainty_module.test_data = data.test 
-                       
         
         num_samples = int(len(data.test)*current_inspection_rate/100)
         

@@ -21,6 +21,7 @@ from collections import OrderedDict
 from scipy import stats
 import math
 import time
+import math
 import numpy as np
 import scipy.sparse as sp
 from itertools import product
@@ -49,10 +50,6 @@ class Strategy:
         self.available_indices = np.arange(self.num_data)
         self.rev_func = args.rev_func 
         
-#         self.test_loader = test_loader
-#         self.model_path = model_path
-#         self.device = args.device
-        
 
     def set_available_indices(self, unavailable):
         self.available_indices = np.delete(np.arange(self.num_data), unavailable)
@@ -61,7 +58,7 @@ class Strategy:
     def query(self, k):
         pass
 
-    
+
     def get_model(self):
         return torch.load(self.model_path)
     
@@ -82,8 +79,6 @@ class Strategy:
     def get_output(self):
         best_model = self.get_model()
         final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(self.test_loader)
-#         import pdb
-#         pdb.set_trace()
         return final_output[self.available_indices]
 
 

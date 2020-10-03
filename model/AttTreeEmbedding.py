@@ -74,6 +74,7 @@ class DATEModel(nn.Module):
         self.fusion_type = fusion_type
         self.use_self = use_self
 
+
         # embedding layers 
         self.leaf_embedding = nn.Embedding(max_leaf,dim)
         self.user_embedding = nn.Embedding(importer_size,dim,padding_idx=0)
@@ -96,7 +97,7 @@ class DATEModel(nn.Module):
         # Loss function
         self.reg_loss_func = reg_loss_func 
         self.cls_loss_func = cls_loss_func 
-    
+
     def forward(self,feature,uid,item_id):
         leaf_vectors = self.leaf_embedding(feature)
         if self.use_self:

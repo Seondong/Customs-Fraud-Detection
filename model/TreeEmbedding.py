@@ -3,6 +3,7 @@ import torch.nn.functional as F
 import torch.nn as nn
 import torch.utils.data as Data
 import numpy as np 
+from .utils import FocalLoss
 
 class MultiTreeEmbeddingClassifier(nn.Module):
     def __init__(self,max_leaf,dim,forest_pooling="max",device="cuda:0", cls_loss_func = 'bce', reg_loss_func = 'full'):
@@ -16,7 +17,7 @@ class MultiTreeEmbeddingClassifier(nn.Module):
         self.pooling = forest_pooling
         self.cls_loss_func = cls_loss_func
         self.reg_loss_func = reg_loss_func
-    
+
     def forward(self,x):
         leaf_vectors = self.leaf_embedding(x)
 
@@ -32,6 +33,7 @@ class MultiTreeEmbeddingClassifier(nn.Module):
         classification_output = torch.sigmoid(self.output_cls_layer(hidden))
         regression_output = self.output_reg_layer(hidden)
         return classification_output, regression_output
+    
     def eval_on_batch(self,test_loader): # predict test data using batch 
         final_output = []
         cls_loss = []
@@ -51,6 +53,7 @@ class MultiTreeEmbeddingClassifier(nn.Module):
             if self.cls_loss_func == 'focal':
                 cls_losses = FocalLoss()(y_pred_prob,batch_cls)
 
+            cls_loss.append(cls_losses.item())
             # compute regression loss 
             if self.reg_loss_func == 'full':
                 reg_losses = nn.MSELoss()(y_pred_rev, batch_reg)
