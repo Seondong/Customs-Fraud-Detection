@@ -7,6 +7,8 @@ from torch_multi_head_attention import MultiHeadAttention
 from .utils import FocalLoss
 
 class Mish(nn.Module):
+    """ Mish: A Self Regularized Non-Monotonic Activation Function 
+    https://arxiv.org/abs/1908.08681 """
     def __init__(self):
         super(Mish,self).__init__()
 

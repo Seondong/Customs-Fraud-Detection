@@ -32,5 +32,5 @@ class TabnetSampling(Strategy):
     def query(self, k):
         self.train_model()
         self.predict_frauds()
-        chosen = np.argpartition(self.y_prob, -k)[-k:]
+        chosen = np.argpartition(self.y_prob[self.available_indices], -k)[-k:]
         return self.available_indices[chosen].tolist()

@@ -25,6 +25,9 @@ from pytorch_tabnet.tab_model import TabNetClassifier, TabNetRegressor
 
 
 def make_logger(curr_time, name=None):
+    """ Initialize loggers, log files are saved under the ./intermediary/logs directory 
+        ToDo: Change all print functions to logger.   
+    """
     
     # five levels of logging: DEBUG, INFO, WARNING, ERROR, CRITICAL (from mild to severe)
     logger = logging.getLogger(name)
@@ -48,18 +51,16 @@ def make_logger(curr_time, name=None):
     return logger
 
 
-def evaluate_upDATE(chosen_rev,chosen_cls,xgb_testy,revenue_test):
-    # get data
+def evaluate_inspection(chosen_rev,chosen_cls,xgb_testy,revenue_test):
+    """ Evaluate the model """
     logger.info("--------Evaluating the model---------")
-
     precisions, recalls, f1s, revenues = metrics_active(chosen_rev,chosen_cls,xgb_testy,revenue_test)
     best_score = f1s
-    
     return precisions, recalls, f1s, revenues
 
 
 def inspection_plan(rate_init, rate_final, numWeeks, option):
-    ### Inspection plan for next n weeks
+    """ Inspection plan for next n weeks """
     if option == 'direct_decay':
         return np.linspace(rate_final, rate_final, numWeeks)
     
@@ -237,6 +238,7 @@ if __name__ == '__main__':
         
         # Selection stragies
         def initialize_sampler(samp):
+            """Initialize selection strategies"""
             if samp == 'random':
                 sampler = random.RandomSampling(data, args)
             if samp == 'xgb':
@@ -292,7 +294,7 @@ if __name__ == '__main__':
         active_cls = inspected_imports['illicit']
         active_cls = active_cls.transpose().to_numpy()
 
-        active_precisions, active_recalls, active_f1s, active_revenues = evaluate_upDATE(active_rev,active_cls,data.test_cls_label,data.test_reg_label)
+        active_precisions, active_recalls, active_f1s, active_revenues = evaluate_inspection(active_rev,active_cls,data.test_cls_label,data.test_reg_label)
         logger.info(f'Metrics Active DATE:\n Pr@{current_inspection_rate}:{round(active_precisions, 4)}, Re@{current_inspection_rate}:{round(active_recalls, 4)} Rev@{current_inspection_rate}:{round(active_revenues, 4)}') 
         
         with open(output_file, 'a') as ff:
@@ -312,7 +314,6 @@ if __name__ == '__main__':
             
             
             output_metric = [curr_time, chosen_data, len(data.train_lab), len(data.valid_lab), len(data.test), len(chosen), len(inspected_imports), len(uninspected_imports), np.sum(data.test_cls_label), np.mean(data.test_cls_label), upper_bound_precision, upper_bound_recall, upper_bound_revenue, samp, initial_inspection_rate, current_inspection_rate, final_inspection_rate, inspection_rate_option, mode, subsamplings, weights, unc_mode, train_start_day.strftime('%y-%m-%d'), valid_start_day.strftime('%y-%m-%d'), test_start_day.strftime('%y-%m-%d'), test_end_day.strftime('%y-%m-%d'), i+1, round(active_precisions,4), round(active_recalls,4), round(active_revenues,4), round(norm_precision,4), round(norm_recall,4), round(norm_revenue,4), save]
-                
                 
             output_metric = list(map(str,output_metric))
             logger.debug(output_metric)

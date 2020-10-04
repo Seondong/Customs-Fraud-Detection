@@ -29,10 +29,11 @@ class XGBSampling(Strategy):
         self.y_prob = self.xgb.predict_proba(self.data.dftestx)[:,1]
         
         
+        
     def query(self, k):
         self.train_model()
         self.predict_frauds()
-        chosen = np.argpartition(self.y_prob, -k)[-k:]
+        chosen = np.argpartition(self.y_prob[self.available_indices], -k)[-k:]
         return self.available_indices[chosen].tolist()
     
     

@@ -168,7 +168,7 @@ class DATESampling(Strategy):
         """ Prediction for new dataset (test_model) """
         best_model = self.get_model()
         final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(self.data.test_loader)
-        self.y_prob = final_output[self.available_indices]
+        self.y_prob = final_output
         
         
     def query(self, k):
@@ -176,7 +176,7 @@ class DATESampling(Strategy):
         self.prepare_DATE_input()
         self.train_DATE_model()
         self.predict_frauds()
-        chosen = np.argpartition(self.y_prob, -k)[-k:]
+        chosen = np.argpartition(self.y_prob[self.available_indices], -k)[-k:]
         return self.available_indices[chosen].tolist()
     
     

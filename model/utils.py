@@ -5,6 +5,7 @@ import torch.utils.data as Data
 import numpy as np 
 
 class FocalLoss(nn.Module):
+    """ Focal loss for better handling imbalanced class distribution. """
     def __init__(self, alpha=1, gamma=2, logits=False, reduce=True):
         super(FocalLoss, self).__init__()
         self.alpha = alpha
