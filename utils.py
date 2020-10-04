@@ -99,6 +99,7 @@ def stratify_sample(y,test_size=0.2,seed=0):
 
 
 def metrics(y_prob,xgb_testy,revenue_test,best_thresh=None):
+    """ Evaluate the performance"""
     if best_thresh ==None:
         _,overall_f1,auc = torch_threshold(y_prob,xgb_testy,best_thresh)
     else:
@@ -127,6 +128,7 @@ def metrics(y_prob,xgb_testy,revenue_test,best_thresh=None):
 
 
 def metrics_active(active_rev,active_cls,xgb_testy,revenue_test):
+    """ Evaluate the performance"""
     precision = np.count_nonzero(active_cls == 1) / len(active_cls)
     recall = sum(active_cls) / sum(xgb_testy)
     try:

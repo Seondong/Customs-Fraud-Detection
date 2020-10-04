@@ -29,6 +29,8 @@ from .strategy import Strategy
 
 
 class Mish(nn.Module):
+    """ Mish: A Self Regularized Non-Monotonic Activation Function 
+    https://arxiv.org/abs/1908.08681 """
     def __init__(self):
         super(Mish,self).__init__()
 
@@ -101,7 +103,7 @@ class AutoEncoder(nn.Module):
     
     
 class SemiAutoEncoder(nn.Module):
-    """ Contributed by Roy"""
+    """ Semi-autoencoder skeleton architecture"""
     def __init__(self, input_dim, layers, device, sigma=0.1):
         super(SemiAutoEncoder, self).__init__()
         self.ae = AutoEncoder(input_dim, layers)
@@ -121,18 +123,14 @@ def warm_up(epoch, max_epoch=10, w_max=0.1):
     w = np.exp(-5*(1-temperature)**2)*w_max
     return w
     
-    
-# preprocess랑 generate_loader도 봐야 한다.    
+
       
 class SSLAutoencoderSampling(Strategy):
+    """ Training and fraud detection by the proposed semi-autoencoder model, contributed by Yu-Che Tsai"""
     def __init__(self, data, args):
         self.data = data
         self.args = args
         self.identifier = args.identifier
-#         self.model_path = './intermediary/xgb_models/xgb_model-'+args.identifier+'.json'
-#         self.data.label_loader = data.label_loader
-#         self.data.unlabel_loader = data.unlabel_loader
-#         self.data.valid_loader = valid_loader
         super(SSLAutoencoderSampling,self).__init__(data, args)
     
     
@@ -331,6 +329,6 @@ class SSLAutoencoderSampling(Strategy):
         self.prepare_SSL_input()
         self.train_model()
         self.predict_frauds()
-        chosen = np.argpartition(self.y_prob, -k)[-k:]
+        chosen = np.argpartition(self.y_prob[self.available_indices], -k)[-k:]
         return self.available_indices[chosen].tolist()
 

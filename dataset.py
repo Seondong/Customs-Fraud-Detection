@@ -11,7 +11,11 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-def mask_labels(df, ir_init):
+def mask_labels(df: pd.DataFrame, ir_init: float) -> pd.DataFrame:
+    """
+    Masking certain amount of importer_id, to mimic the situation that not all imports are inspected.
+    ir_init is the inspection ratio at the beginning.
+    """
     # To do: For more consistent results, we can control the random seed while selecting inspected_id.
     inspected_id = {}
     train_id = list(set(df['importer.id']))
@@ -139,6 +143,7 @@ def tag_risky_profiles(df: pd.DataFrame, profile: str, profiles: list or dict, o
 
 
 class Import_declarations():
+    """ Class for dataset engineering """
     def __init__(self, path):
         self.path = path
         self.df = pd.read_csv(self.path, encoding = "ISO-8859-1")
@@ -147,6 +152,7 @@ class Import_declarations():
         
      
     def firstCheck(self):
+        """ Sorting and indexing necessary for data preparation """
         self.df = self.df.dropna(subset=["illicit"])
         self.df = self.df.sort_values("sgd.date")
         self.df = self.df.reset_index(drop=True)
@@ -259,6 +265,10 @@ class Import_declarations():
     
     
     def update(self, inspected_imports, uninspected_imports, test_start_day, test_end_day, valid_start_day):
+        """ Update the dataset for next test phase. 
+            Newly inspected imports are updated to train-labeled data, newly uninspected imports are updated to train-unlabeled data. """
+        
+        
         self.train_valid_lab = pd.concat([self.train_valid_lab, inspected_imports]).sort_index()
         self.train_valid_unlab = pd.concat([self.train_valid_unlab, uninspected_imports]).sort_index()
         
@@ -291,20 +301,11 @@ class Import_declarations():
         
         
         
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-    
-    
 class Syntheticdata(Import_declarations):
+    """ Class for synthetic data
+    
+    ToDo: For later usage, we should support flexibility towards different datasets with different features. End-users would like to use their existing features. For this program, initial preprocessings were done to make columns consistently.
+    """
     def __init__(self, path):
         super(Syntheticdata, self).__init__(path)
         self.profile_candidates = ['importer.id', 'declarant.id', 'tariff.code', 'quantity', 'HS6', 'HS4', 'HS2', 'office.id']
@@ -312,18 +313,21 @@ class Syntheticdata(Import_declarations):
         
         
 class Ndata(Import_declarations):
+    """ Class for Ndata"""
     def __init__(self, path):
         super(Ndata, self).__init__(path)
         self.profile_candidates = ['importer.id', 'declarant.id', 'tariff.code', 'quantity', 'HS6', 'HS4', 'HS2', 'office.id']
 
         
 class Mdata(Import_declarations):
+    """ Class for Mdata"""
     def __init__(self, path):
         super(Mdata, self).__init__(path)
         self.profile_candidates = ['importer.id', 'exporter.name', 'expcty', 'country', 'declarant.id', 'tariff.code', 'quantity', 'HS6', 'HS4', 'HS2', 'office.id']
         
         
 class Tdata(Import_declarations):
+    """ Class for Tdata"""
     def __init__(self, path):
         super(Tdata, self).__init__(path)
         self.profile_candidates = ['importer.id', 'country', 'last.departure.code', 'contract.party.code',
@@ -331,11 +335,13 @@ class Tdata(Import_declarations):
 
 
 class Cdata(Import_declarations):
+    """ Class for Cdata - waiting"""
     def __init__(self, path):
         super(Cdata, self).__init__(path)
 
 
 class Kdata(Import_declarations):
+    """ Class for Kdata - waiting"""
     def __init__(self, path):
         super(Kdata, self).__init__(path)
 
