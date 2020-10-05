@@ -25,7 +25,7 @@ class bATESampling(DATESampling):
     def bATE_sampling(self, k):
         gradEmbedding  = self.get_grad_embedding()
         # normalize
-        gradEmbedding = normalize(gradEmbedding, axis = 1, norm = 'l2')
+        # gradEmbedding = normalize(gradEmbedding, axis = 1, norm = 'l2')
         # get uncertainty
         uncertainty_score = self.get_uncertainty()
         revs = np.asarray(self.get_revenue())
