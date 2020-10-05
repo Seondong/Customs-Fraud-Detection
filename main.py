@@ -191,7 +191,7 @@ if __name__ == '__main__':
     
         
     # Saving simulation results: Output file will be saved under ./results/performances/ directory
-    output_file =  "./results/performances/" + args.output + '-' + samp + '-' + str(final_inspection_rate) +".csv"
+    output_file =  "./results/performances/prelim-" + args.output + '-' + samp + '-' + str(final_inspection_rate) +".csv"
     with open(output_file, 'a') as ff:
         output_metric_name = ['runID', 'data', 'num_train','num_valid','num_test','num_select','num_inspected','num_uninspected','num_test_illicit','test_illicit_rate', 'upper_bound_precision', 'upper_bound_recall','upper_bound_rev', 'sampling', 'initial_inspection_rate', 'current_inspection_rate', 'final_inspection_rate', 'inspection_rate_option', 'mode', 'subsamplings', 'weights','unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue', 'norm-precision', 'norm-recall', 'norm-revenue', 'save']
         print(",".join(output_metric_name),file=ff)
@@ -221,7 +221,8 @@ if __name__ == '__main__':
                 
         # Feature engineering for train, valid, test data
         data.episode = i
-        data.featureEngineering()
+        if samp not in ['random']: 
+            data.featureEngineering()
         current_inspection_rate = confirmed_inspection_plan[i]  # ToDo: Add multiple decaying strategy
         print(i, current_inspection_rate)
         logger.info('%s, %s', data.train_lab.shape, data.test.shape)
