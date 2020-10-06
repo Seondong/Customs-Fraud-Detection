@@ -56,8 +56,8 @@ Currently, the framework supports single-item declarations that the target label
 
 
 ## Preliminary Results on Two Datasets
-*[Data N](fig/ndata.png)
-*[Data T](fig/tdata.png)
+![Data N](fig/ndata.png)
+![Data T](fig/tdata.png)
 
 
 ## Related Repositories
