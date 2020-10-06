@@ -123,7 +123,7 @@ if __name__ == '__main__':
     parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
     parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
     parser.add_argument('--output', type=str, default="result"+"-"+curr_time, help="Name of output file")
-    parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'hybrid', 'tabnet', 'ssl_ae'], help='Sampling strategy')
+    parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'hybrid', 'tabnet', 'ssl_ae', 'noupDATE', 'randomupDATE'], help='Sampling strategy')
     parser.add_argument('--initial_inspection_rate', type=int, default=100, help='Initial inspection rate in training data by percentile')
     parser.add_argument('--final_inspection_rate', type=int, default = 5, help='Percentage of test data need to query')
     parser.add_argument('--inspection_plan', type=str, default = 'direct_decay', choices=['direct_decay','linear_decay','fast_linear_decay'], help='Inspection rate decaying option for simulation time')
@@ -248,7 +248,7 @@ if __name__ == '__main__':
                 sampler = xgb_lr.XGBLRSampling(data, args)
             if samp == 'badge':
                 sampler = badge.BadgeSampling(data, args)
-            if samp == 'DATE':
+            if samp in ['DATE', 'noupDATE', 'randomupDATE']:
                 sampler = DATE.DATESampling(data, args)
             if samp == 'diversity':
                 sampler = diversity.DiversitySampling(data, args, uncertainty_module)
@@ -337,7 +337,16 @@ if __name__ == '__main__':
         test_start_day = test_end_day
         test_end_day = test_start_day + test_length
         valid_start_day = test_start_day - valid_length
-        data.update(inspected_imports, uninspected_imports, test_start_day, test_end_day, valid_start_day)
+        if samp == 'noupDATE':
+        	data.update(data.df.loc[[]], data.df.loc[set(data.test.index)], test_start_day, test_end_day, valid_start_day)
+        if samp == 'randomupDATE':
+        	chosen = random.RandomSampling(data, args).query(num_samples)
+        	indices = [point + data.offset for point in chosen]        	
+        	inspected_imports = data.df.loc[indices]
+        	uninspected_imports = data.df.loc[set(data.test.index)-set(inspected_imports.index)]        	
+        	data.update(inspected_imports, uninspected_imports, test_start_day, test_end_day, valid_start_day)        	
+        else:
+        	data.update(inspected_imports, uninspected_imports, test_start_day, test_end_day, valid_start_day)
         
         
         
