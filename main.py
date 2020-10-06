@@ -124,8 +124,8 @@ if __name__ == '__main__':
     parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
     parser.add_argument('--output', type=str, default="result"+"-"+curr_time, help="Name of output file")
     parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'hybrid', 'tabnet', 'ssl_ae', 'noupDATE', 'randomupDATE'], help='Sampling strategy')
-    parser.add_argument('--initial_inspection_rate', type=int, default=100, help='Initial inspection rate in training data by percentile')
-    parser.add_argument('--final_inspection_rate', type=int, default = 5, help='Percentage of test data need to query')
+    parser.add_argument('--initial_inspection_rate', type=float, default=100, help='Initial inspection rate in training data by percentile')
+    parser.add_argument('--final_inspection_rate', type=float, default = 5, help='Percentage of test data need to query')
     parser.add_argument('--inspection_plan', type=str, default = 'direct_decay', choices=['direct_decay','linear_decay','fast_linear_decay'], help='Inspection rate decaying option for simulation time')
     parser.add_argument('--mode', type=str, default = 'finetune', choices = ['finetune', 'scratch'], help = 'finetune last model or train from scratch')
     parser.add_argument('--subsamplings', type=str, default = 'bATE/DATE', help = 'available for hybrid sampling, the list of sub-sampling techniques seperated by /')
@@ -223,6 +223,8 @@ if __name__ == '__main__':
         data.episode = i
         if samp not in ['random']: 
             data.featureEngineering()
+        else:
+            data.offset = data.test.index[0]
         current_inspection_rate = confirmed_inspection_plan[i]  # ToDo: Add multiple decaying strategy
         print(i, current_inspection_rate)
         logger.info('%s, %s', data.train_lab.shape, data.test.shape)
@@ -338,15 +340,15 @@ if __name__ == '__main__':
         test_end_day = test_start_day + test_length
         valid_start_day = test_start_day - valid_length
         if samp == 'noupDATE':
-        	data.update(data.df.loc[[]], data.df.loc[set(data.test.index)], test_start_day, test_end_day, valid_start_day)
+            data.update(data.df.loc[[]], data.df.loc[set(data.test.index)], test_start_day, test_end_day, valid_start_day)
         if samp == 'randomupDATE':
-        	chosen = random.RandomSampling(data, args).query(num_samples)
-        	indices = [point + data.offset for point in chosen]        	
-        	inspected_imports = data.df.loc[indices]
-        	uninspected_imports = data.df.loc[set(data.test.index)-set(inspected_imports.index)]        	
-        	data.update(inspected_imports, uninspected_imports, test_start_day, test_end_day, valid_start_day)        	
+            chosen = random.RandomSampling(data, args).query(num_samples)
+            indices = [point + data.offset for point in chosen]         
+            inspected_imports = data.df.loc[indices]
+            uninspected_imports = data.df.loc[set(data.test.index)-set(inspected_imports.index)]            
+            data.update(inspected_imports, uninspected_imports, test_start_day, test_end_day, valid_start_day)          
         else:
-        	data.update(inspected_imports, uninspected_imports, test_start_day, test_end_day, valid_start_day)
+            data.update(inspected_imports, uninspected_imports, test_start_day, test_end_day, valid_start_day)
         
         
         

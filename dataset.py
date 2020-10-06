@@ -234,9 +234,15 @@ class Import_declarations():
         self.column_to_use = ['cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'TaxUnitquantity', 'tariff.code', 'HS6', 'HS4', 'HS2', 'SGD.DayofYear', 'SGD.WeekofYear', 'SGD.MonthofYear'] + [col for col in self.train_lab.columns if 'RiskH' in col] 
         
         self.X_train_lab = self.train_lab[self.column_to_use].values
-        self.X_train_unlab = self.train_unlab[self.column_to_use].values
+        if not self.train_unlab.empty:
+            self.X_train_unlab = self.train_unlab[self.column_to_use].values
+        else:
+            self.X_train_unlab = np.asarray([])            
         self.X_valid_lab = self.valid_lab[self.column_to_use].values
-        self.X_valid_unlab = self.valid_unlab[self.column_to_use].values
+        if not self.valid_unlab.empty:
+            self.X_valid_unlab = self.valid_unlab[self.column_to_use].values
+        else:
+            self.X_valid_unlab = np.asarray([])
         self.X_test = self.test[self.column_to_use].values
         print("Data size:")
         print(f'Train labeled: {self.train_lab.shape}, Train unlabeled: {self.train_unlab.shape}, Valid labeled: {self.valid_lab.shape}, Valid unlabeled: {self.valid_unlab.shape}, Test: {self.test.shape}')
@@ -258,9 +264,15 @@ class Import_declarations():
         print("Testing:",cnt[1]/cnt[0])
         
         self.dftrainx_lab = pd.DataFrame(self.X_train_lab,columns=self.column_to_use)
-        self.dftrainx_unlab = pd.DataFrame(self.X_train_unlab,columns=self.column_to_use)
+        try:
+            self.dftrainx_unlab = pd.DataFrame(self.X_train_unlab,columns=self.column_to_use)
+        except:
+            self.dftrainx_unlab = pd.DataFrame(columns=self.column_to_use)
         self.dfvalidx_lab = pd.DataFrame(self.X_valid_lab,columns=self.column_to_use) 
-        self.dfvalidx_unlab = pd.DataFrame(self.X_valid_unlab,columns=self.column_to_use)
+        try:
+            self.dfvalidx_unlab = pd.DataFrame(self.X_valid_unlab,columns=self.column_to_use)
+        except:
+            self.dfvalidx_unlab = pd.DataFrame(columns=self.column_to_use)
         self.dftestx = pd.DataFrame(self.X_test,columns=self.column_to_use)
     
     
