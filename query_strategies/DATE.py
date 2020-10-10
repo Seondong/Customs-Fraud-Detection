@@ -171,10 +171,11 @@ class DATESampling(Strategy):
         self.y_prob = final_output
         
         
-    def query(self, k):
-        self.train_xgb_model()
-        self.prepare_DATE_input()
-        self.train_DATE_model()
+    def query(self, k, **kwargs):
+        if not kwargs['DATE']:
+            self.train_xgb_model()
+            self.prepare_DATE_input()
+            self.train_DATE_model()
         self.predict_frauds()
         chosen = np.argpartition(self.y_prob[self.available_indices], -k)[-k:]
         return self.available_indices[chosen].tolist()

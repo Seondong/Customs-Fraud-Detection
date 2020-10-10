@@ -13,5 +13,5 @@ class Strategy:
         self.available_indices = np.delete(np.arange(self.num_data), unavailable)
 
         
-    def query(self, k):
+    def query(self, k, **kwargs):
         pass

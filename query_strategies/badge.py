@@ -44,7 +44,7 @@ class BadgeSampling(DATESampling):
     def __init__(self, data, args):
         super(BadgeSampling,self).__init__(data, args)
 
-    def query(self, k):
+    def query(self, k, **kwargs):
         # Train DATE model
         self.train_xgb_model()
         self.prepare_DATE_input()

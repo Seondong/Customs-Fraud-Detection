@@ -37,11 +37,10 @@ class bATESampling(DATESampling):
         return chosen
     
     
-    def query(self, k):
-        self.train_xgb_model()
-        self.prepare_DATE_input()
-        self.train_DATE_model()
+    def query(self, k, **kwargs):
+        if not kwargs['DATE']:
+            self.train_xgb_model()
+            self.prepare_DATE_input()
+            self.train_DATE_model()
         chosen = self.bATE_sampling(k)
         return self.available_indices[chosen].tolist()
-
-    

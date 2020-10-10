@@ -53,7 +53,7 @@ class XGBLRSampling(Strategy):
         self.y_prob = self.lr.predict_proba(self.lr_testx)[:,1]
         
         
-    def query(self, k):
+    def query(self, k, **kwargs):
         """ Querying top-k imports to inspect """
         self.train_xgb_model()
         self.prepare_lr_input()

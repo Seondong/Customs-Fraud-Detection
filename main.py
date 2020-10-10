@@ -327,7 +327,8 @@ if __name__ == '__main__':
         output_file_indices =  "./results/query_indices/" + curr_time + '-' + samp + '-' + str(current_inspection_rate) + '-' + mode + "-week-" + str(i) + ".csv"
         
         if samp == 'hybrid':
-            indices_by_subsamp = zip_longest(*[list(islice(indices, num)) for num in sampler.ks])
+            indices_iter = iter(indices)
+            indices_by_subsamp = zip_longest(*[list(islice(indices_iter, num)) for num in sampler.ks])
         else:
             indices_by_subsamp = zip(*[indices])
 

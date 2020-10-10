@@ -324,7 +324,7 @@ class SSLAutoencoderSampling(Strategy):
         self.y_prob = np.ravel(pred_prob)
 
     
-    def query(self, k):
+    def query(self, k, **kwargs):
         self.train_xgb_model()
         self.prepare_SSL_input()
         self.train_model()

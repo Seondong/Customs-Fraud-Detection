@@ -30,7 +30,7 @@ class XGBSampling(Strategy):
         
         
         
-    def query(self, k):
+    def query(self, k, **kwargs):
         self.train_model()
         self.predict_frauds()
         chosen = np.argpartition(self.y_prob[self.available_indices], -k)[-k:]
