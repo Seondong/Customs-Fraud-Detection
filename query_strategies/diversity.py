@@ -50,8 +50,8 @@ class DiversitySampling(DATESampling):
         return chosen
     
     
-    def query(self, k, **kwargs):
-        if not kwargs['DATE']:
+    def query(self, k, model_available = False):
+        if not model_available:
             self.train_xgb_model()
             self.prepare_DATE_input()
             self.train_DATE_model()
