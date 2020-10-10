@@ -11,10 +11,10 @@ class HybridSampling(Strategy):
 		self.weights = weights
 		
 	def query(self, k):
-		ks = [round(k*weight) for weight in self.weights[:-1]]
-		ks.append(k - sum(ks))
+		self.ks = [round(k*weight) for weight in self.weights[:-1]]
+		self.ks.append(k - sum(self.ks))
 		chosen = []
-		for subsamp, num_samp in zip(self.subsamps, ks):
+		for subsamp, num_samp in zip(self.subsamps, self.ks):
 			subsamp.set_available_indices(chosen)
 			chosen = [*chosen, *subsamp.query(num_samp)]
 		return chosen

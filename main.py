@@ -8,6 +8,8 @@ import warnings
 import time 
 import dataset
 import sys
+from itertools import islice 
+from itertools import zip_longest
 from collections import defaultdict
 from datetime import timedelta
 import datetime
@@ -322,12 +324,21 @@ if __name__ == '__main__':
             logger.debug(output_metric)
             print(",".join(output_metric),file=ff)
         
-        
         output_file_indices =  "./results/query_indices/" + curr_time + '-' + samp + '-' + str(current_inspection_rate) + '-' + mode + "-week-" + str(i) + ".csv"
         
-        with open(output_file_indices,"w") as queryFiles:
+        if samp == 'hybrid':
+            indices_by_subsamp = zip_longest(*[list(islice(indices, num)) for num in sampler.ks])
+        else:
+            indices_by_subsamp = zip(*[indices])
+
+        with open(output_file_indices, "w", newline='') as queryFiles:
             wr = csv.writer(queryFiles, delimiter = ",")
-            wr.writerow([i, test_start_day, test_end_day,indices])
+            wr.writerow([i, test_start_day, test_end_day])
+            if samp == 'hybrid':
+                wr.writerow(args.subsamplings.split("/"))
+            else:
+                wr.writerow([samp])
+            wr.writerows(indices_by_subsamp)
 
 
         # Renew valid & test period & dataset
