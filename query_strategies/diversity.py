@@ -50,10 +50,11 @@ class DiversitySampling(DATESampling):
         return chosen
     
     
-    def query(self, k):
-        self.train_xgb_model()
-        self.prepare_DATE_input()
-        self.train_DATE_model()
+    def query(self, k, model_available = False):
+        if not model_available:
+            self.train_xgb_model()
+            self.prepare_DATE_input()
+            self.train_DATE_model()
         chosen = self.diversity_sampling(k)
         return self.available_indices[chosen].tolist()
         
