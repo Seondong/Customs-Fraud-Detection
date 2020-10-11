@@ -8,6 +8,8 @@ import warnings
 import time 
 import dataset
 import sys
+from itertools import islice 
+from itertools import zip_longest
 from collections import defaultdict
 from datetime import timedelta
 import datetime
@@ -76,7 +78,7 @@ def inspection_plan(rate_init, rate_final, numWeeks, option):
 if __name__ == '__main__':
     
     # Initiate directories
-    curr_time = str(int(time.time()))
+    curr_time = str(round(time.time(),2))
     
     if not os.path.exists('./results'):
         os.makedirs('./results')
@@ -325,9 +327,20 @@ if __name__ == '__main__':
         
         output_file_indices =  "./results/query_indices/" + curr_time + '-' + samp + '-' + str(current_inspection_rate) + '-' + mode + "-week-" + str(i) + ".csv"
         
-        with open(output_file_indices,"w") as queryFiles:
+        if samp == 'hybrid':
+            indices_iter = iter(indices)
+            indices_by_subsamp = zip_longest(*[list(islice(indices_iter, num)) for num in sampler.ks])
+        else:
+            indices_by_subsamp = zip(*[indices])
+            
+        with open(output_file_indices, "w", newline='') as queryFiles:
             wr = csv.writer(queryFiles, delimiter = ",")
-            wr.writerow([i, test_start_day, test_end_day,indices])
+            wr.writerow([i, test_start_day, test_end_day])
+            if samp == 'hybrid':
+                wr.writerow(args.subsamplings.split("/"))
+            else:
+                wr.writerow([samp])
+            wr.writerows(indices_by_subsamp)
 
 
         # Renew valid & test period & dataset

@@ -12,4 +12,5 @@ data/NTMdata.csv
 nohup.out
 .ipynb_checkpoints/
 gpu.sh
-*.sh
+bash/
+

@@ -44,11 +44,12 @@ class BadgeSampling(DATESampling):
     def __init__(self, data, args):
         super(BadgeSampling,self).__init__(data, args)
 
-    def query(self, k):
+    def query(self, k, model_available = False):
         # Train DATE model
-        self.train_xgb_model()
-        self.prepare_DATE_input()
-        self.train_DATE_model()
+        if not model_available:
+            self.train_xgb_model()
+            self.prepare_DATE_input()
+            self.train_DATE_model()
         
         # Get embeddings from DATE, run BADGE strategy
         gradEmbedding  = self.get_grad_embedding()

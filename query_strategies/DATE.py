@@ -121,17 +121,20 @@ class DATESampling(Strategy):
         self.data.train_loader = Data.DataLoader(
             dataset=train_dataset,     
             batch_size=batch_size,      
-            shuffle=True,               
+            shuffle=True,
+            num_workers=2
         )
         self.data.valid_loader = Data.DataLoader(
             dataset=valid_dataset,     
             batch_size=batch_size,      
-            shuffle=False,               
+            shuffle=False,
+            num_workers=1
         )
         self.data.test_loader = Data.DataLoader(
             dataset=test_dataset,     
             batch_size=batch_size,      
-            shuffle=False,               
+            shuffle=False,
+            num_workers=1
         )
         
         
@@ -171,10 +174,11 @@ class DATESampling(Strategy):
         self.y_prob = final_output
         
         
-    def query(self, k):
-        self.train_xgb_model()
-        self.prepare_DATE_input()
-        self.train_DATE_model()
+    def query(self, k, model_available = False):
+        if not model_available:
+            self.train_xgb_model()
+            self.prepare_DATE_input()
+            self.train_DATE_model()
         self.predict_frauds()
         chosen = np.argpartition(self.y_prob[self.available_indices], -k)[-k:]
         return self.available_indices[chosen].tolist()
