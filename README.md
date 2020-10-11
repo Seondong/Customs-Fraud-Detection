@@ -6,14 +6,14 @@ This framework supports general import declarations.
 
 
 ## How to Install  
-1. Setup your Python environment: e.g., Anaconda Python 3.7 [Guide](docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html)
+1. Setup your Python environment: e.g., Anaconda Python 3.7 [[Guide]](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html)
 ```
 $ source activate py37 
 ```
 
 2. Clone the repository
 ```
-$ https://github.com/john-mai-2605/WCO-project.git
+$ git clone https://github.com/john-mai-2605/WCO-project.git
 ```
 
 3. Install requirements 
@@ -22,7 +22,7 @@ $ pip install -r requirements.txt
 # Please install the Ranger optimizer by following its instruction.
 ```
 
-4. Run the codes
+4. Run the codes: Refer to main.py for hyperparameters
 ```
 $ export CUDA_VISIBLE_DEVICES=3 && python main.py --data real-m --semi_supervised 0 --sampling hybrid --subsamplings bATE/DATE --weights 0.1/0.9 --mode scratch --train_from 20130101 --test_from 20130701 --test_length 30 --valid_length 30 --initial_inspection_rate 20 --final_inspection_rate 5 --epoch 5 --closs bce --rloss full --save 0 --numweeks 100 --inspection_plan direct_decay
 ```
@@ -52,12 +52,14 @@ Currently, the framework supports single-item declarations that the target label
 * [BADGE](./query_strategies/badge.py): BADGE model uses the gradient embedding of the base model (DATE) and find the most diverse imports by KMeans++. [[Reference]](https://github.com/JordanAsh/badge)
 * [bATE](./query_strategies/bATE.py): Proposed model for better exploration. By following the BADGE model, we first use the embeddings of the base model, DATE. Our contribution is to amplify the embedding with extra uncertainty score, and predicted revenue. Finally, we find the most diverse imports by KMeans++.
 * [Hybrid](./query_strategies/hybrid.py): Support mixing several strategies.
-* [SSL-AE](./query_strategies/ssl_ae.py): Semi-supervised learning approach by optimizing reconstruction loss of all imports and binary cross-entropy of labeled imports
+* [SSL-AE](./query_strategies/ssl_ae.py): Semi-supervised learning approach by optimizing reconstruction loss of all imports and binary cross-entropy of labeled imports.
 
 
 ## Preliminary Results on Two Datasets
-*[Data N](fig/ndata.png)
-*[Data T](fig/tdata.png)
+* Dataset N
+   ![](./fig/ndata.png)
+* Dataset T
+   ![](./fig/tdata.png)
 
 
 ## Related Repositories
