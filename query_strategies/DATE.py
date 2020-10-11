@@ -348,8 +348,8 @@ class VanillaDATE:
                 loss.backward()
                 optimizer.step()
                 if (step+1) % 1000 ==0:  
-                    print("CLS loss:%.4f, REG loss:%.4f, ADV loss:%.4f, Loss:%.4f"\
-                    %(cls_loss.item(),revenue_loss.item(),adv_loss.item(),loss.item()))
+                    print("CLS loss:%.4f, REG loss:%.4f, Loss:%.4f"\
+                    %(cls_loss.item(),revenue_loss.item(),loss.item()))
                     
             # evaluate 
             self.model.eval()
