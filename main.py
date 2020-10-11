@@ -8,8 +8,7 @@ import warnings
 import time 
 import dataset
 import sys
-from itertools import islice 
-from itertools import zip_longest
+from itertools import islice
 from collections import defaultdict
 from datetime import timedelta
 import datetime
@@ -78,7 +77,7 @@ def inspection_plan(rate_init, rate_final, numWeeks, option):
 if __name__ == '__main__':
     
     # Initiate directories
-    curr_time = str(round(time.time(),2))
+    curr_time = str(round(time.time(),3))
     
     if not os.path.exists('./results'):
         os.makedirs('./results')
@@ -86,6 +85,8 @@ if __name__ == '__main__':
         os.makedirs('./results/performances')
     if not os.path.exists('./results/query_indices'):
         os.makedirs('./results/query_indices')
+    if not os.path.exists('./results/query_indices/'+curr_time):
+        os.makedirs('./results/query_indices/'+curr_time)
     if not os.path.exists('./intermediary'):
         os.makedirs('./intermediary')    
     if not os.path.exists('./intermediary/saved_models'):
@@ -325,22 +326,25 @@ if __name__ == '__main__':
             print(",".join(output_metric),file=ff)
         
         
-        output_file_indices =  "./results/query_indices/" + curr_time + '-' + samp + '-' + str(current_inspection_rate) + '-' + mode + "-week-" + str(i) + ".csv"
-        
-        if samp == 'hybrid':
-            indices_iter = iter(indices)
-            indices_by_subsamp = zip_longest(*[list(islice(indices_iter, num)) for num in sampler.ks])
-        else:
-            indices_by_subsamp = zip(*[indices])
+        output_file_indices =  "./results/query_indices/"+curr_time + "/" + curr_time + '-' + samp + '-' + str(current_inspection_rate) + '-' + mode + "-week-" + str(i) + ".csv"
             
         with open(output_file_indices, "w", newline='') as queryFiles:
             wr = csv.writer(queryFiles, delimiter = ",")
-            wr.writerow([i, test_start_day, test_end_day])
+            wr.writerow(['Experiment ID', curr_time])
+            wr.writerow(['Dataset', chosen_data])
+            wr.writerow(['Episode', i])
+            wr.writerow(['Test_start_day', test_start_day])
+            wr.writerow(['Test_end_day', test_end_day])
+            
             if samp == 'hybrid':
-                wr.writerow(args.subsamplings.split("/"))
+                tmpIdx = 0
+                for subsampler, num in zip(args.subsamplings.split('/'), sampler.ks):
+                    row = [subsampler]
+                    row.extend(indices[tmpIdx:tmpIdx+num])
+                    wr.writerow(row)
+                    tmpIdx += num
             else:
-                wr.writerow([samp])
-            wr.writerows(indices_by_subsamp)
+                wr.writerow([samp].extend(indices))
 
 
         # Renew valid & test period & dataset
@@ -352,6 +356,13 @@ if __name__ == '__main__':
         test_start_day = test_end_day
         test_end_day = test_start_day + test_length
         valid_start_day = test_start_day - valid_length
+        
+        
+        """ Variation of the DATE model - only for research purposes (Measure the effect of smarter batch selection)
+        # randomupDATE: Performance evaluation is done by DATE strategy, but newly added instances are random - not realistic)
+        # noupDATE: DATE model does not accept new train data. (But the model anyway needs to be retrained with test data owing to the design choice of our XGB model) 
+        These two strategies will be removed for software release. """
+        
         if samp == 'noupDATE':
             data.update(data.df.loc[[]], data.df.loc[set(data.test.index)], test_start_day, test_end_day, valid_start_day)
         if samp == 'randomupDATE':
