@@ -98,16 +98,15 @@ def stratify_sample(y,test_size=0.2,seed=0):
     return train_idx, test_idx
 
 
-def metrics(y_prob,xgb_testy,revenue_test,best_thresh=None):
+def metrics(y_prob,xgb_testy,revenue_test, args, best_thresh=None):
     """ Evaluate the performance"""
     if best_thresh ==None:
         _,overall_f1,auc = torch_threshold(y_prob,xgb_testy,best_thresh)
     else:
         overall_f1,auc = torch_threshold(y_prob,xgb_testy,best_thresh)
-#     import pdb
-#     pdb.set_trace()
     pr, re, f, rev = [], [], [], []
-    for i in [99,98,95,90]:
+    # For validatation, we measure the performance on 5% (previously, 1%, 2%, 5%, and 10%)
+    for i in [95]: 
         threshold = np.percentile(y_prob, i)
         precision = xgb_testy[y_prob > threshold].mean()
         recall = sum(xgb_testy[y_prob > threshold])/ sum(xgb_testy)
@@ -115,10 +114,10 @@ def metrics(y_prob,xgb_testy,revenue_test,best_thresh=None):
             f1 = hmean([precision, recall])
         except ValueError:
             f1 = 0
-            
         revenue = sum(revenue_test[y_prob > threshold]) / sum(revenue_test)
-        print(f'Checking top {100-i}% suspicious transactions: {len(y_prob[y_prob > threshold])}')
-        print('Precision: %.4f, Recall: %.4f, Revenue: %.4f' % (precision, recall, revenue))
+        if i == 95:
+            print(f'Checking top {100-i}% suspicious transactions: {len(y_prob[y_prob > threshold])}')
+            print('Precision: %.4f, Recall: %.4f, Revenue: %.4f' % (precision, recall, revenue))
         # save results
         pr.append(precision)
         re.append(recall)

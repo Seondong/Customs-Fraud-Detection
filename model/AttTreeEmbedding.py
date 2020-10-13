@@ -1,10 +1,12 @@
 import torch
+from pytorch_memlab import LineProfiler
 import torch.nn.functional as F
 import torch.nn as nn
 import torch.utils.data as Data
 import numpy as np 
 from torch_multi_head_attention import MultiHeadAttention
 from .utils import FocalLoss
+import gc
 
 class Mish(nn.Module):
     """ Mish: A Self Regularized Non-Monotonic Activation Function 
@@ -137,34 +139,43 @@ class DATEModel(nn.Module):
         cls_loss = []
         reg_loss = []
         hiddens = []
-        revs = []        
-        for batch in test_loader:
-            batch_feature, batch_user, batch_item, batch_cls, batch_reg = batch
-            batch_feature,batch_user,batch_item,batch_cls,batch_reg =  \
-            batch_feature.to(self.device), batch_user.to(self.device),\
-            batch_item.to(self.device), batch_cls.to(self.device), batch_reg.to(self.device)
-            batch_cls,batch_reg = batch_cls.view(-1,1), batch_reg.view(-1,1)
-            y_pred_prob, y_pred_rev, hidden = self.forward(batch_feature,batch_user,batch_item)
-            revs.extend(y_pred_rev)
-            hiddens.extend(hidden)
-            
-            # compute classification loss
-            if self.cls_loss_func == 'bce':
-                cls_losses = nn.BCELoss()(y_pred_prob,batch_cls)
-            if self.cls_loss_func == 'focal':
-                cls_losses = FocalLoss()(y_pred_prob, batch_cls)
-            cls_loss.append(cls_losses.item())
+        revs = []  
+        i = 0
+        
+        with torch.no_grad():
+            for batch in test_loader:
+                i += 1
+                batch_feature, batch_user, batch_item, batch_cls, batch_reg = batch
+                batch_feature,batch_user,batch_item,batch_cls,batch_reg =  \
+                batch_feature.to(self.device), batch_user.to(self.device),\
+                batch_item.to(self.device), batch_cls.to(self.device), batch_reg.to(self.device)
+                batch_cls,batch_reg = batch_cls.view(-1,1), batch_reg.view(-1,1)
+                y_pred_prob, y_pred_rev, hidden = self.forward(batch_feature,batch_user,batch_item)
+                revs.extend(y_pred_rev)
+                hiddens.extend(hidden)
 
-            # compute regression loss 
-            if self.reg_loss_func == 'full':
-                reg_losses = nn.MSELoss()(y_pred_rev, batch_reg)
-            if self.reg_loss_func == 'masked':
-                reg_losses = torch.mean(nn.MSELoss(reduction = 'none')(y_pred_rev, batch_reg)*batch_cls)
-            reg_loss.append(reg_losses.item())
+                # compute classification loss
+                if self.cls_loss_func == 'bce':
+                    cls_losses = nn.BCELoss()(y_pred_prob,batch_cls)
+                if self.cls_loss_func == 'focal':
+                    cls_losses = FocalLoss()(y_pred_prob, batch_cls)
+                cls_loss.append(cls_losses.item())
 
-            # store predicted probability 
-            y_pred = y_pred_prob.detach().cpu().numpy().tolist()
-            final_output.extend(y_pred)
+                # compute regression loss 
+                if self.reg_loss_func == 'full':
+                    reg_losses = nn.MSELoss()(y_pred_rev, batch_reg)
+                if self.reg_loss_func == 'masked':
+                    reg_losses = torch.mean(nn.MSELoss(reduction = 'none')(y_pred_rev, batch_reg)*batch_cls)
+                reg_loss.append(reg_losses.item())
+
+                # store predicted probability 
+                y_pred = y_pred_prob.detach().cpu().numpy().tolist()
+                final_output.extend(y_pred)
+
+                del hidden
+                del cls_losses
+                del reg_losses
+                del y_pred
 
         print("CLS loss: %.4f, REG loss: %.4f"% (np.mean(cls_loss), np.mean(reg_loss)) )
         return np.array(final_output).ravel(), np.mean(cls_loss)+ np.mean(reg_loss), (hiddens, revs)

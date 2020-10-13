@@ -1,11 +1,12 @@
 import logging
 import argparse
 import os
+import pathlib
 import csv
 import pdb
+import time
 import pickle
 import warnings
-import time 
 import dataset
 import sys
 from itertools import islice
@@ -22,7 +23,6 @@ from model.AttTreeEmbedding import Attention, DATEModel
 from ranger import Ranger
 from utils import torch_threshold, metrics, metrics_active
 warnings.filterwarnings("ignore")
-from pytorch_tabnet.tab_model import TabNetClassifier, TabNetRegressor
 
 
 def make_logger(curr_time, name=None):
@@ -76,53 +76,39 @@ def inspection_plan(rate_init, rate_final, numWeeks, option):
 
 if __name__ == '__main__':
     
-    # Initiate directories
     curr_time = str(round(time.time(),3))
+    print('Experiment starts: ', curr_time)
     
-    if not os.path.exists('./results'):
-        os.makedirs('./results')
-    if not os.path.exists('./results/performances'):
-        os.makedirs('./results/performances')
-    if not os.path.exists('./results/query_indices'):
-        os.makedirs('./results/query_indices')
-    if not os.path.exists('./results/query_indices/'+curr_time):
-        os.makedirs('./results/query_indices/'+curr_time)
-    if not os.path.exists('./intermediary'):
-        os.makedirs('./intermediary')    
-    if not os.path.exists('./intermediary/saved_models'):
-        os.makedirs('./intermediary/saved_models')   
-    if not os.path.exists('./intermediary/logs'):
-        os.makedirs('./intermediary/logs')
-    if not os.path.exists('./intermediary/leaf_indices'):
-        os.makedirs('./intermediary/leaf_indices')
-    if not os.path.exists('./intermediary/processed_data'):
-        os.makedirs('./intermediary/processed_data')
-    if not os.path.exists('./intermediary/torch_data'):
-        os.makedirs('./intermediary/torch_data')
-    if not os.path.exists('./intermediary/xgb_models'):
-        os.makedirs('./intermediary/xgb_models')
-    if not os.path.exists('./intermediary/tn_models'):
-        os.makedirs('./intermediary/tn_models')
-    if not os.path.exists('./uncertainty_models'):
-        os.makedirs('./uncertainty_models')
-    if not os.path.exists('./intermediary/tn_models'):
-        os.makedirs('./intermediary/tn_models')
+    # Initiate directories
+    pathlib.Path('./results').mkdir(parents=True, exist_ok=True) 
+    pathlib.Path('./results/performances').mkdir(parents=True, exist_ok=True)
+    pathlib.Path('./results/query_indices').mkdir(parents=True, exist_ok=True)
+    pathlib.Path('./intermediary').mkdir(parents=True, exist_ok=True)
+    pathlib.Path('./intermediary/saved_models').mkdir(parents=True, exist_ok=True)
+    pathlib.Path('./intermediary/logs').mkdir(parents=True, exist_ok=True)
+    pathlib.Path('./intermediary/xgb_models').mkdir(parents=True, exist_ok=True)
+    pathlib.Path('./intermediary/tn_models').mkdir(parents=True, exist_ok=True)
+    pathlib.Path('./uncertainty_models').mkdir(parents=True, exist_ok=True)
     
     logger = make_logger(curr_time)
     
     # Parse argument
     parser = argparse.ArgumentParser()
-    parser.add_argument('--epoch', type=int, default=5, help="Number of epochs")
+    
+    # Hyperparameters related to DATE
+    parser.add_argument('--epoch', type=int, default=20, help="Number of epochs for DATE-related models")
+    parser.add_argument('--batch_size', type=int, default=10000, help="Batch size for DATE-related models")
     parser.add_argument('--dim', type=int, default=16, help="Hidden layer dimension")
     parser.add_argument('--lr', type=float, default=0.005, help="learning rate")
     parser.add_argument('--l2', type=float, default=0.01, help="l2 reg")
     parser.add_argument('--alpha', type=float, default=10, help="Regression loss weight")
-    parser.add_argument('--beta', type=float, default=0.00, help="Adversarial loss weight")
     parser.add_argument('--head_num', type=int, default=4, help="Number of heads for self attention")
     parser.add_argument('--use_self', type=int, default=1, help="Whether to use self attention")
     parser.add_argument('--fusion', type=str, choices=["concat","attention"], default="concat", help="Fusion method for final embedding")
     parser.add_argument('--agg', type=str, choices=["sum","max","mean"], default="sum", help="Aggreate type for leaf embedding")
     parser.add_argument('--act', type=str, choices=["mish","relu"], default="relu", help="Activation function")
+    
+    # Hyperparameters related to customs selection
     parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
     parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
     parser.add_argument('--output', type=str, default="result"+"-"+curr_time, help="Name of output file")
@@ -137,12 +123,12 @@ if __name__ == '__main__':
     parser.add_argument('--rev_func', type=str, default = 'log', choices = ['log'], help = 'Uncertainty principle : ambiguity of illicitness or self-supervised manner prediction')
     parser.add_argument('--closs', type=str, default = 'bce', choices = ['bce', 'focal'], help = 'Classification loss function')
     parser.add_argument('--rloss', type=str, default = 'full', choices = ['full', 'masked'], help = 'Regression loss function')
-    parser.add_argument('--train_from', type=str, default = '20160105', help = 'Training period start from (YYYYMMDD)')
-    parser.add_argument('--test_from', type=str, default = '20160112', help = 'Testing period start from (YYYYMMDD)')
-    parser.add_argument('--test_length', type=int, default=3, help='Single testing period length (e.g., 7)')
-    parser.add_argument('--valid_length', type=int, default=3, help='Validation period length (e.g., 7)')
-    parser.add_argument('--data', type=str, default='real-n', choices = ['synthetic', 'real-n', 'real-m', 'real-t', 'real-k', 'real-c'], help = 'Dataset')
-    parser.add_argument('--numweeks', type=int, default=100, help='number of test weeks (week if test_length = 7)')
+    parser.add_argument('--train_from', type=str, default = '20130101', help = 'Training period start from (YYYYMMDD)')
+    parser.add_argument('--test_from', type=str, default = '20130201', help = 'Testing period start from (YYYYMMDD)')
+    parser.add_argument('--test_length', type=int, default=7, help='Single testing period length (e.g., 7)')
+    parser.add_argument('--valid_length', type=int, default=7, help='Validation period length (e.g., 7)')
+    parser.add_argument('--data', type=str, default='synthetic', choices = ['synthetic', 'real-n', 'real-m', 'real-t', 'real-k', 'real-c'], help = 'Dataset')
+    parser.add_argument('--numweeks', type=int, default=50, help='number of test weeks (week if test_length = 7)')
     parser.add_argument('--semi_supervised', type=int, default=0, help='Additionally using uninspected, unlabeled data (1=semi-supervised, 0=fully-supervised)')
     parser.add_argument('--identifier', type=str, default=curr_time, help='identifier for each execution')
     parser.add_argument('--save', type=int, default=0, help='Save intermediary files (1=save, 0=not save)')
@@ -157,7 +143,6 @@ if __name__ == '__main__':
     act = args.act
     fusion = args.fusion
     alpha = args.alpha
-    beta = args.beta
     use_self = args.use_self
     agg = args.agg
     samp = args.sampling
@@ -194,7 +179,11 @@ if __name__ == '__main__':
     
         
     # Saving simulation results: Output file will be saved under ./results/performances/ directory
-    output_file =  "./results/performances/prelim-" + args.output + '-' + samp + '-' + str(final_inspection_rate) +".csv"
+    subsamps = args.subsamplings.replace('/','+')
+    if samp != 'hybrid':
+        subsamps = 'single'
+        
+    output_file =  "./results/performances/www21-" + args.output + '-' + samp + '-' + subsamps + '-' + str(final_inspection_rate) + ".csv"
     with open(output_file, 'a') as ff:
         output_metric_name = ['runID', 'data', 'num_train','num_valid','num_test','num_select','num_inspected','num_uninspected','num_test_illicit','test_illicit_rate', 'upper_bound_precision', 'upper_bound_recall','upper_bound_rev', 'sampling', 'initial_inspection_rate', 'current_inspection_rate', 'final_inspection_rate', 'inspection_rate_option', 'mode', 'subsamplings', 'weights','unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue', 'norm-precision', 'norm-recall', 'norm-revenue', 'save']
         print(",".join(output_metric_name),file=ff)
@@ -273,7 +262,18 @@ if __name__ == '__main__':
             weights = [float(weight) for weight in args.weights.split("/")]
             sampler = hybrid.HybridSampling(data, args, subsamplers, weights)
         
-        chosen = sampler.query(num_samples)
+        
+        # If it fails to query, try one more time. If it fails again, do random sampling.
+        try:
+            chosen = sampler.query(num_samples)
+            
+        except:
+            try:
+                chosen = sampler.query(num_samples)
+            except:
+                chosen = random.RandomSampling(data, args).query(num_samples)
+            
+            
         logger.info("%s, %s, %s", len(set(chosen)), len(chosen), num_samples)
         assert len(set(chosen)) == num_samples
   
@@ -326,7 +326,7 @@ if __name__ == '__main__':
             print(",".join(output_metric),file=ff)
         
         
-        output_file_indices =  "./results/query_indices/"+curr_time + "/" + curr_time + '-' + samp + '-' + str(current_inspection_rate) + '-' + mode + "-week-" + str(i) + ".csv"
+        output_file_indices =  "./results/query_indices/" + curr_time + '-' + samp + '-' + subsamplings.replace('/','+') + '-' + str(current_inspection_rate) + '-' + mode + "-week-" + str(i) + ".csv"
             
         with open(output_file_indices, "w", newline='') as queryFiles:
             wr = csv.writer(queryFiles, delimiter = ",")
@@ -344,7 +344,9 @@ if __name__ == '__main__':
                     wr.writerow(row)
                     tmpIdx += num
             else:
-                wr.writerow([samp].extend(indices))
+                row = [samp]
+                row.extend(indices)
+                wr.writerow(row)
 
 
         # Renew valid & test period & dataset
