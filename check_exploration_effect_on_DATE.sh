@@ -1,40 +1,23 @@
-    echo check_exploration_effect_on_DATE - T dataset
-    
-    sleep 2
-    
-    
-    python main.py --data real-t --semi_supervised 0 --sampling hybrid --subsamplings DATE/random --weights 0.9/0.1 --mode scratch --train_from 20150101 --test_from 20150201 --test_length 7 --valid_length 7 --initial_inspection_rate 100 --final_inspection_rate 5 --epoch 5 --closs bce --rloss full --save 0 --numweeks 300 --inspection_plan direct_decay
-    
-    python main.py --data real-t --semi_supervised 0 --sampling hybrid --subsamplings DATE/diversity --weights 0.9/0.1 --mode scratch --train_from 20150101 --test_from 20150201 --test_length 7 --valid_length 7 --initial_inspection_rate 100 --final_inspection_rate 5 --epoch 5 --closs bce --rloss full --save 0 --numweeks 300 --inspection_plan direct_decay
+export CUDA_VISIBLE_DEVICES=0 && nohup python main.py --data real-t --semi_supervised 0 --sampling hybrid --subsamplings DATE/random --weights 0.9/0.1 --mode scratch --train_from 20150101 --test_from 20150301 --test_length 7 --valid_length 28 --initial_inspection_rate 100 --final_inspection_rate 5 --epoch 10 --closs bce --rloss full --save 0 --numweeks 300 --inspection_plan direct_decay --batch_size 512 &> ./logs/nohup-t1-DATE-random-5.out & 
 
-    python main.py --data real-t --semi_supervised 0 --sampling hybrid --subsamplings DATE/badge --weights 0.9/0.1 --mode scratch --train_from 20150101 --test_from 20150201 --test_length 7 --valid_length 7 --initial_inspection_rate 100 --final_inspection_rate 5 --epoch 5 --closs bce --rloss full --save 0 --numweeks 300 --inspection_plan direct_decay
-    
-    python main.py --data real-t --semi_supervised 0 --sampling hybrid --subsamplings DATE/bATE --weights 0.9/0.1 --mode scratch --train_from 20150101 --test_from 20150201 --test_length 7 --valid_length 7 --initial_inspection_rate 100 --final_inspection_rate 5 --epoch 5 --closs bce --rloss full --save 0 --numweeks 300 --inspection_plan direct_decay
+export CUDA_VISIBLE_DEVICES=1 && nohup python main.py --data real-t --semi_supervised 0 --sampling hybrid --subsamplings DATE/diversity --weights 0.9/0.1 --mode scratch --train_from 20150101 --test_from 20150301 --test_length 7 --valid_length 28 --initial_inspection_rate 100 --final_inspection_rate 5 --epoch 10 --closs bce --rloss full --save 0 --numweeks 300 --inspection_plan direct_decay --batch_size 512 &> ./logs/nohup-t1-DATE-diversity-5.out & 
 
-    
-    echo check_exploration_effect_on_DATE - N dataset
-    
-    sleep 2
-    
-    
-    python main.py --data real-n --semi_supervised 0 --sampling hybrid --subsamplings DATE/random --weights 0.9/0.1 --mode scratch --train_from 20130101 --test_from 20130201 --test_length 7 --valid_length 7 --initial_inspection_rate 100 --final_inspection_rate 5 --epoch 5 --closs bce --rloss full --save 0 --numweeks 300 --inspection_plan direct_decay
-    
-    python main.py --data real-n --semi_supervised 0 --sampling hybrid --subsamplings DATE/diversity --weights 0.9/0.1 --mode scratch --train_from 20130101 --test_from 20130201 --test_length 7 --valid_length 7 --initial_inspection_rate 100 --final_inspection_rate 5 --epoch 5 --closs bce --rloss full --save 0 --numweeks 300 --inspection_plan direct_decay
+export CUDA_VISIBLE_DEVICES=2 && nohup python main.py --data real-t --semi_supervised 0 --sampling hybrid --subsamplings DATE/badge --weights 0.9/0.1 --mode scratch --train_from 20150101 --test_from 20150301 --test_length 7 --valid_length 28 --initial_inspection_rate 100 --final_inspection_rate 5 --epoch 10 --closs bce --rloss full --save 0 --numweeks 300 --inspection_plan direct_decay --batch_size 512 &> ./logs/nohup-t1-DATE-badge-5.out & 
 
-    python main.py --data real-n --semi_supervised 0 --sampling hybrid --subsamplings DATE/badge --weights 0.9/0.1 --mode scratch --train_from 20130101 --test_from 20130201 --test_length 7 --valid_length 7 --initial_inspection_rate 100 --final_inspection_rate 5 --epoch 5 --closs bce --rloss full --save 0 --numweeks 300 --inspection_plan direct_decay
-    
-    python main.py --data real-n --semi_supervised 0 --sampling hybrid --subsamplings DATE/bATE --weights 0.9/0.1 --mode scratch --train_from 20130101 --test_from 20130201 --test_length 7 --valid_length 7 --initial_inspection_rate 100 --final_inspection_rate 5 --epoch 5 --closs bce --rloss full --save 0 --numweeks 300 --inspection_plan direct_decay
-    
-    
-    echo check_exploration_effect_on_DATE - M dataset
-    
-    sleep 2
+export CUDA_VISIBLE_DEVICES=3 && nohup python main.py --data real-t --semi_supervised 0 --sampling hybrid --subsamplings DATE/bATE --weights 0.9/0.1 --mode scratch --train_from 20150101 --test_from 20150301 --test_length 7 --valid_length 28 --initial_inspection_rate 100 --final_inspection_rate 5 --epoch 10 --closs bce --rloss full --save 0 --numweeks 300 --inspection_plan direct_decay --batch_size 512 &> ./logs/nohup-t1-DATE-bATE-5.out &
 
+export CUDA_VISIBLE_DEVICES=4 && nohup python main.py --data real-n --semi_supervised 0 --sampling hybrid --subsamplings DATE/random --weights 0.9/0.1 --mode scratch --train_from 20130101 --test_from 20130301 --test_length 7 --valid_length 28 --initial_inspection_rate 100 --final_inspection_rate 5 --epoch 10 --closs bce --rloss full --save 0 --numweeks 300 --inspection_plan direct_decay --batch_size 512 &> ./logs/nohup-n1-DATE-random-5.out &
 
-    python main.py --data real-m --semi_supervised 0 --sampling hybrid --subsamplings DATE/random --weights 0.9/0.1 --mode scratch --train_from 20130101 --test_from 20130701 --test_length 14 --valid_length 14 --initial_inspection_rate 100 --final_inspection_rate 5 --epoch 5 --closs bce --rloss full --save 0 --numweeks 300 --inspection_plan direct_decay
-    
-    python main.py --data real-m --semi_supervised 0 --sampling hybrid --subsamplings DATE/diversity --weights 0.9/0.1 --mode scratch --train_from 20130101 --test_from 20130701 --test_length 14 --valid_length 14 --initial_inspection_rate 100 --final_inspection_rate 5 --epoch 5 --closs bce --rloss full --save 0 --numweeks 300 --inspection_plan direct_decay
+export CUDA_VISIBLE_DEVICES=5 && nohup python main.py --data real-n --semi_supervised 0 --sampling hybrid --subsamplings DATE/diversity --weights 0.9/0.1 --mode scratch --train_from 20130101 --test_from 20130301 --test_length 7 --valid_length 28 --initial_inspection_rate 100 --final_inspection_rate 5 --epoch 10 --closs bce --rloss full --save 0 --numweeks 300 --inspection_plan direct_decay --batch_size 512 &> ./logs/nohup-n1-DATE-diversity-5.out &
 
-    python main.py --data real-m --semi_supervised 0 --sampling hybrid --subsamplings DATE/badge --weights 0.9/0.1 --mode scratch --train_from 20130101 --test_from 20130701 --test_length 14 --valid_length 14 --initial_inspection_rate 100 --final_inspection_rate 5 --epoch 5 --closs bce --rloss full --save 0 --numweeks 300 --inspection_plan direct_decay
-    
-    python main.py --data real-m --semi_supervised 0 --sampling hybrid --subsamplings DATE/bATE --weights 0.9/0.1 --mode scratch --train_from 20130101 --test_from 20130701 --test_length 14 --valid_length 14 --initial_inspection_rate 100 --final_inspection_rate 5 --epoch 5 --closs bce --rloss full --save 0 --numweeks 300 --inspection_plan direct_decay
+export CUDA_VISIBLE_DEVICES=0 && nohup python main.py --data real-n --semi_supervised 0 --sampling hybrid --subsamplings DATE/badge --weights 0.9/0.1 --mode scratch --train_from 20130101 --test_from 20130301 --test_length 7 --valid_length 28 --initial_inspection_rate 100 --final_inspection_rate 5 --epoch 10 --closs bce --rloss full --save 0 --numweeks 300 --inspection_plan direct_decay --batch_size 512 &> ./logs/nohup-n1-DATE-badge-5.out &
+
+export CUDA_VISIBLE_DEVICES=1 && nohup python main.py --data real-n --semi_supervised 0 --sampling hybrid --subsamplings DATE/bATE --weights 0.9/0.1 --mode scratch --train_from 20130101 --test_from 20130301 --test_length 7 --valid_length 28 --initial_inspection_rate 100 --final_inspection_rate 5 --epoch 10 --closs bce --rloss full --save 0 --numweeks 300 --inspection_plan direct_decay --batch_size 512 &> ./logs/nohup-n1-DATE-bATE-5.out &
+
+export CUDA_VISIBLE_DEVICES=2 && nohup python main.py --data real-m --semi_supervised 0 --sampling hybrid --subsamplings DATE/random --weights 0.9/0.1 --mode scratch --train_from 20130101 --test_from 20130301 --test_length 7 --valid_length 14 --initial_inspection_rate 100 --final_inspection_rate 5 --epoch 10 --closs bce --rloss full --save 0 --numweeks 300 --inspection_plan direct_decay --batch_size 512 &> ./logs/nohup-m1-DATE-random-5.out &
+
+export CUDA_VISIBLE_DEVICES=3 && nohup python main.py --data real-m --semi_supervised 0 --sampling hybrid --subsamplings DATE/diversity --weights 0.9/0.1 --mode scratch --train_from 20130101 --test_from 20130301 --test_length 7 --valid_length 14 --initial_inspection_rate 100 --final_inspection_rate 5 --epoch 10 --closs bce --rloss full --save 0 --numweeks 300 --inspection_plan direct_decay --batch_size 512 &> ./logs/nohup-m1-DATE-diversity-5.out &
+
+export CUDA_VISIBLE_DEVICES=4 && nohup python main.py --data real-m --semi_supervised 0 --sampling hybrid --subsamplings DATE/badge --weights 0.9/0.1 --mode scratch --train_from 20130101 --test_from 20130301 --test_length 7 --valid_length 14 --initial_inspection_rate 100 --final_inspection_rate 5 --epoch 10 --closs bce --rloss full --save 0 --numweeks 300 --inspection_plan direct_decay --batch_size 512 &> ./logs/nohup-m1-DATE-badge-5.out &
+
+export CUDA_VISIBLE_DEVICES=5 && nohup python main.py --data real-m --semi_supervised 0 --sampling hybrid --subsamplings DATE/bATE --weights 0.9/0.1 --mode scratch --train_from 20130101 --test_from 20130301 --test_length 7 --valid_length 14 --initial_inspection_rate 100 --final_inspection_rate 5 --epoch 10 --closs bce --rloss full --save 0 --numweeks 300 --inspection_plan direct_decay --batch_size 512 &> ./logs/nohup-m1-DATE-bATE-5.out &
