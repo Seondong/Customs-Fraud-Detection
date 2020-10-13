@@ -33,6 +33,7 @@ class DATESampling(Strategy):
         super(DATESampling,self).__init__(data, args)
         self.model_name = "DATE"
         self.model_path = "./intermediary/saved_models/%s-%s.pkl" % (self.model_name,self.args.identifier)
+        self.batch_size = args.batch_size
         
     
     def train_xgb_model(self):
@@ -117,24 +118,20 @@ class DATESampling(Strategy):
         test_dataset = Data.TensorDataset(test_leaves,test_user,test_item,test_label_cls,test_label_reg)
         
         
-        batch_size = 256
         self.data.train_loader = Data.DataLoader(
             dataset=train_dataset,     
-            batch_size=batch_size,      
-            shuffle=True,
-            num_workers=2
+            batch_size=self.batch_size,      
+            shuffle=True
         )
         self.data.valid_loader = Data.DataLoader(
             dataset=valid_dataset,     
-            batch_size=batch_size,      
-            shuffle=False,
-            num_workers=1
+            batch_size=self.batch_size,      
+            shuffle=False
         )
         self.data.test_loader = Data.DataLoader(
             dataset=test_dataset,     
-            batch_size=batch_size,      
-            shuffle=False,
-            num_workers=1
+            batch_size=self.batch_size,      
+            shuffle=False
         )
         
         
@@ -275,7 +272,6 @@ class VanillaDATE:
         head_num = args.head_num
         act = args.act
         fusion = args.fusion
-        beta = args.beta
         alpha = args.alpha
         use_self = args.use_self
         agg = args.agg
@@ -283,7 +279,6 @@ class VanillaDATE:
         rloss = args.rloss
         
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        
         self.model = DATEModel(leaf_num,importer_size,item_size,\
                                         dim,head_num,\
                                         fusion_type=fusion,act=act,device=device,\
@@ -320,6 +315,7 @@ class VanillaDATE:
         no_improvement = 0
         current_score = None 
         
+        print()
         print("Training DATE model ...")
         for epoch in range(epochs):
             for step, (batch_feature,batch_user,batch_item,batch_cls,batch_reg) in enumerate(train_loader):
@@ -358,36 +354,23 @@ class VanillaDATE:
             y_prob, val_loss, _ = self.model.module.eval_on_batch(valid_loader)
             y_pred_tensor = torch.tensor(y_prob).float().to(device)
             best_threshold, val_score, roc = torch_threshold(y_prob,xgb_validy)
-            overall_f1, auc, precisions, recalls, f1s, revenues = metrics(y_prob,xgb_validy,revenue_valid)
-            select_best = np.mean(revenues)  # instead of f1s
-            print("Over-all F1:%.4f, AUC:%.4f, F1-top:%.4f" % (overall_f1, auc, select_best))
-
-            print("Evaluate at epoch %s"%(epoch+1))
-            y_prob, val_loss, _ = self.model.module.eval_on_batch(test_loader)
-            y_pred_tensor = torch.tensor(y_prob).float().to(device)
-            overall_f1, auc, precisions, recalls, f1s, revenues = metrics(y_prob,xgb_testy,revenue_test, best_thresh=best_threshold)
-            print("Over-all F1:%.4f, AUC:%.4f, F1-top:%.4f" %(overall_f1, auc, np.mean(f1s)))
+            overall_f1, auc, precisions, recalls, f1s, revenues = metrics(y_prob,xgb_validy,revenue_valid,self.args)
+            select_best = np.mean(precisions+revenues)  # instead of f1s
+            print("Overall F1:%.4f, AUC:%.4f, F1-top:%.4f" % (overall_f1, auc, select_best))
 
             # save best model 
             if select_best >= global_best_score:
                 global_best_score = select_best
                 torch.save(self.model, self.model_path)
-            print(os.path.abspath(self.model_path))
-            
-            # early stopping 
-            if current_score == None:
-                current_score = select_best
-                continue
-            if select_best < current_score:
-                current_score = select_best
+                print(os.path.abspath(self.model_path))
+                no_improvement = 0
+            else:
                 no_improvement += 1
+            
             if no_improvement >= stop_rounds:
                 print("Early stopping...")
                 break 
-            if select_best > current_score:
-                no_improvement = 0
-                current_score = None
-
+                
                 
     def evaluate(self):
         
