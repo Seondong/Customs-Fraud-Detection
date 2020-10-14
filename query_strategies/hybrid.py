@@ -10,6 +10,7 @@ class HybridSampling(Strategy):
         assert len(subsamps) == len(weights)
         self.subsamps = subsamps
         self.weights = weights
+        self.available_indices = None  # Needed!
 
     def query(self, k):
         self.ks = [round(k*weight) for weight in self.weights[:-1]]
