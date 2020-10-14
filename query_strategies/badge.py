@@ -12,7 +12,9 @@ def init_centers(X, K):
     centInds = [0.] * len(X)
     cent = 0
     # print('#Samps\tTotal Distance')
-    while len(mu) < K:
+    while len(set(mu)) < K:             
+        # Sundong: Changed from len(mu) to len(set(mu)       
+        # While debugging in 100% inspection scenario, it selected duplicated items, that results smaller number of inspections than random
         if len(mu) == 1:
             D2 = pairwise_distances(X, mu).ravel().astype(float)
         else:
