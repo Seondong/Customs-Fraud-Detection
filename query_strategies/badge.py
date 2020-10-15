@@ -8,11 +8,11 @@ from .DATE import DATESampling
 def init_centers(X, K):
     ind = np.argmax([np.linalg.norm(s, 2) for s in X])
     mu = [X[ind]]
-    indsAll = [ind]
+    indsAll = {ind}
     centInds = [0.] * len(X)
     cent = 0
     # print('#Samps\tTotal Distance')
-    while len(set(mu)) < K:             
+    while len(mu) < K:             
         # Sundong: Changed from len(mu) to len(set(mu)       
         # While debugging in 100% inspection scenario, it selected duplicated items, that results smaller number of inspections than random
         if len(mu) == 1:
@@ -30,12 +30,14 @@ def init_centers(X, K):
         customDist = stats.rv_discrete(name='custm', values=(np.arange(len(D2)), Ddist))
         ind = customDist.rvs(size=1)[0]
         mu.append(X[ind])
-        indsAll.append(ind)
+        indsAll.add(ind)
         cent += 1
+    indsAll = list(indsAll)
     gram = np.matmul(X[indsAll], X[indsAll].T)
     val, _ = np.linalg.eig(gram)
     val = np.abs(val)
     vgt = val[val > 1e-2]
+    print("Selected:", indsAll)
     return indsAll
 
 
