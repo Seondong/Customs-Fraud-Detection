@@ -13,8 +13,8 @@ def init_centers(X, K):
     cent = 0
     # print('#Samps\tTotal Distance')
     while len(mu) < K:             
-        # Sundong: Changed from len(mu) to len(set(mu)       
-        # While debugging in 100% inspection scenario, it selected duplicated items, that results smaller number of inspections than random
+        # Sundong: ideally it should be changed from len(mu) to len(indsAll), but the sampling would not terminate.     
+        # While debugging in 100% inspection scenario, it selects duplicated items, resulting in smaller number of inspections than random selection
         if len(mu) == 1:
             D2 = pairwise_distances(X, mu).ravel().astype(float)
         else:
@@ -37,7 +37,14 @@ def init_centers(X, K):
     val, _ = np.linalg.eig(gram)
     val = np.abs(val)
     vgt = val[val > 1e-2]
-    print("Selected:", indsAll)
+    
+    # Added by Sundong: 
+    # Handling edge cases: if the number of selected items is less than expected, select remaining portion as random. 
+    unselected = np.setdiff1d(np.arange(len(D2)), indsAll)
+    additionally_selected_inds = np.random.choice(unselected, K-len(indsAll), replace=False)
+    indsAll.extend(additionally_selected_inds)
+    
+    assert K == len(indsAll)
     return indsAll
 
 
