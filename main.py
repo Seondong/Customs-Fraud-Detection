@@ -273,7 +273,9 @@ if __name__ == '__main__':
             
             
         logger.info("%s, %s, %s", len(set(chosen)), len(chosen), num_samples)
+        print(chosen)
         assert len(set(chosen)) == num_samples
+        
   
 
         # Indices of sampled imports (Considered as fraud by model) -> This will be inspected thus annotated.    
