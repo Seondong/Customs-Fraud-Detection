@@ -77,7 +77,7 @@ class DATEModel(nn.Module):
             self.act = Mish() 
         self.fusion_type = fusion_type
         self.use_self = use_self
-
+        self.performance = 0
 
         # embedding layers 
         self.leaf_embedding = nn.Embedding(max_leaf,dim)
