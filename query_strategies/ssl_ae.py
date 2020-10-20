@@ -126,7 +126,7 @@ def warm_up(epoch, max_epoch=10, w_max=0.1):
 
       
 class SSLAutoencoderSampling(Strategy):
-    """ Training and fraud detection by the proposed semi-autoencoder model, contributed by Yu-Che Tsai"""
+    """ Training and fraud detection by the proposed semi-autoencoder model"""
     def __init__(self, data, args):
         self.data = data
         self.args = args
