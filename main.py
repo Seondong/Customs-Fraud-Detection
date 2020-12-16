@@ -13,7 +13,7 @@ from itertools import islice
 from collections import defaultdict
 from datetime import timedelta
 import datetime
-from query_strategies import badge, bATE, random, DATE, diversity, uncertainty, hybrid, xgb, xgb_lr, ssl_ae, tabnet
+from query_strategies import badge, bATE, random, DATE, diversity, uncertainty, hybrid, xgb, xgb_lr, ssl_ae, tabnet, deepSAD, multideepSAD
 import numpy as np
 import torch
 import torch.utils.data as Data
@@ -167,7 +167,7 @@ if __name__ == '__main__':
     parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
     parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
     parser.add_argument('--output', type=str, default="result"+"-"+curr_time, help="Name of output file")
-    parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'hybrid', 'tabnet', 'ssl_ae', 'noupDATE', 'randomupDATE', 'adahybrid'], help='Sampling strategy')
+    parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'hybrid', 'tabnet', 'ssl_ae', 'noupDATE', 'randomupDATE', 'adahybrid', 'deepSAD', 'multideepSAD'], help='Sampling strategy')
     parser.add_argument('--initial_inspection_rate', type=float, default=100, help='Initial inspection rate in training data by percentile')
     parser.add_argument('--final_inspection_rate', type=float, default = 5, help='Percentage of test data need to query')
     parser.add_argument('--inspection_plan', type=str, default = 'direct_decay', choices=['direct_decay','linear_decay','fast_linear_decay'], help='Inspection rate decaying option for simulation time')
@@ -311,6 +311,10 @@ if __name__ == '__main__':
                 sampler = ssl_ae.SSLAutoencoderSampling(data, args)
             if samp == 'tabnet':
                 sampler = tabnet.TabnetSampling(data, args)
+            if samp == 'deepSAD': # check
+                sampler = deepSAD.deepSADSampling(data, args)
+            if samp == 'multideepSAD':
+                sampler = multideepSAD.multideepSADSampling(data, args)
             return sampler
             
         if samp not in ['hybrid', 'adahybrid']:
