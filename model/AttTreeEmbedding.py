@@ -248,7 +248,7 @@ class AnomalyDATEModel(nn.Module):
             regression_output = torch.relu(self.output_reg_layer(hidden))
             return hidden, classification_output, regression_output
         return hidden
-    
+
 
     def get_average_hidden_vec(self,train_loader): # calculate average hidden vector on test loader
         with torch.no_grad():
@@ -259,7 +259,8 @@ class AnomalyDATEModel(nn.Module):
                 batch_feature,batch_user,batch_item,batch_cls,batch_reg =  \
                 batch_feature.to(self.device), batch_user.to(self.device),\
                 batch_item.to(self.device), batch_cls.to(self.device), batch_reg.to(self.device)
-                batch_cls,batch_reg = batch_cls.view(-1,1), batch_reg.view(-1,1)                
+                batch_cls,batch_reg = batch_cls.view(-1,1), batch_reg.view(-1,1)
+                
                 hidden = self.forward(batch_feature,batch_user,batch_item)
                 count += 1
                 if first:
@@ -267,12 +268,9 @@ class AnomalyDATEModel(nn.Module):
                 else:
                     avg_hidden += hidden
                     
-        #avg_hidden = avg_hidden.sum(dim = 0)
-        #self.avg_hidden = F.normalize(avg_hidden, dim=-1)
         avg_hidden /= count
         self.avg_hidden = avg_hidden.mean(dim = 0)
-        return self.avg_hidden
-    
+        return self.avg_hidden    
     
     def get_average_hidden_vec_clusters(self,train_loader,n_cluster=20,random_state=0): # calculate average hidden vector on test loader
         X = []
