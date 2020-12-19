@@ -7,6 +7,7 @@ import numpy as np
 from torch_multi_head_attention import MultiHeadAttention
 from .utils import FocalLoss
 import gc
+from sklearn.cluster import KMeans
 from sklearn.metrics import roc_auc_score
 
 
@@ -219,7 +220,7 @@ class AnomalyDATEModel(nn.Module):
         self.reg_loss_func = reg_loss_func 
         self.cls_loss_func = cls_loss_func 
 
-    def forward(self,feature,uid,item_id):
+    def forward(self,feature,uid,item_id, pretrain=False):
         leaf_vectors = self.leaf_embedding(feature)
         if self.use_self:
             leaf_vectors = self.self_att(leaf_vectors,leaf_vectors,leaf_vectors)
@@ -241,7 +242,11 @@ class AnomalyDATEModel(nn.Module):
             raise "Fusion type error"
         hidden = self.hidden(fusion)
         hidden = self.act(hidden)
-        #hidden = F.normalize(hidden, dim=-1)
+        
+        if pretrain == True:
+            classification_output = torch.sigmoid(self.output_cls_layer(hidden))
+            regression_output = torch.relu(self.output_reg_layer(hidden))
+            return hidden, classification_output, regression_output
         return hidden
 
 
@@ -263,13 +268,82 @@ class AnomalyDATEModel(nn.Module):
                 else:
                     avg_hidden += hidden
                     
-        #avg_hidden = avg_hidden.sum(dim = 0)
-        #self.avg_hidden = F.normalize(avg_hidden, dim=-1)
         avg_hidden /= count
         self.avg_hidden = avg_hidden.mean(dim = 0)
-        return self.avg_hidden
-
+        return self.avg_hidden    
     
+    def get_average_hidden_vec_clusters(self,train_loader,n_cluster=20,random_state=0): # calculate average hidden vector on test loader
+        X = []
+        with torch.no_grad():
+            count = 0
+            for batch in train_loader:
+                batch_feature, batch_user, batch_item, batch_cls, batch_reg = batch
+                batch_feature,batch_user,batch_item,batch_cls,batch_reg =  \
+                batch_feature.to(self.device), batch_user.to(self.device),\
+                batch_item.to(self.device), batch_cls.to(self.device), batch_reg.to(self.device)
+                batch_cls,batch_reg = batch_cls.view(-1,1), batch_reg.view(-1,1)
+                
+                hidden = self.forward(batch_feature,batch_user,batch_item)
+                if count == 0:
+                    X = hidden
+                else:
+                    X = torch.cat((X, hidden), dim = 0)                    
+                count += 1
+                   
+        X = X.cpu().numpy()
+        kmeans = KMeans(n_clusters=n_cluster, random_state=random_state).fit(X)
+        self.avg_hidden = torch.Tensor(kmeans.cluster_centers_).to(self.device)
+        return self.avg_hidden
+    
+
+  
+    def eval_on_batch_for_pretrain(self,test_loader): # predict test data using batch for pretraining
+        final_output = []
+        cls_loss = []
+        reg_loss = []
+        hiddens = []
+        revs = []  
+        i = 0
+        
+        with torch.no_grad():
+            for batch in test_loader:
+                i += 1
+                batch_feature, batch_user, batch_item, batch_cls, batch_reg = batch
+                batch_feature,batch_user,batch_item,batch_cls,batch_reg =  \
+                batch_feature.to(self.device), batch_user.to(self.device),\
+                batch_item.to(self.device), batch_cls.to(self.device), batch_reg.to(self.device)
+                batch_cls,batch_reg = batch_cls.view(-1,1), batch_reg.view(-1,1)
+                hidden, y_pred_prob, y_pred_rev = self.forward(batch_feature,batch_user,batch_item, pretrain=True)
+                revs.extend(y_pred_rev)
+                hiddens.extend(hidden)
+
+                # compute classification loss
+                if self.cls_loss_func == 'bce':
+                    cls_losses = nn.BCELoss()(y_pred_prob,batch_cls)
+                if self.cls_loss_func == 'focal':
+                    cls_losses = FocalLoss()(y_pred_prob, batch_cls)
+                cls_loss.append(cls_losses.item())
+
+                # compute regression loss 
+                if self.reg_loss_func == 'full':
+                    reg_losses = nn.MSELoss()(y_pred_rev, batch_reg)
+                if self.reg_loss_func == 'masked':
+                    reg_losses = torch.mean(nn.MSELoss(reduction = 'none')(y_pred_rev, batch_reg)*batch_cls)
+                reg_loss.append(reg_losses.item())
+
+                # store predicted probability 
+                y_pred = y_pred_prob.detach().cpu().numpy().tolist()
+                final_output.extend(y_pred)
+
+                del hidden
+                del cls_losses
+                del reg_losses
+                del y_pred
+
+        print("CLS loss: %.4f, REG loss: %.4f"% (np.mean(cls_loss), np.mean(reg_loss)) )
+        return np.array(final_output).ravel(), np.mean(cls_loss)+ np.mean(reg_loss), (hiddens, revs)
+
+
     def eval_on_batch(self,test_loader): # predict test data using batch 
         hiddens = []
         labels = []
@@ -286,8 +360,11 @@ class AnomalyDATEModel(nn.Module):
                 batch_cls,batch_reg = batch_cls.view(-1,1), batch_reg.view(-1,1)
                 hidden = self.forward(batch_feature,batch_user,batch_item)
                 
-                #normality_score = torch.matmul(hidden, self.avg_hidden)
-                normality_score = torch.norm(hidden - self.avg_hidden, dim=-1)
+                if len(self.avg_hidden.shape) == 2:
+                    distance_matrix = torch.cdist(hidden, self.avg_hidden)
+                    normality_score = distance_matrix.min(dim=1).values
+                else: 
+                    normality_score = torch.norm(hidden - self.avg_hidden, dim=-1)
 
                 normality_scores.extend(normality_score.cpu().numpy())
                 hiddens.extend(hidden)
