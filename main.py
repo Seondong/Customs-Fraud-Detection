@@ -165,6 +165,7 @@ if __name__ == '__main__':
     parser.add_argument('--act', type=str, choices=["mish","relu"], default="relu", help="Activation function")
     
     # Hyperparameters related to customs selection
+    parser.add_argument('--ssl_strategy', type=str, default="random", help="sampling strategy for semi-supervised learning")
     parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
     parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
     parser.add_argument('--output', type=str, default="result"+"-"+curr_time, help="Name of output file")
@@ -216,6 +217,7 @@ if __name__ == '__main__':
     numWeeks = args.numweeks
     semi_supervised = args.semi_supervised
     save = args.save
+    ssl_strategy = args.ssl_strategy
     
     logger.info(args)
     
