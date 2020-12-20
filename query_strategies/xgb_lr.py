@@ -44,7 +44,7 @@ class XGBLRSampling(Strategy):
     def train_lr_model(self):
         """ Train LR model """
         print("Training Logistic Regression model...")
-        self.lr = LogisticRegression(n_jobs=-1)
+        self.lr = LogisticRegression(n_jobs=-1, max_iter=1000)
         self.lr.fit(self.lr_trainx, self.data.train_cls_label)
         
         
