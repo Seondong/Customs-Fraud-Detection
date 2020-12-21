@@ -12,5 +12,3 @@ data/NTMdata.csv
 nohup.out
 .ipynb_checkpoints/
 logs/
-bash/
-analysis/
