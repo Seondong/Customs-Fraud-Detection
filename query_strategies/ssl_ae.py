@@ -126,7 +126,7 @@ def warm_up(epoch, max_epoch=10, w_max=0.1):
 
       
 class SSLAutoencoderSampling(Strategy):
-    """ Training and fraud detection by the proposed semi-autoencoder model, contributed by Yu-Che Tsai"""
+    """ Training and fraud detection by the proposed semi-autoencoder model"""
     def __init__(self, data, args):
         self.data = data
         self.args = args
@@ -181,8 +181,10 @@ class SSLAutoencoderSampling(Strategy):
             dataset=label_dataset,     
             batch_size=batch_size,      
             shuffle=False,               
-        ).__iter__()
-
+        )
+        
+        self.data.iter_label_loader = self.data.label_loader.__iter__()
+        
         self.data.unlabel_loader = Data.DataLoader(
             dataset=unlabel_dataset,     
             batch_size=batch_size,      
@@ -198,13 +200,6 @@ class SSLAutoencoderSampling(Strategy):
             batch_size=batch_size,      
             shuffle=False,               
         )
-        
-        # Save intermediary data
-        if self.args.save:
-            data4embedding = {"label_dataset":label_dataset,"unlabel_dataset":unlabel_dataset,"valid_dataset":valid_dataset,"test_dataset":test_dataset}    
-            with open("./intermediary/torch_data/torch_ssl_data-"+self.args.identifier+".pickle", 'wb') as f:
-                pickle.dump(data4embedding, f, protocol=pickle.HIGHEST_PROTOCOL)
-    
     
     def train_model(self):
         """ Get trained model """
@@ -232,7 +227,11 @@ class SSLAutoencoderSampling(Strategy):
             train_cls_loss = 0
             for batch_idx, unlab_data in enumerate(self.data.unlabel_loader):
                 unlab_data = unlab_data[0].to(device)
-                label_data, label = next(self.data.label_loader)
+                try:
+                    label_data, label = next(self.data.iter_label_loader)
+                except:
+                    self.data.iter_label_loader = self.data.label_loader.__iter__()
+                    label_data, label = next(self.data.iter_label_loader)
                 label_data, label = label_data.to(device), label.to(device)
                 optimizer.zero_grad()
                 recon_batch_unlab, _= self.model(unlab_data)
@@ -281,7 +280,7 @@ class SSLAutoencoderSampling(Strategy):
             xgb_validy = self.data.valid_loader.dataset.tensors[1]
             revenue_valid = self.data.valid_loader.dataset.tensors[2]
             
-            overall_f1, auc, precisions, re, f1s, rev = metrics(y_prob,xgb_validy,revenue_valid)
+            overall_f1, auc, precisions, re, f1s, rev = metrics(y_prob,xgb_validy,revenue_valid,self.args)
             select_best = np.mean(rev) 
 
             print("Over-all F1:%.4f, AUC:%.4f, F1-top:%.4f" % (overall_f1, auc, select_best) )
@@ -293,7 +292,7 @@ class SSLAutoencoderSampling(Strategy):
                 self.best_model = copy.deepcopy(self.model)
 
         
-        self.max_epoch = 1
+        self.max_epoch = self.args.epoch
         for epoch in range(self.max_epoch): 
             train(epoch, self.max_epoch)
             valid(epoch)

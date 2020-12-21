@@ -13,7 +13,7 @@ from itertools import islice
 from collections import defaultdict
 from datetime import timedelta
 import datetime
-from query_strategies import badge, bATE, random, DATE, diversity, uncertainty, hybrid, xgb, xgb_lr, ssl_ae, tabnet, deepSAD, multideepSAD
+from query_strategies import badge, bATE, upDATE, gATE, random, DATE, diversity, uncertainty, hybrid, xgb, xgb_lr, ssl_ae, tabnet, deepSAD, multideepSAD
 
 import numpy as np
 import torch
@@ -144,6 +144,8 @@ if __name__ == '__main__':
     pathlib.Path('./intermediary/logs').mkdir(parents=True, exist_ok=True)
     pathlib.Path('./intermediary/xgb_models').mkdir(parents=True, exist_ok=True)
     pathlib.Path('./intermediary/tn_models').mkdir(parents=True, exist_ok=True)
+    pathlib.Path('./intermediary/torch_data').mkdir(parents=True, exist_ok=True)
+    pathlib.Path('./intermediary/leaf_indices').mkdir(parents=True, exist_ok=True)
     pathlib.Path('./uncertainty_models').mkdir(parents=True, exist_ok=True)
     
     logger = make_logger(curr_time)
@@ -169,8 +171,7 @@ if __name__ == '__main__':
     parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
     parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
     parser.add_argument('--output', type=str, default="result"+"-"+curr_time, help="Name of output file")
-    parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'hybrid', 'tabnet', 'ssl_ae', 'noupDATE', 'randomupDATE', 'adahybrid', 'deepSAD', 'multideepSAD'], help='Sampling strategy')
-
+    parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'upDATE', 'gATE', 'hybrid', 'tabnet', 'ssl_ae', 'noupDATE', 'randomupDATE', 'deepSAD', 'multideepSAD'], help='Sampling strategy')
     parser.add_argument('--initial_inspection_rate', type=float, default=100, help='Initial inspection rate in training data by percentile')
     parser.add_argument('--final_inspection_rate', type=float, default = 5, help='Percentage of test data need to query')
     parser.add_argument('--inspection_plan', type=str, default = 'direct_decay', choices=['direct_decay','linear_decay','fast_linear_decay'], help='Inspection rate decaying option for simulation time')
@@ -242,7 +243,7 @@ if __name__ == '__main__':
     if samp not in ['hybrid', 'adahybrid']:
         subsamps = 'single'
         
-    output_file =  "./results/performances/fld5-" + args.output + '-' + samp + '-' + subsamps + '-' + str(final_inspection_rate) + ".csv"
+    output_file =  "./results/performances/results-" + args.output + '-' + samp + '-' + subsamps + '-' + str(final_inspection_rate) + ".csv"
     with open(output_file, 'a') as ff:
         output_metric_name = ['runID', 'data', 'num_train','num_valid','num_test','num_select','num_inspected','num_uninspected','num_test_illicit','test_illicit_rate', 'upper_bound_precision', 'upper_bound_recall','upper_bound_rev', 'sampling', 'initial_inspection_rate', 'current_inspection_rate', 'final_inspection_rate', 'inspection_rate_option', 'mode', 'subsamplings', 'weights','unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue', 'norm-precision', 'norm-recall', 'norm-revenue', 'save']
         print(",".join(output_metric_name),file=ff)
@@ -260,10 +261,7 @@ if __name__ == '__main__':
     data.split(train_start_day, valid_start_day, test_start_day, test_end_day, valid_length, test_length, args)
     confirmed_inspection_plan = inspection_plan(initial_inspection_rate, final_inspection_rate, numWeeks, inspection_rate_option)
     logger.info('Inspection rate for testing periods: %s', confirmed_inspection_plan)
-    
-    # Adavetive weight (if adahybrid)
-    if samp == 'adahybrid':
-    	weight_sampler = ExpWeights()
+        
 
     # Customs selection simulation for long term (if test_length = 7 days, simulate for numWeeks)
     for i in range(numWeeks):
@@ -286,7 +284,8 @@ if __name__ == '__main__':
         
         # Initialize unceratinty module for some cases
         if unc_mode == 'self-supervised':
-            if samp in ['bATE', 'diversity', 'hybrid', 'adahybrid']:
+            if samp in ['bATE', 'diversity', 'hybrid', 'upDATE', 'gATE', 'adahybrid']:
+
                 if uncertainty_module is None :
                     uncertainty_module = uncertainty.Uncertainty(data.train_lab, './uncertainty_models/')
                     uncertainty_module.train()
@@ -299,26 +298,32 @@ if __name__ == '__main__':
             """Initialize selection strategies"""
             if samp == 'random':
                 sampler = random.RandomSampling(data, args)
-            if samp == 'xgb':
+            elif samp == 'xgb':
                 sampler = xgb.XGBSampling(data, args)
-            if samp == 'xgb_lr':
+            elif samp == 'xgb_lr':
                 sampler = xgb_lr.XGBLRSampling(data, args)
-            if samp == 'badge':
+            elif samp == 'badge':
                 sampler = badge.BadgeSampling(data, args)
-            if samp in ['DATE', 'noupDATE', 'randomupDATE']:
+            elif samp in ['DATE', 'noupDATE', 'randomupDATE']:
                 sampler = DATE.DATESampling(data, args)
-            if samp == 'diversity':
+            elif samp == 'diversity':
                 sampler = diversity.DiversitySampling(data, args, uncertainty_module)
-            if samp == 'bATE':
+            elif samp == 'bATE':
                 sampler = bATE.bATESampling(data, args, uncertainty_module)
-            if samp == 'ssl_ae':
+            elif samp == 'upDATE':
+                sampler = upDATE.upDATESampling(data, args, uncertainty_module)
+            elif samp == 'gATE':
+                sampler = gATE.gATESampling(data, args, uncertainty_module)
+            elif samp == 'ssl_ae':
                 sampler = ssl_ae.SSLAutoencoderSampling(data, args)
-            if samp == 'tabnet':
+            elif samp == 'tabnet':
                 sampler = tabnet.TabnetSampling(data, args)
-            if samp == 'deepSAD': # check
+            elif samp == 'deepSAD': # check
                 sampler = deepSAD.deepSADSampling(data, args)
-            if samp == 'multideepSAD':
+            elif samp == 'multideepSAD':
                 sampler = multideepSAD.multideepSADSampling(data, args)
+            else:
+                print('Make sure the sampling strategy is listed in the argument --sampling')
             return sampler
             
         if samp not in ['hybrid', 'adahybrid']:
@@ -331,7 +336,9 @@ if __name__ == '__main__':
 
         if samp == 'adahybrid':
             subsamplers = [initialize_sampler(samp) for samp in args.subsamplings.split("/")]
+            # TODO: Ideally, it should support multiple strategies.
             assert(len(subsamplers) == 2)
+            weight_sampler = ExpWeights()
             weight = weight_sampler.sample()
             weights = [weight, 1 - weight]
             sampler = hybrid.HybridSampling(data, args, subsamplers, weights)
@@ -346,7 +353,6 @@ if __name__ == '__main__':
             
             
         logger.info("%s, %s, %s", len(set(chosen)), len(chosen), num_samples)
-        print(chosen)
         assert len(set(chosen)) == num_samples
         
   
@@ -363,7 +369,7 @@ if __name__ == '__main__':
         logger.debug(inspected_imports[:5])
         
         # tune the uncertainty
-        if unc_mode == 'self-supervised' and samp in ['bATE', 'diversity', 'hybrid', 'adahybrid']:
+        if unc_mode == 'self-supervised' and samp in ['bATE', 'diversity', 'hybrid', 'upDATE', 'gATE', 'adahybrid']:
             uncertainty_module.retrain(data.test.iloc[indices - data.offset])
         
         # Evaluation
@@ -423,8 +429,10 @@ if __name__ == '__main__':
                 row = [samp]
                 row.extend(indices)
                 wr.writerow(row)
+        
+        # Review needed: Check if the weights are updated as desired.
         if samp == 'adahybrid':
-        	weight_sampler.update_dists(1-norm_precision)
+            weight_sampler.update_dists(1-norm_precision)
 
         # Renew valid & test period & dataset
         if i == numWeeks - 1:
@@ -442,9 +450,10 @@ if __name__ == '__main__':
         # noupDATE: DATE model does not accept new train data. (But the model anyway needs to be retrained with test data owing to the design choice of our XGB model) 
         These two strategies will be removed for software release. """
         
+        
         if samp == 'noupDATE':
             data.update(data.df.loc[[]], data.df.loc[set(data.test.index)], test_start_day, test_end_day, valid_start_day)
-        if samp == 'randomupDATE':
+        elif samp == 'randomupDATE':
             chosen = random.RandomSampling(data, args).query(num_samples)
             indices = [point + data.offset for point in chosen]         
             inspected_imports = data.df.loc[indices]
@@ -454,5 +463,7 @@ if __name__ == '__main__':
             data.update(inspected_imports, uninspected_imports, test_start_day, test_end_day, valid_start_day)
         
         
+        del inspected_imports
+        del uninspected_imports
         
         print("===========================================================================================")

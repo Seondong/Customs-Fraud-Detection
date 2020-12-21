@@ -244,7 +244,7 @@ class Import_declarations():
         if not self.train_unlab.empty:
             self.X_train_unlab = self.train_unlab[self.column_to_use].values
         else:
-            self.X_train_unlab = np.asarray([])            
+            self.X_train_unlab = np.asarray([])
         self.X_valid_lab = self.valid_lab[self.column_to_use].values
         if not self.valid_unlab.empty:
             self.X_valid_unlab = self.valid_unlab[self.column_to_use].values
