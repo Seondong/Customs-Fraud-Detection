@@ -443,8 +443,7 @@ class VanillamultideepSAD:
                                         fusion_type=fusion,act=act,device=device,\
                                         use_self=use_self,agg_type=agg, cls_loss_func=closs, reg_loss_func=rloss).to(device)
         
-        if torch.cuda.device_count() > 1:
-            self.model = nn.DataParallel(self.model)     
+        self.model = nn.DataParallel(self.model)     
             
         if not self.state_dict:
             # initialize parameters
