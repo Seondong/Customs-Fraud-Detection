@@ -1,5 +1,6 @@
 torch
 torchvision
+xgboost
 torch_multi_head_attention
 scikit-learn>=0.21.0
 numpy>=1.16.4

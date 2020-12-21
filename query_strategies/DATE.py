@@ -308,6 +308,7 @@ class VanillaDATE:
 
         # save best model
         global_best_score = 0
+        self.performance = 0
         model_state = None
 
         # early stop settings 
@@ -361,6 +362,7 @@ class VanillaDATE:
             # save best model 
             if select_best >= global_best_score:
                 global_best_score = select_best
+                self.model.module.performance = np.mean(revenues)
                 torch.save(self.model, self.model_path)
                 print(os.path.abspath(self.model_path))
                 no_improvement = 0

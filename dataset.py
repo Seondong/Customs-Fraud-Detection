@@ -11,24 +11,33 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-def mask_labels(df: pd.DataFrame, ir_init: float) -> pd.DataFrame:
+def mask_labels(df: pd.DataFrame, ir_init: float, ssl_strategy: str) -> pd.DataFrame:
     """
-    Masking certain amount of importer_id, to mimic the situation that not all imports are inspected.
+    Masking certain amount of data for semi-supervised learning by specific strategy.
+    ssl_strategy = importer
+        Masking certain amount of importer_id, to mimic the situation that not all imports are inspected.
+    ssl_strategy = = random
+        Masking transactions by random sampling.
     ir_init is the inspection ratio at the beginning.
     """
-    # To do: For more consistent results, we can control the random seed while selecting inspected_id.
-    inspected_id = {}
-    train_id = list(set(df['importer.id']))
-    inspected_id[ir_init] = np.random.choice(train_id, size= int(len(train_id) * ir_init / 100), replace=False)
-    d = {}
-    for id in train_id:
-        d[id] = float('nan')
-    for id in inspected_id[ir_init]:
-        d[id] = 1
-    
     print('Before masking:\n', df['illicit'].value_counts())
-    df['illicit'] = df['importer.id'].apply(lambda x: d[x]) * df['illicit']
-    df['revenue'] = df['importer.id'].apply(lambda x: d[x]) * df['revenue']
+    # To do: For more consistent results, we can control the random seed while selecting inspected_id.
+    if ssl_strategy == "importer":
+        inspected_id = {}
+        train_id = list(set(df['importer.id']))
+        inspected_id[ir_init] = np.random.choice(train_id, size= int(len(train_id) * ir_init / 100), replace=False)
+        d = {}
+        for id in train_id:
+            d[id] = float('nan')
+        for id in inspected_id[ir_init]:
+            d[id] = 1
+        df['illicit'] = df['importer.id'].apply(lambda x: d[x]) * df['illicit']
+        df['revenue'] = df['importer.id'].apply(lambda x: d[x]) * df['revenue']
+    elif ssl_strategy == "random":
+        sampled_idx = list(df.sample(frac=1 - ir_init / 100, replace=False).index)
+        df.loc[sampled_idx,"illicit"] = df.loc[sampled_idx,"illicit"]* np.nan
+        df.loc[sampled_idx,"revenue"] = df.loc[sampled_idx,"revenue"]* np.nan
+
     print('After masking:\n', df['illicit'].value_counts())
     return df
 
@@ -176,10 +185,8 @@ class Import_declarations():
         # Intentionally masking datasets to simulate partially labeled scenario, note that our dataset is 100% inspected.
         # If your dataset is partially labeled already, comment below two lines.
         if args.data in ['synthetic', 'real-n', 'real-m', 'real-t']:
-            self.train = mask_labels(self.train, args.initial_inspection_rate)
-            self.valid = mask_labels(self.valid, args.initial_inspection_rate)
-        
-        
+            self.train = mask_labels(self.train, args.initial_inspection_rate, args.ssl_strategy)
+      
         self.train_lab = self.train[self.train['illicit'].notna()]
         self.train_unlab = self.train[self.train['illicit'].isna()]
         self.valid_lab = self.valid[self.valid['illicit'].notna()]
@@ -237,7 +244,7 @@ class Import_declarations():
         if not self.train_unlab.empty:
             self.X_train_unlab = self.train_unlab[self.column_to_use].values
         else:
-            self.X_train_unlab = np.asarray([])            
+            self.X_train_unlab = np.asarray([])
         self.X_valid_lab = self.valid_lab[self.column_to_use].values
         if not self.valid_unlab.empty:
             self.X_valid_unlab = self.valid_unlab[self.column_to_use].values
