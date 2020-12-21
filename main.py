@@ -147,6 +147,7 @@ if __name__ == '__main__':
     pathlib.Path('./intermediary/torch_data').mkdir(parents=True, exist_ok=True)
     pathlib.Path('./intermediary/leaf_indices').mkdir(parents=True, exist_ok=True)
     pathlib.Path('./uncertainty_models').mkdir(parents=True, exist_ok=True)
+    pathlib.Path('./temp').mkdir(parents=True, exist_ok=True)
     
     logger = make_logger(curr_time)
     
