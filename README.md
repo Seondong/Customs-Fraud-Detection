@@ -19,7 +19,7 @@ $ pip install -r requirements.txt
 
 3. Run the codes: Refer to main.py for hyperparameters
 ```
-$ export CUDA_VISIBLE_DEVICES=3 && python main.py --data real-m --semi_supervised 0 --sampling hybrid --subsamplings bATE/DATE --weights 0.1/0.9 --mode scratch --train_from 20130101 --test_from 20130701 --test_length 30 --valid_length 30 --initial_inspection_rate 20 --final_inspection_rate 5 --epoch 5 --closs bce --rloss full --save 0 --numweeks 100 --inspection_plan direct_decay
+$ export CUDA_VISIBLE_DEVICES=3 && python main.py --data real-m --semi_supervised 0 --batch_size 128 --sampling hybrid --subsamplings bATE/DATE --weights 0.1/0.9 --mode scratch --train_from 20130101 --test_from 20130701 --test_length 30 --valid_length 30 --initial_inspection_rate 20 --final_inspection_rate 5 --epoch 5 --closs bce --rloss full --save 0 --numweeks 100 --inspection_plan direct_decay
 ```
 
 
@@ -46,9 +46,11 @@ Currently, the framework supports single-item declarations that the target label
 * [Diversity](./query_strategies/diversity.py): Variation of BADGE, this model uses the penultimate layer of the DATE model, then finds centroids by KMeans. In this way, diverse imports can be selected for the next inspection.
 * [BADGE](./query_strategies/badge.py): BADGE model uses the gradient embedding of the base model (DATE) and find the most diverse imports by KMeans++. [[Reference]](https://github.com/JordanAsh/badge)
 * [bATE](./query_strategies/bATE.py): Proposed model for better exploration. By following the BADGE model, we first use the embeddings of the base model, DATE. Our contribution is to amplify the embedding with extra uncertainty score, and predicted revenue. Finally, we find the most diverse imports by KMeans++.
-* [gATE](./query_strategies/enhanced_bATE.py): Proposed exploration model, bATE added with gatekeeper. 
-* [Hybrid](./query_strategies/hybrid.py): Support mixing several strategies.
+* [gATE](./query_strategies/gATE.py): Proposed exploration model, bATE added with gatekeeper. 
+* [deepSAD](./query_strategies/deepSAD.py): Deep-SAD model, which does semi-supervised anomaly detection by pulling normal-labeled and unlabeled data into a single point, and pushing anomalies away. [[Reference]](https://github.com/lukasruff/Deep-SAD-PyTorch)
+* [multideepSAD](./query_strategies/multideepSAD.py): deepSAD variant with several cluster points.
 * [SSL-AE](./query_strategies/ssl_ae.py): Semi-supervised learning approach by optimizing reconstruction loss of all imports and binary cross-entropy of labeled imports.
+* [Hybrid](./query_strategies/hybrid.py): Support mixing several strategies. (Adahybrid method can adaptively change the exploration rate)
 
 
 ## Related Repositories

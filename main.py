@@ -13,7 +13,8 @@ from itertools import islice
 from collections import defaultdict
 from datetime import timedelta
 import datetime
-from query_strategies import badge, bATE, upDATE, enhanced_bATE, random, DATE, diversity, uncertainty, hybrid, xgb, xgb_lr, ssl_ae, tabnet
+from query_strategies import badge, bATE, upDATE, gATE, random, DATE, diversity, uncertainty, hybrid, xgb, xgb_lr, ssl_ae, tabnet, deepSAD, multideepSAD
+
 import numpy as np
 import torch
 import torch.utils.data as Data
@@ -24,6 +25,61 @@ from ranger import Ranger
 from utils import torch_threshold, metrics, metrics_active
 warnings.filterwarnings("ignore")
 
+class ExpWeights(object):
+    """ Expenential weight helper, adapted form RP1 paper 
+        sample: sample the weights based on its underlying distribution l
+        update_dists(feedback): update the underlying distribution with new feedback (should be loss)
+    """
+    def __init__(self, 
+                 arms=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0],
+                 lr = 0.2,
+                 window = 20, # we don't use this yet.. 
+                 epsilon = 0.2,
+                 decay = 0.9):
+        
+        self.arms = arms
+        self.l = {i:0 for i in range(len(self.arms))}
+        self.arm = 0
+        self.value = self.arms[self.arm]
+        self.error_buffer = []
+        self.window = window
+        self.lr = lr
+        self.epsilon = epsilon
+        self.decay = decay
+        
+        self.choices = [self.arm]
+        self.data = []
+        
+    def sample(self):
+        
+        if np.random.uniform() > self.epsilon:
+            p = [np.exp(x) for x in self.l.values()]
+            p /= np.sum(p) # normalize to make it a distribution
+            print(p)
+            self.arm = np.random.choice(range(0,len(p)), p=p)
+        else:
+            self.arm = int(np.random.uniform() * len(self.arms))
+
+        self.value = self.arms[self.arm]
+        self.choices.append(self.arm)
+        
+        return(self.value)
+        
+    def update_dists(self, feedback, norm=1):
+        
+        # Need to normalize score. 
+        # Since this is non-stationary, subtract mean of previous 5. 
+        
+        self.error_buffer.append(feedback)
+        self.error_buffer = self.error_buffer[-5:]
+        
+        feedback -= np.mean(self.error_buffer)
+        feedback /= norm
+        
+        self.l[self.arm] *= self.decay
+        self.l[self.arm] += self.lr * (feedback/max(np.exp(self.l[self.arm]), 0.0001))
+        
+        self.data.append(feedback)
 
 def make_logger(curr_time, name=None):
     """ Initialize loggers, log files are saved under the ./intermediary/logs directory 
@@ -114,7 +170,7 @@ if __name__ == '__main__':
     parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
     parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
     parser.add_argument('--output', type=str, default="result"+"-"+curr_time, help="Name of output file")
-    parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'upDATE', 'enhanced_bATE', 'hybrid', 'tabnet', 'ssl_ae', 'noupDATE', 'randomupDATE'], help='Sampling strategy')
+    parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'upDATE', 'gATE', 'hybrid', 'tabnet', 'ssl_ae', 'noupDATE', 'randomupDATE', 'deepSAD', 'multideepSAD'], help='Sampling strategy')
     parser.add_argument('--initial_inspection_rate', type=float, default=100, help='Initial inspection rate in training data by percentile')
     parser.add_argument('--final_inspection_rate', type=float, default = 5, help='Percentage of test data need to query')
     parser.add_argument('--inspection_plan', type=str, default = 'direct_decay', choices=['direct_decay','linear_decay','fast_linear_decay'], help='Inspection rate decaying option for simulation time')
@@ -182,10 +238,10 @@ if __name__ == '__main__':
         
     # Saving simulation results: Output file will be saved under ./results/performances/ directory
     subsamps = args.subsamplings.replace('/','+')
-    if samp != 'hybrid':
+    if samp not in ['hybrid', 'adahybrid']:
         subsamps = 'single'
         
-    output_file =  "./results/performances/xgb-" + args.output + '-' + samp + '-' + subsamps + '-' + str(final_inspection_rate) + ".csv"
+    output_file =  "./results/performances/results-" + args.output + '-' + samp + '-' + subsamps + '-' + str(final_inspection_rate) + ".csv"
     with open(output_file, 'a') as ff:
         output_metric_name = ['runID', 'data', 'num_train','num_valid','num_test','num_select','num_inspected','num_uninspected','num_test_illicit','test_illicit_rate', 'upper_bound_precision', 'upper_bound_recall','upper_bound_rev', 'sampling', 'initial_inspection_rate', 'current_inspection_rate', 'final_inspection_rate', 'inspection_rate_option', 'mode', 'subsamplings', 'weights','unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue', 'norm-precision', 'norm-recall', 'norm-revenue', 'save']
         print(",".join(output_metric_name),file=ff)
@@ -203,7 +259,8 @@ if __name__ == '__main__':
     data.split(train_start_day, valid_start_day, test_start_day, test_end_day, valid_length, test_length, args)
     confirmed_inspection_plan = inspection_plan(initial_inspection_rate, final_inspection_rate, numWeeks, inspection_rate_option)
     logger.info('Inspection rate for testing periods: %s', confirmed_inspection_plan)
-    
+        
+
     # Customs selection simulation for long term (if test_length = 7 days, simulate for numWeeks)
     for i in range(numWeeks):
         
@@ -225,7 +282,8 @@ if __name__ == '__main__':
         
         # Initialize unceratinty module for some cases
         if unc_mode == 'self-supervised':
-            if samp in ['bATE', 'diversity', 'hybrid', 'upDATE', 'enhanced_bATE']:
+            if samp in ['bATE', 'diversity', 'hybrid', 'upDATE', 'gATE', 'adahybrid']:
+
                 if uncertainty_module is None :
                     uncertainty_module = uncertainty.Uncertainty(data.train_lab, './uncertainty_models/')
                     uncertainty_module.train()
@@ -252,25 +310,37 @@ if __name__ == '__main__':
                 sampler = bATE.bATESampling(data, args, uncertainty_module)
             elif samp == 'upDATE':
                 sampler = upDATE.upDATESampling(data, args, uncertainty_module)
-            elif samp == 'enhanced_bATE':
-                sampler = enhanced_bATE.rbATESampling(data, args, uncertainty_module)
+            elif samp == 'gATE':
+                sampler = gATE.gATESampling(data, args, uncertainty_module)
             elif samp == 'ssl_ae':
                 sampler = ssl_ae.SSLAutoencoderSampling(data, args)
             elif samp == 'tabnet':
                 sampler = tabnet.TabnetSampling(data, args)
+            elif samp == 'deepSAD': # check
+                sampler = deepSAD.deepSADSampling(data, args)
+            elif samp == 'multideepSAD':
+                sampler = multideepSAD.multideepSADSampling(data, args)
             else:
                 print('Make sure the sampling strategy is listed in the argument --sampling')
             return sampler
             
-        if samp != 'hybrid':
+        if samp not in ['hybrid', 'adahybrid']:
             sampler = initialize_sampler(samp)
         
         if samp == 'hybrid':
             subsamplers = [initialize_sampler(samp) for samp in args.subsamplings.split("/")]
             weights = [float(weight) for weight in args.weights.split("/")]
             sampler = hybrid.HybridSampling(data, args, subsamplers, weights)
-        
-        
+
+        if samp == 'adahybrid':
+            subsamplers = [initialize_sampler(samp) for samp in args.subsamplings.split("/")]
+            # TODO: Ideally, it should support multiple strategies.
+            assert(len(subsamplers) == 2)
+            weight_sampler = ExpWeights()
+            weight = weight_sampler.sample()
+            weights = [weight, 1 - weight]
+            sampler = hybrid.HybridSampling(data, args, subsamplers, weights)
+
         # If it fails to query, try one more time. If it fails again, do random sampling.
         try:
             chosen = sampler.query(num_samples)
@@ -297,7 +367,7 @@ if __name__ == '__main__':
         logger.debug(inspected_imports[:5])
         
         # tune the uncertainty
-        if unc_mode == 'self-supervised' and samp in ['bATE', 'diversity', 'hybrid', 'upDATE', 'enhanced_bATE']:
+        if unc_mode == 'self-supervised' and samp in ['bATE', 'diversity', 'hybrid', 'upDATE', 'gATE', 'adahybrid']:
             uncertainty_module.retrain(data.test.iloc[indices - data.offset])
         
         # Evaluation
@@ -314,6 +384,9 @@ if __name__ == '__main__':
             if samp == 'hybrid':
                 subsamplings = args.subsamplings
                 weights = args.weights
+            elif samp == 'adahybrid':
+                subsamplings = args.subsamplings
+                weights = '/'.join([str(weight) for weight in weights])
             else:
                 subsamplings = '-'
                 weights = '-'
@@ -343,7 +416,7 @@ if __name__ == '__main__':
             wr.writerow(['Test_start_day', test_start_day])
             wr.writerow(['Test_end_day', test_end_day])
             
-            if samp == 'hybrid':
+            if samp in ['hybrid', 'adahybrid']:
                 tmpIdx = 0
                 for subsampler, num in zip(args.subsamplings.split('/'), sampler.ks):
                     row = [subsampler]
@@ -354,7 +427,10 @@ if __name__ == '__main__':
                 row = [samp]
                 row.extend(indices)
                 wr.writerow(row)
-
+        
+        # Review needed: Check if the weights are updated as desired.
+        if samp == 'adahybrid':
+            weight_sampler.update_dists(1-norm_precision)
 
         # Renew valid & test period & dataset
         if i == numWeeks - 1:
