@@ -6,7 +6,7 @@ from .DATE import DATESampling
 class HybridSampling(Strategy):
     def __init__(self, data, args, subsamps, weights):
         super(HybridSampling, self).__init__(data, args)
-        assert sum(weights) == 1
+        assert round(sum(weights), 10) == 1
         assert len(subsamps) == len(weights)
         self.subsamps = subsamps
         self.weights = weights
