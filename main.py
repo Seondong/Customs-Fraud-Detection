@@ -9,6 +9,7 @@ import pickle
 import warnings
 import dataset
 import sys
+import math
 from itertools import islice
 from collections import defaultdict
 from datetime import timedelta
@@ -69,6 +70,8 @@ class ExpWeights(object):
         
         # Need to normalize score. 
         # Since this is non-stationary, subtract mean of previous 5. 
+        if not math.isfinite(feedback):
+            pass
         self.error_buffer.append(feedback)
         self.error_buffer = self.error_buffer[-5:]
         
@@ -436,6 +439,7 @@ if __name__ == '__main__':
         if samp == 'adahybrid':
             print(weight_sampler.p)
             weight_sampler.update_dists(1-norm_precision)
+            logger.info(f'Ada distribution: {weight_sampler.p}')
 
         # Renew valid & test period & dataset
         if i == numWeeks - 1:
