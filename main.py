@@ -71,7 +71,7 @@ class ExpWeights(object):
         # Need to normalize score. 
         # Since this is non-stationary, subtract mean of previous 5. 
         if not math.isfinite(feedback):
-            pass
+            return
         self.error_buffer.append(feedback)
         self.error_buffer = self.error_buffer[-5:]
         
