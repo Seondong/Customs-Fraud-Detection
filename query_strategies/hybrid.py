@@ -18,6 +18,8 @@ class HybridSampling(Strategy):
         chosen = []
         trained_DATE_available = False
         for subsamp, num_samp in zip(self.subsamps, self.ks):
+            if num_samp == 0:
+                continue
             print(f'Querying {num_samp} items for subsampler {subsamp}')
             subsamp.set_available_indices(chosen)
             if isinstance(subsamp, DATESampling):

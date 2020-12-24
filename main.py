@@ -338,8 +338,10 @@ if __name__ == '__main__':
             subsamplers = [initialize_sampler(samp) for samp in args.subsamplings.split("/")]
             # TODO: Ideally, it should support multiple strategies.
             assert(len(subsamplers) == 2)
-            weight_sampler = ExpWeights()
+            if i == 0:
+                weight_sampler = ExpWeights()
             weight = weight_sampler.sample()
+            print(weight)
             weights = [weight, 1 - weight]
             sampler = hybrid.HybridSampling(data, args, subsamplers, weights)
 
@@ -432,8 +434,7 @@ if __name__ == '__main__':
         
         # Review needed: Check if the weights are updated as desired.
         if samp == 'adahybrid':
-            import pdb
-            pdb.set_trace()
+            print(weight_sampler.p)
             weight_sampler.update_dists(1-norm_precision)
 
         # Renew valid & test period & dataset
