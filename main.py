@@ -78,8 +78,10 @@ class ExpWeights(object):
         feedback -= np.mean(self.error_buffer)
         feedback /= norm
         
+        print(feedback)
+
         self.l[self.arm] *= self.decay
-        self.l[self.arm] += self.lr * feedback*self.p[self.arm]
+        self.l[self.arm] -= self.lr * feedback/max(self.p[self.arm], 1e-16)
         
         self.data.append(feedback)
 
@@ -161,6 +163,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=10000, help="Batch size for DATE-related models")
     parser.add_argument('--dim', type=int, default=16, help="Hidden layer dimension")
     parser.add_argument('--lr', type=float, default=0.005, help="learning rate")
+    parser.add_argument('--ada_lr', type=float, default=0.8, help="learning rate for adahybrid")
     parser.add_argument('--l2', type=float, default=0.01, help="l2 reg")
     parser.add_argument('--alpha', type=float, default=10, help="Regression loss weight")
     parser.add_argument('--head_num', type=int, default=4, help="Number of heads for self attention")
@@ -180,7 +183,7 @@ if __name__ == '__main__':
     parser.add_argument('--inspection_plan', type=str, default = 'direct_decay', choices=['direct_decay','linear_decay','fast_linear_decay'], help='Inspection rate decaying option for simulation time')
     parser.add_argument('--mode', type=str, default = 'finetune', choices = ['finetune', 'scratch'], help = 'finetune last model or train from scratch')
     parser.add_argument('--subsamplings', type=str, default = 'bATE/DATE', help = 'available for hybrid sampling, the list of sub-sampling techniques seperated by /')
-    parser.add_argument('--weights', type=str, default = '0.5/0.5', help = 'available for hybrid sampling, the list of weights for sub-sampling techniques seperated by /')
+    parser.add_argument('--weights', type=str, default = '0.1/0.9', help = 'available for hybrid sampling, the list of weights for sub-sampling techniques seperated by /')
     parser.add_argument('--uncertainty', type=str, default = 'naive', choices = ['naive', 'self-supervised'], help = 'Uncertainty principle : ambiguity of illicitness or self-supervised manner prediction')
     parser.add_argument('--rev_func', type=str, default = 'log', choices = ['log'], help = 'Uncertainty principle : ambiguity of illicitness or self-supervised manner prediction')
     parser.add_argument('--closs', type=str, default = 'bce', choices = ['bce', 'focal'], help = 'Classification loss function')
@@ -222,6 +225,7 @@ if __name__ == '__main__':
     semi_supervised = args.semi_supervised
     save = args.save
     ssl_strategy = args.ssl_strategy
+    ada_lr = args.ada_lr
     
     logger.info(args)
     
@@ -342,7 +346,7 @@ if __name__ == '__main__':
             # TODO: Ideally, it should support multiple strategies.
             assert(len(subsamplers) == 2)
             if i == 0:
-                weight_sampler = ExpWeights()
+                weight_sampler = ExpWeights(lr = ada_lr)
             weight = weight_sampler.sample()
             print(weight)
             weights = [weight, 1 - weight]
@@ -440,6 +444,8 @@ if __name__ == '__main__':
             print(weight_sampler.p)
             weight_sampler.update_dists(1-norm_precision)
             logger.info(f'Ada distribution: {weight_sampler.p}')
+            logger.info(f'Ada arm: {weight_sampler.value}')
+            logger.info(f'Feedbacks: {weight_sampler.data}')
 
         # Renew valid & test period & dataset
         if i == numWeeks - 1:
