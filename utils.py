@@ -128,8 +128,12 @@ def metrics(y_prob,xgb_testy,revenue_test, args, best_thresh=None):
 
 def metrics_active(active_rev,active_cls,xgb_testy,revenue_test):
     """ Evaluate the performance"""
-    precision = np.count_nonzero(active_cls == 1) / len(active_cls)
-    recall = sum(active_cls) / sum(xgb_testy)
+    try:
+        precision = np.count_nonzero(active_cls == 1) / len(active_cls)
+        recall = sum(active_cls) / sum(xgb_testy)
+    except:
+        precision = np.float("nan")
+        recall = np.float("nan")
     try:
         f1 = hmean([precision, recall])
     except ValueError:

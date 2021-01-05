@@ -9,6 +9,7 @@ import pickle
 import warnings
 import dataset
 import sys
+import math
 from itertools import islice
 from collections import defaultdict
 from datetime import timedelta
@@ -32,10 +33,10 @@ class ExpWeights(object):
     """
     def __init__(self, 
                  arms=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0],
-                 lr = 0.2,
+                 lr = 2,
                  window = 20, # we don't use this yet.. 
-                 epsilon = 0.2,
-                 decay = 0.9):
+                 epsilon = 0,
+                 decay = 1):
         
         self.arms = arms
         self.l = {i:0 for i in range(len(self.arms))}
@@ -53,10 +54,10 @@ class ExpWeights(object):
     def sample(self):
         
         if np.random.uniform() > self.epsilon:
-            p = [np.exp(x) for x in self.l.values()]
-            p /= np.sum(p) # normalize to make it a distribution
-            print(p)
-            self.arm = np.random.choice(range(0,len(p)), p=p)
+            self.p = [np.exp(x) for x in self.l.values()]
+            self.p /= np.sum(self.p) # normalize to make it a distribution
+            print(self.p)
+            self.arm = np.random.choice(range(0,len(self.p)), p=self.p)
         else:
             self.arm = int(np.random.uniform() * len(self.arms))
 
@@ -69,15 +70,18 @@ class ExpWeights(object):
         
         # Need to normalize score. 
         # Since this is non-stationary, subtract mean of previous 5. 
-        
+        if not math.isfinite(feedback):
+            return
         self.error_buffer.append(feedback)
         self.error_buffer = self.error_buffer[-5:]
         
         feedback -= np.mean(self.error_buffer)
         feedback /= norm
         
+        print(feedback)
+
         self.l[self.arm] *= self.decay
-        self.l[self.arm] += self.lr * (feedback/max(np.exp(self.l[self.arm]), 0.0001))
+        self.l[self.arm] -= self.lr * feedback/max(self.p[self.arm], 1e-16)
         
         self.data.append(feedback)
 
@@ -159,6 +163,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=10000, help="Batch size for DATE-related models")
     parser.add_argument('--dim', type=int, default=16, help="Hidden layer dimension")
     parser.add_argument('--lr', type=float, default=0.005, help="learning rate")
+    parser.add_argument('--ada_lr', type=float, default=0.8, help="learning rate for adahybrid")
     parser.add_argument('--l2', type=float, default=0.01, help="l2 reg")
     parser.add_argument('--alpha', type=float, default=10, help="Regression loss weight")
     parser.add_argument('--head_num', type=int, default=4, help="Number of heads for self attention")
@@ -172,13 +177,13 @@ if __name__ == '__main__':
     parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
     parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
     parser.add_argument('--output', type=str, default="result"+"-"+curr_time, help="Name of output file")
-    parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'upDATE', 'gATE', 'hybrid', 'tabnet', 'ssl_ae', 'noupDATE', 'randomupDATE', 'deepSAD', 'multideepSAD'], help='Sampling strategy')
+    parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'upDATE', 'gATE', 'hybrid', 'adahybrid', 'tabnet', 'ssl_ae', 'noupDATE', 'randomupDATE', 'deepSAD', 'multideepSAD'], help='Sampling strategy')
     parser.add_argument('--initial_inspection_rate', type=float, default=100, help='Initial inspection rate in training data by percentile')
     parser.add_argument('--final_inspection_rate', type=float, default = 5, help='Percentage of test data need to query')
     parser.add_argument('--inspection_plan', type=str, default = 'direct_decay', choices=['direct_decay','linear_decay','fast_linear_decay'], help='Inspection rate decaying option for simulation time')
     parser.add_argument('--mode', type=str, default = 'finetune', choices = ['finetune', 'scratch'], help = 'finetune last model or train from scratch')
     parser.add_argument('--subsamplings', type=str, default = 'bATE/DATE', help = 'available for hybrid sampling, the list of sub-sampling techniques seperated by /')
-    parser.add_argument('--weights', type=str, default = '0.5/0.5', help = 'available for hybrid sampling, the list of weights for sub-sampling techniques seperated by /')
+    parser.add_argument('--weights', type=str, default = '0.1/0.9', help = 'available for hybrid sampling, the list of weights for sub-sampling techniques seperated by /')
     parser.add_argument('--uncertainty', type=str, default = 'naive', choices = ['naive', 'self-supervised'], help = 'Uncertainty principle : ambiguity of illicitness or self-supervised manner prediction')
     parser.add_argument('--rev_func', type=str, default = 'log', choices = ['log'], help = 'Uncertainty principle : ambiguity of illicitness or self-supervised manner prediction')
     parser.add_argument('--closs', type=str, default = 'bce', choices = ['bce', 'focal'], help = 'Classification loss function')
@@ -220,6 +225,7 @@ if __name__ == '__main__':
     semi_supervised = args.semi_supervised
     save = args.save
     ssl_strategy = args.ssl_strategy
+    ada_lr = args.ada_lr
     
     logger.info(args)
     
@@ -339,8 +345,10 @@ if __name__ == '__main__':
             subsamplers = [initialize_sampler(samp) for samp in args.subsamplings.split("/")]
             # TODO: Ideally, it should support multiple strategies.
             assert(len(subsamplers) == 2)
-            weight_sampler = ExpWeights()
+            if i == 0:
+                weight_sampler = ExpWeights(lr = ada_lr)
             weight = weight_sampler.sample()
+            print(weight)
             weights = [weight, 1 - weight]
             sampler = hybrid.HybridSampling(data, args, subsamplers, weights)
 
@@ -433,7 +441,11 @@ if __name__ == '__main__':
         
         # Review needed: Check if the weights are updated as desired.
         if samp == 'adahybrid':
+            print(weight_sampler.p)
             weight_sampler.update_dists(1-norm_precision)
+            logger.info(f'Ada distribution: {weight_sampler.p}')
+            logger.info(f'Ada arm: {weight_sampler.value}')
+            logger.info(f'Feedbacks: {weight_sampler.data}')
 
         # Renew valid & test period & dataset
         if i == numWeeks - 1:
