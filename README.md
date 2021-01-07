@@ -58,7 +58,7 @@ Currently, the framework supports single-item declarations that the target label
 * [multideepSAD](./query_strategies/multideepSAD.py): deepSAD variant with several cluster points.
 * [SSL-AE](./query_strategies/ssl_ae.py): Semi-supervised learning approach by optimizing reconstruction loss of all imports and binary cross-entropy of labeled imports.
 * [Hybrid](./query_strategies/hybrid.py): Support mixing several strategies. (Adahybrid method can adaptively change the exploration rate)
-* [Adahybrid](./query_strategies/hybrid.py): Adaptively changing exploration ratio of the hybrid strategy. Aim to tackle exploitation-exploration dilemma in smarter way. The description of this strategy is introduced in page 21-22 of this report [[PDF]](URP_Report_TungDuongMai.pdf).
+* [Adahybrid](./query_strategies/hybrid.py): Adaptively changing exploration ratio of the hybrid strategy. Aim to tackle exploitation-exploration dilemma in smarter way. The description of this strategy is introduced in page 21-22 of this report [[PDF]](./literatures/URP_Report_TungDuongMai.pdf).
 
 
 
