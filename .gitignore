@@ -8,8 +8,11 @@ data/raw_datas/
 data/mdata.csv
 data/ndata.csv
 data/tdata.csv
+data/cdata.csv
 data/NTMdata.csv
 nohup.out
 .ipynb_checkpoints/
 logs/
 temp/
+dataset_transfer.py
+main_transfer_v4.py
