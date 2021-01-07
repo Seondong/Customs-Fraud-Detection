@@ -18,7 +18,7 @@ $ pip install -r requirements.txt
 # Please install the Ranger optimizer by following its instruction.
 ```
 
-3. Run the codes: Refer to main.py for hyperparameters
+3. Run the codes: Refer to main.py for hyperparameters, .sh files in `./bash` directory will give you some ideas how to run codes effectively. 
 ```
 $ export CUDA_VISIBLE_DEVICES=3 && python main.py --data real-m --semi_supervised 0 --batch_size 128 --sampling hybrid --subsamplings bATE/DATE --weights 0.1/0.9 --mode scratch --train_from 20130101 --test_from 20130701 --test_length 30 --valid_length 30 --initial_inspection_rate 20 --final_inspection_rate 5 --epoch 5 --closs bce --rloss full --save 0 --numweeks 100 --inspection_plan direct_decay
 ```
@@ -43,6 +43,17 @@ Currently, the framework supports single-item declarations that the target label
 | SGD4 | 13-01-02 | IMP435108 |8703222900  | ... |4160     | 514       | 0     | 0     |
 | SGD5 | 13-01-02 | IMP717900 |8545200000  | ... |239549   | 397       | 1     | 980   |
 
+For team: to run this code with real datasets (real-n, real-m, real-t, real-c), please sign the [Confidentiality Statement](./data/Confidentiality_Statement.docx) and submit to Sundong Kim (sundong@ibs.re.kr). If you haven't signed yet, please sign and submit the form.
+
+|Data       |# Imports |Illicit rate| Period           |
+|:---------:|:--------:|:----------:|:----------------:|
+| synthetic | 0.1M     | 7.58%      | Jan 13 – Dec 13  |
+| real-m    | 0.42M    | 1.64%      | Jan 13 – Dec 16  |
+| real-c    | 1.90M    | 1.21%      | Jan 16 – Dec 19  |
+| real-n    | 1.93M    | 4.12%      | Jan 13 – Dec 17  |
+| real-t    | 4.17M    | 8.16%      | Jan 15 – Dec 19  |
+
+
 
 ## Available Selection Strategies:
 * [Random](./query_strategies/random.py): Random selection, often used as a sub-strategy to find novel frauds by compensating the weakness of the selection model based on historical data. 
@@ -63,11 +74,11 @@ Currently, the framework supports single-item declarations that the target label
 
 
 ## Brief Introduction of Our Research Directions
-Please find the attached literatures to study. Some of them are uploaded in ```./literatures``` directory.
-* Machine Learning for Customs Fraud Detection [[Link]](https://github.com/YSCHOI-github/Customs_Fraud_Detection): This repository helps practitioners to get used to machine learning for customs fraud detection, this material is worth to check before catching up the DATE paper.
+Please find the attached literatures to study. Some of them are uploaded in `./literatures` directory.
+* Machine Learning for Customs Fraud Detection [[Link]](https://github.com/YSCHOI-github/Customs_Fraud_Detection): This repository helps practitioners to get used to machine learning for customs fraud detection. This material is worth to check before catching up the DATE paper.
 * DATE: Dual-Attentive Tree-aware Embedding for Customs Fraud Detection (KDD'2020) [[Github]](https://bit.ly/kdd20-date) [[Paper]](https://dl.acm.org/doi/pdf/10.1145/3394486.3403339) [[Slides]](http://seondong.github.io/assets/papers/2020_KDD_DATE_slides.pdf) [[Presentation (20 min)]](https://youtu.be/S-29rTbvH6c) [[Promotional video]](https://youtu.be/YhfxCHBNM2g): DATE is the Tree-aware dual attentive model for finding the most illicit and valuable imports at the same time. In the 'Take a Chance' paper, we use DATE as a representative of exploitation strategies. We are building algorithms on top of DATE architecture. We can easily reproduce DATE by running [DATE](./query_strategies/DATE.py) on this repository.
 * Take a Chance: Managing the Exploitation-Exploration Dilemma in Customs Fraud Detection via Online Active Learning [[Link]](https://arxiv.org/abs/2010.14282): The key point of this study is that in the conflicting situation between short term revenue and long-term model performance, adding a certain amount of exploration strategy will ensure that the customs targeting system operates sustainably. To that end, our research team proposed an exploration scheme called bATE and gATE, and showed that the model's performance is maintained for a long time when these strategies are used together with existing exploitation strategies. We can easily reproduce this hybrid approach by running [Hybrid](./query_strategies/hybrid.py) with exploitation-exploration pair, such as 90% [DATE](./query_strategies/DATE.py) and 10% [gATE](./query_strategies/gATE.py).
-* This proposal [[PDF]](./literatures/YSF_proposal_Sundong_Lifelong_tabular_learning.pdf) introduces several research direction that the team is pursuing for long term.
+* This proposal [[PDF]](./literatures/YSF_proposal_Sundong_Lifelong_tabular_learning.pdf) introduces several research directions that the team is pursuing long term.
 
 
 ## Contribution
