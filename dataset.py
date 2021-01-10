@@ -226,8 +226,6 @@ class Import_declarations():
         
         # Add a few more risky profiles
         risk_profiles = {}
-        import pdb
-        pdb.set_trace()
         profile_candidates = self.profile_candidates + [col for col in self.train_lab.columns if '&' in col]
 
         for profile in profile_candidates:
