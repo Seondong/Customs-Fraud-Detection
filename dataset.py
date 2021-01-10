@@ -226,6 +226,8 @@ class Import_declarations():
         
         # Add a few more risky profiles
         risk_profiles = {}
+        import pdb
+        pdb.set_trace()
         profile_candidates = self.profile_candidates + [col for col in self.train_lab.columns if '&' in col]
 
         for profile in profile_candidates:
@@ -327,7 +329,7 @@ class Syntheticdata(Import_declarations):
     """
     def __init__(self, path):
         super(Syntheticdata, self).__init__(path)
-        self.profile_candidates = ['importer.id', 'declarant.id', 'tariff.code', 'quantity', 'HS6', 'HS4', 'HS2', 'office.id']
+        self.profile_candidates = ['importer.id', 'declarant.id', 'country', 'tariff.code', 'HS6', 'HS4', 'HS2', 'office.id']
         
         
         
@@ -335,14 +337,14 @@ class Ndata(Import_declarations):
     """ Class for Ndata"""
     def __init__(self, path):
         super(Ndata, self).__init__(path)
-        self.profile_candidates = ['importer.id', 'declarant.id', 'tariff.code', 'quantity', 'HS6', 'HS4', 'HS2', 'office.id']
+        self.profile_candidates = ['importer.id', 'declarant.id', 'country', 'tariff.code', 'HS6', 'HS4', 'HS2', 'office.id']
 
         
 class Mdata(Import_declarations):
     """ Class for Mdata"""
     def __init__(self, path):
         super(Mdata, self).__init__(path)
-        self.profile_candidates = ['importer.id', 'exporter.name', 'expcty', 'country', 'declarant.id', 'tariff.code', 'quantity', 'HS6', 'HS4', 'HS2', 'office.id']
+        self.profile_candidates = ['importer.id', 'exporter.name', 'expcty', 'country', 'declarant.id', 'tariff.code', 'HS6', 'HS4', 'HS2', 'office.id']
         
         
 class Tdata(Import_declarations):
@@ -352,11 +354,13 @@ class Tdata(Import_declarations):
         self.profile_candidates = ['importer.id', 'country', 'last.departure.code', 'contract.party.code',
                       'tariff.code', 'quantity', 'HS6', 'HS4', 'HS2', 'office.id']
 
-
+        
 class Cdata(Import_declarations):
-    """ Class for Cdata - waiting"""
+    """ Class for Cdata"""
     def __init__(self, path):
         super(Cdata, self).__init__(path)
+        self.profile_candidates = ['importer.id', 'declarant.id', 'country', 'tariff.code', 'HS6', 'HS4', 'HS2', 'office.id']
+        
 
 
 class Kdata(Import_declarations):
