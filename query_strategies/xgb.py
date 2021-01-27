@@ -9,8 +9,8 @@ from xgboost import XGBClassifier
 class XGBSampling(Strategy):
     """ XGBoost strategy: Using XGB classification probability to measure fraudness of imports """
     
-    def __init__(self, data, args):
-        super(XGBSampling, self).__init__(data, args)
+    def __init__(self, args):
+        super(XGBSampling, self).__init__(args)
     
     
     def train_model(self):

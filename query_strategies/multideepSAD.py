@@ -29,8 +29,8 @@ from sklearn.metrics import roc_curve, auc
 class multideepSADSampling(Strategy):
     """ deepSAD strategy with multiple centroids from items: Using DATE architecture for semi-supervised anomaly detection (multideepSAD) """
     
-    def __init__(self, data, args):
-        super(multideepSADSampling,self).__init__(data, args)
+    def __init__(self, args):
+        super(multideepSADSampling,self).__init__(args)
         self.model_name = "DATE"
         self.model_path = "./intermediary/saved_models/%s-%s.pkl" % (self.model_name,self.args.identifier)
         self.batch_size = args.batch_size

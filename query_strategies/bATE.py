@@ -9,9 +9,8 @@ from .badge import init_centers
 class bATESampling(DATESampling):
     """ bATE strategy: Our proposed model for better exploration. By following the BADGE model, we first uses the embeddings of the base model, DATE. Our contribution is to amplify the embedding with extra uncertainty score, and predicted revenue. Finally, we find the most diverse imports by KMeans++. """
         
-    def __init__(self, data, args, uncertainty_module):
-        super(bATESampling,self).__init__(data, args)
-        self.uncertainty_module = uncertainty_module
+    def __init__(self, args, uncertainty_module):
+        super(bATESampling, self).__init__(args)
     
     
     def get_uncertainty(self):

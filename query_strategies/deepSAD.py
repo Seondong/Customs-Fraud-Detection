@@ -29,8 +29,8 @@ from sklearn.metrics import roc_curve, auc
 class deepSADSampling(Strategy):
     """ deepSAD strategy: Using DATE architecture for semi-supervised anomaly detection (deepSAD) """
     
-    def __init__(self, data, args):
-        super(deepSADSampling,self).__init__(data, args)
+    def __init__(self, args):
+        super(deepSADSampling,self).__init__(args)
         self.model_name = "DATE"
         self.model_path = "./intermediary/saved_models/%s-%s.pkl" % (self.model_name,self.args.identifier)
         self.batch_size = args.batch_size

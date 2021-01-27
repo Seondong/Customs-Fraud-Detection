@@ -19,7 +19,7 @@ from ranger import Ranger
 from .strategy import Strategy
 from xgboost import XGBClassifier
 from torch.utils.data import DataLoader
-from utils import find_best_threshold,process_leaf_idx, torch_threshold, metrics
+from utils import find_best_threshold, process_leaf_idx, torch_threshold, metrics
 from model.AttTreeEmbedding import Attention, DATEModel
 from model.utils import FocalLoss
 
@@ -29,8 +29,8 @@ class DATESampling(Strategy):
     """ DATE strategy: Using DATE classification probability to measure fraudness of imports 
         Reference: DATE: Dual Attentive Tree-aware Embedding for Customs Fraud Detection; KDD 2020 """
     
-    def __init__(self, data, args):
-        super(DATESampling,self).__init__(data, args)
+    def __init__(self, args):
+        super(DATESampling,self).__init__(args)
         self.model_name = "DATE"
         self.model_path = "./intermediary/saved_models/%s-%s.pkl" % (self.model_name,self.args.identifier)
         self.batch_size = args.batch_size

@@ -9,9 +9,8 @@ class DiversitySampling(DATESampling):
     """ Diversity strategy: Using DATE embedding, then select centroid by KMeans.
         In this way, we can guarantee diverse imports for next inspection. """
     
-    def __init__(self, data, args, uncertainty_module):
-        super(DiversitySampling, self).__init__(data, args)
-        self.uncertainty_module = uncertainty_module
+    def __init__(self, args):
+        super(DiversitySampling, self).__init__(args)
 
 
     def get_uncertainty(self):

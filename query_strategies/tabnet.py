@@ -13,8 +13,8 @@ class TabnetSampling(Strategy):
         Paper reference: https://arxiv.org/pdf/1908.07442.pdf """
     
     
-    def __init__(self, data, args):
-        super(TabnetSampling, self).__init__(data, args)
+    def __init__(self, args):
+        super(TabnetSampling, self).__init__(args)
 
     
     def train_model(self):

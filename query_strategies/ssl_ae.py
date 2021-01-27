@@ -127,8 +127,7 @@ def warm_up(epoch, max_epoch=10, w_max=0.1):
       
 class SSLAutoencoderSampling(Strategy):
     """ Training and fraud detection by the proposed semi-autoencoder model"""
-    def __init__(self, data, args):
-        self.data = data
+    def __init__(self, args):
         self.args = args
         self.identifier = args.identifier
         super(SSLAutoencoderSampling,self).__init__(data, args)

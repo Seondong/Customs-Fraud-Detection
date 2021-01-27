@@ -11,8 +11,8 @@ from sklearn.preprocessing import OneHotEncoder
 class XGBLRSampling(Strategy):
     """ XGBoost+LR strategy: Using Logistic Regression based on XGBoost leaf indices to measure fraudness of imports """
     
-    def __init__(self, data, args):
-        super(XGBLRSampling, self).__init__(data, args)
+    def __init__(self, args):
+        super(XGBLRSampling, self).__init__(args)
     
     
     def train_xgb_model(self):
