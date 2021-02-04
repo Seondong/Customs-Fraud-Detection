@@ -8,9 +8,8 @@ from .badge import init_centers
 
 class upDATESampling(DATESampling):
         
-    def __init__(self, data, args, uncertainty_module):
-        super(upDATESampling,self).__init__(data, args)
-        self.uncertainty_module = uncertainty_module
+    def __init__(self, args, uncertainty_module):
+        super(upDATESampling,self).__init__(args)
     
     
     def get_uncertainty(self):

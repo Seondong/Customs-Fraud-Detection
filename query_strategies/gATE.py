@@ -9,9 +9,8 @@ from .badge import init_centers
 class gATESampling(DATESampling):
     """ gATE strategy: Our proposed model for better exploration. Switch turn on/off bATE model and random depending on the DATE performance. """
         
-    def __init__(self, data, args, uncertainty_module):
-        super(gATESampling,self).__init__(data, args)
-        self.uncertainty_module = uncertainty_module
+    def __init__(self, args):
+        super(gATESampling,self).__init__(args)
     
     
     def get_uncertainty(self):

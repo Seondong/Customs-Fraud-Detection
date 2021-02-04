@@ -52,8 +52,8 @@ class BadgeSampling(DATESampling):
     """ BADGE strategy: BADGE model uses the embeddings of the base model (DATE) and find the most diverse imports by KMeans++.
         Reference: Deep Batch Active Learning by Diverse, Uncertain Gradient Lower Bounds; ICLR 2020 """
     
-    def __init__(self, data, args):
-        super(BadgeSampling,self).__init__(data, args)
+    def __init__(self, args):
+        super(BadgeSampling,self).__init__(args)
 
     def query(self, k, model_available = False):
         # Train DATE model
