@@ -63,6 +63,7 @@ def initialize_sampler(samp, args):
         sampler = adahybrid.AdaHybridSampling(args)
     else:
         print('Make sure the sampling strategy is listed in the argument --sampling')
+    sampler.set_name(samp)
     return sampler
 
 
@@ -397,10 +398,8 @@ if __name__ == '__main__':
         
         # Review needed: Check if the weights are updated as desired.
         if samp == 'adahybrid':
-            
             sampler.update(norm_precision)
-            import pdb
-            pdb.set_trace()
+#             pdb.set_trace()
 
         # Renew valid & test period & dataset
         if i == numWeeks - 1:

@@ -16,6 +16,7 @@ class HybridSampling(Strategy):
      
     
     def set_data(self, data):
+        super(HybridSampling, self).set_data(data)
         for subsamp in self.subsamps:
             subsamp.set_data(data)
     
@@ -37,16 +38,19 @@ class HybridSampling(Strategy):
     def query(self, k):
         self.ks = [round(k*weight) for weight in self.weights[:-1]]
         self.ks.append(k - sum(self.ks))
-        chosen = []
+        self.chosen = []
+        self.each_chosen = {}
         trained_DATE_available = False
         for subsamp, num_samp in zip(self.subsamps, self.ks):
             if num_samp == 0:
                 continue
-            print(f'<Hybrid> Querying {num_samp} (={round(100*num_samp/np.sum(self.ks), 2)}%) items using the {subsamp} subsampler')
-            subsamp.set_available_indices(chosen)
+            print(f'<Hybrid> Querying {num_samp} (={round(100*num_samp/np.sum(self.ks))}%) items using the {subsamp} subsampler')
+            subsamp.set_available_indices(self.chosen)
             if isinstance(subsamp, DATESampling):
-                chosen = [*chosen, *subsamp.query(num_samp, model_available = trained_DATE_available)]
+                self.chosen = [*self.chosen, *subsamp.query(num_samp, model_available = trained_DATE_available)]
+                self.each_chosen[subsamp.name] = subsamp.query(num_samp, model_available = trained_DATE_available) 
                 trained_DATE_available = True
             else:
-                chosen = [*chosen, *subsamp.query(num_samp)]
-        return chosen
+                self.chosen = [*self.chosen, *subsamp.query(num_samp)]
+                self.each_chosen[subsamp.name] = subsamp.query(num_samp) 
+        return self.chosen
