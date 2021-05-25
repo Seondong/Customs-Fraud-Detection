@@ -1,4 +1,5 @@
 import torch
+import pickle
 from pytorch_memlab import LineProfiler
 import torch.nn.functional as F
 import torch.nn as nn
@@ -81,7 +82,7 @@ class DATEModel(nn.Module):
         self.fusion_type = fusion_type
         self.use_self = use_self
         self.performance = 0
-
+        self.cnt=0
         # embedding layers 
         self.leaf_embedding = nn.Embedding(max_leaf,dim)
         self.user_embedding = nn.Embedding(importer_size,dim,padding_idx=0)
@@ -131,6 +132,7 @@ class DATEModel(nn.Module):
         # multi-task output 
         classification_output = torch.sigmoid(self.output_cls_layer(hidden))
         regression_output = torch.relu(self.output_reg_layer(hidden))
+        # print("Hidden from DATE Model", hidden.shape)
         return classification_output, regression_output, hidden
 
     def pred_from_hidden(self,hidden):
@@ -142,13 +144,14 @@ class DATEModel(nn.Module):
         cls_loss = []
         reg_loss = []
         hiddens = []
+        idxs=[]
         revs = []  
         i = 0
-        
+        idx_hidden=dict()
         with torch.no_grad():
             for batch in test_loader:
                 i += 1
-                batch_feature, batch_user, batch_item, batch_cls, batch_reg = batch
+                batch_feature, batch_user, batch_item, batch_cls, batch_reg, idx = batch
                 batch_feature,batch_user,batch_item,batch_cls,batch_reg =  \
                 batch_feature.to(self.device), batch_user.to(self.device),\
                 batch_item.to(self.device), batch_cls.to(self.device), batch_reg.to(self.device)
@@ -156,6 +159,8 @@ class DATEModel(nn.Module):
                 y_pred_prob, y_pred_rev, hidden = self.forward(batch_feature,batch_user,batch_item)
                 revs.extend(y_pred_rev)
                 hiddens.extend(hidden)
+                idxs.extend(idx)
+                idx_hidden[idx]=hidden
 
                 # compute classification loss
                 if self.cls_loss_func == 'bce':
@@ -179,7 +184,9 @@ class DATEModel(nn.Module):
                 del cls_losses
                 del reg_losses
                 del y_pred
-
+        file = open("intermediary/embeddings/embd_"+str(self.cnt)+".pickle", "wb")
+        pickle.dump(idx_hidden, file)
+        self.cnt+=1
         print("CLS loss: %.4f, REG loss: %.4f"% (np.mean(cls_loss), np.mean(reg_loss)) )
         return np.array(final_output).ravel(), np.mean(cls_loss)+ np.mean(reg_loss), (hiddens, revs)
 
@@ -298,7 +305,7 @@ class TransferDATEModel(nn.Module):
         print("CLS loss: %.4f, REG loss: %.4f"% (np.mean(cls_loss), np.mean(reg_loss)) )
         return np.array(final_output).ravel(), np.mean(cls_loss)+ np.mean(reg_loss), (hiddens, revs)
     
-    
+
 class AnomalyDATEModel(nn.Module):
     def __init__(self,max_leaf,importer_size,item_size,dim,head_num=4,fusion_type="concat",act="relu",device="cpu",use_self=True,agg_type="sum", cls_loss_func = 'bce', reg_loss_func = 'full'):
         super(AnomalyDATEModel, self).__init__()

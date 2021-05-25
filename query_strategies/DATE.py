@@ -23,7 +23,26 @@ from utils import find_best_threshold, process_leaf_idx, torch_threshold, metric
 from model.AttTreeEmbedding import Attention, DATEModel
 from model.utils import FocalLoss
 
+class TransferDataset(Data.Dataset):
+    def __init__(self, leave, user, item, cls, reg, h_true = False):
+        self.leave = leave
+        self.user = user
+        self.item = item
+        self.cls = cls
+        self.reg = reg
+        # self.h_code = h_code
+        self.h_true = h_true
+        # self.disc = disc
 
+    def __getitem__(self, index):
+        if self.h_true:
+            icode = str(self.h_code[index])[:2]
+            return self.leave[index], self.user[index], self.item[index], self.cls[index], self.reg[index],  icode, index
+        else: 
+            return self.leave[index], self.user[index], self.item[index], self.cls[index], self.reg[index], index
+
+    def __len__(self):
+        return len(self.leave)
 
 class DATESampling(Strategy):
     """ DATE strategy: Using DATE classification probability to measure fraudness of imports 
@@ -34,7 +53,7 @@ class DATESampling(Strategy):
         self.model_name = "DATE"
         self.model_path = "./intermediary/saved_models/%s-%s.pkl" % (self.model_name,self.args.identifier)
         self.batch_size = args.batch_size
-        
+        self.cnt=0
     
     def train_xgb_model(self):
         """ Train XGB model """
@@ -113,10 +132,13 @@ class DATESampling(Strategy):
         valid_label_reg = torch.tensor(self.data.norm_revenue_valid).float()
         test_label_reg = torch.tensor(self.data.norm_revenue_test).float()
 
-        train_dataset = Data.TensorDataset(train_leaves,train_user,train_item,train_label_cls,train_label_reg)
-        valid_dataset = Data.TensorDataset(valid_leaves,valid_user,valid_item,valid_label_cls,valid_label_reg)
-        test_dataset = Data.TensorDataset(test_leaves,test_user,test_item,test_label_cls,test_label_reg)
-        
+        # train_dataset = Data.TensorDataset(train_leaves,train_user,train_item,train_label_cls,train_label_reg)
+        # valid_dataset = Data.TensorDataset(valid_leaves,valid_user,valid_item,valid_label_cls,valid_label_reg)
+        # test_dataset = Data.TensorDataset(test_leaves,test_user,test_item,test_label_cls,test_label_reg)
+    
+        train_dataset = TransferDataset(train_leaves,train_user,train_item,train_label_cls,train_label_reg)
+        valid_dataset = TransferDataset(valid_leaves,valid_user,valid_item,valid_label_cls,valid_label_reg)
+        test_dataset = TransferDataset(test_leaves,test_user,test_item,test_label_cls,test_label_reg)
         
         self.data.train_loader = Data.DataLoader(
             dataset=train_dataset,     
@@ -139,10 +161,11 @@ class DATESampling(Strategy):
         if self.args.save:
             data4embedding = {"train_dataset":train_dataset,"valid_dataset":valid_dataset,"test_dataset":test_dataset,\
                       "leaf_num":self.data.leaf_num,"importer_num":self.data.importer_size,"item_size":self.data.item_size}
-            with open("./intermediary/torch_data/torch_data-"+self.args.identifier+".pickle", 'wb') as f:
+            with open("./intermediary/torch_data/torch_data-"+self.args.identifier+"_"+str(self.cnt)+".pickle", 'wb') as f:
                 pickle.dump(data4embedding, f, protocol=pickle.HIGHEST_PROTOCOL)
-            with open("./intermediary/leaf_indices/leaf_index-"+self.args.identifier+".pickle", "wb") as f:
+            with open("./intermediary/leaf_indices/leaf_index-"+self.args.identifier+"_"+str(self.cnt)+".pickle", "wb") as f:
                 pickle.dump(new_leaf_index, f, protocol=pickle.HIGHEST_PROTOCOL)
+            self.cnt+=1
         
     
     def get_model(self):
@@ -185,6 +208,8 @@ class DATESampling(Strategy):
     # Below methods are for DATE-dependent selection strategies.
     def get_embedding(self):
         best_model = self.get_model()
+        print('trying to print smth')
+        print(self.data.test_loader)
         final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(self.data.test_loader)
         hiddens = [hiddens[i] for i in self.available_indices]
         return hiddens
@@ -319,7 +344,7 @@ class VanillaDATE:
         print()
         print("Training DATE model ...")
         for epoch in range(epochs):
-            for step, (batch_feature,batch_user,batch_item,batch_cls,batch_reg) in enumerate(train_loader):
+            for step, (batch_feature,batch_user,batch_item,batch_cls,batch_reg,idx) in enumerate(train_loader):
                 self.model.train() # prep to train model
                 batch_feature,batch_user,batch_item,batch_cls,batch_reg =  \
                 batch_feature.to(device), batch_user.to(device), batch_item.to(device),\
@@ -328,7 +353,6 @@ class VanillaDATE:
 
                 # model output
                 classification_output, regression_output, hidden_vector = self.model(batch_feature,batch_user,batch_item)
-                
                 if self.cls_loss_func == 'bce':
                     cls_loss = nn.BCELoss()(classification_output,batch_cls)
                 if self.cls_loss_func == 'focal':
@@ -398,9 +422,10 @@ class VanillaDATE:
         best_threshold, val_score, roc = torch_threshold(y_prob,xgb_validy)
 
         # predict test 
-        y_prob, val_loss, _ = best_model.module.eval_on_batch(test_loader)
+        y_prob, val_loss, (hiddens, revs) = best_model.module.eval_on_batch(test_loader)
         overall_f1, auc, precisions, recalls, f1s, revenues = metrics(y_prob,xgb_testy,revenue_test,best_threshold)
         best_score = f1s[0]
+        # print(hiddens)
         
         return overall_f1, auc, precisions, recalls, f1s, revenues, self.model_path    
     

@@ -7,7 +7,7 @@ import pdb
 import time
 import pickle
 import warnings
-import dataset
+import dataset_transfer as dataset
 import sys
 import math
 from itertools import islice
@@ -135,6 +135,7 @@ if __name__ == '__main__':
     pathlib.Path('./intermediary/tn_models').mkdir(parents=True, exist_ok=True)
     pathlib.Path('./intermediary/torch_data').mkdir(parents=True, exist_ok=True)
     pathlib.Path('./intermediary/leaf_indices').mkdir(parents=True, exist_ok=True)
+    pathlib.Path('./intermediary/embeddings').mkdir(parents=True, exist_ok=True)
     pathlib.Path('./uncertainty_models').mkdir(parents=True, exist_ok=True)
     pathlib.Path('./temp').mkdir(parents=True, exist_ok=True)
     
@@ -269,8 +270,9 @@ if __name__ == '__main__':
     sampler = initialize_sampler(samp, args)      
         
     # Customs selection simulation for long term (if test_length = 7 days, simulate for numWeeks)
+    print("Num Weeks", numWeeks)
     for i in range(numWeeks):
-        
+        print('TEST DAY', i, test_start_day)
         if test_start_day.strftime('%y-%m-%d') > max(data.df["sgd.date"]):
             logger.info('Simulation period is over.')
             logger.info('Terminating ...')
@@ -315,16 +317,17 @@ if __name__ == '__main__':
         
         # set data to sampler
         sampler.set_data(data)
-        
+
         # If it fails to query, try one more time. If it fails again, do random sampling.
         try:
             chosen = sampler.query(num_samples)
-            
+            # hiddens = sampler.get_embedding()
+            # print(len(hiddens))
+            # print(hiddens)
         except:
             import traceback
             traceback.print_exc()
-            
-            
+         
         logger.info("# of unique queried item: %s, # of queried item: %s, # of samples to be queried: %s", len(set(chosen)), len(chosen), num_samples)
         assert len(set(chosen)) == num_samples
         
