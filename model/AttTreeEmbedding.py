@@ -10,7 +10,7 @@ from .utils import FocalLoss
 import gc
 from sklearn.cluster import KMeans
 from sklearn.metrics import roc_auc_score
-
+import os
 
 class Mish(nn.Module):
     """ Mish: A Self Regularized Non-Monotonic Activation Function 
@@ -82,7 +82,7 @@ class DATEModel(nn.Module):
         self.fusion_type = fusion_type
         self.use_self = use_self
         self.performance = 0
-        self.cnt=0
+
         # embedding layers 
         self.leaf_embedding = nn.Embedding(max_leaf,dim)
         self.user_embedding = nn.Embedding(importer_size,dim,padding_idx=0)
@@ -139,15 +139,15 @@ class DATEModel(nn.Module):
         classification_output = torch.sigmoid(self.output_cls_layer(hidden))
         return classification_output 
 
-    def eval_on_batch(self,test_loader): # predict test data using batch 
+    def eval_on_batch(self,test_loader, test=False): # predict test data using batch 
         final_output = []
         cls_loss = []
         reg_loss = []
         hiddens = []
         idxs=[]
         revs = []  
-        i = 0
         idx_hidden=dict()
+        i = 0
         with torch.no_grad():
             for batch in test_loader:
                 i += 1
@@ -160,7 +160,8 @@ class DATEModel(nn.Module):
                 revs.extend(y_pred_rev)
                 hiddens.extend(hidden)
                 idxs.extend(idx)
-                idx_hidden[idx]=hidden
+                for i,x in enumerate(idx):
+                    idx_hidden[x]=hidden[i]
 
                 # compute classification loss
                 if self.cls_loss_func == 'bce':
@@ -179,14 +180,18 @@ class DATEModel(nn.Module):
                 # store predicted probability 
                 y_pred = y_pred_prob.detach().cpu().numpy().tolist()
                 final_output.extend(y_pred)
-
                 del hidden
                 del cls_losses
                 del reg_losses
                 del y_pred
-        file = open("intermediary/embeddings/embd_"+str(self.cnt)+".pickle", "wb")
-        pickle.dump(idx_hidden, file)
-        self.cnt+=1
+        if test:
+            if len(os.listdir('intermediary/embeddings'))==0:
+                cnt=0
+            else:
+                cnt=int(os.listdir('intermediary/embeddings')[-1].split('.')[0][-1])+1
+            print('saving', cnt)
+            file = open("intermediary/embeddings/embd_"+str(cnt)+".pickle", "wb")
+            pickle.dump(idx_hidden, file)
         print("CLS loss: %.4f, REG loss: %.4f"% (np.mean(cls_loss), np.mean(reg_loss)) )
         return np.array(final_output).ravel(), np.mean(cls_loss)+ np.mean(reg_loss), (hiddens, revs)
 

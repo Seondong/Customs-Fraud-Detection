@@ -53,7 +53,6 @@ class DATESampling(Strategy):
         self.model_name = "DATE"
         self.model_path = "./intermediary/saved_models/%s-%s.pkl" % (self.model_name,self.args.identifier)
         self.batch_size = args.batch_size
-        self.cnt=0
     
     def train_xgb_model(self):
         """ Train XGB model """
@@ -158,14 +157,13 @@ class DATESampling(Strategy):
         
         
            # save data
-        if self.args.save:
-            data4embedding = {"train_dataset":train_dataset,"valid_dataset":valid_dataset,"test_dataset":test_dataset,\
-                      "leaf_num":self.data.leaf_num,"importer_num":self.data.importer_size,"item_size":self.data.item_size}
-            with open("./intermediary/torch_data/torch_data-"+self.args.identifier+"_"+str(self.cnt)+".pickle", 'wb') as f:
-                pickle.dump(data4embedding, f, protocol=pickle.HIGHEST_PROTOCOL)
-            with open("./intermediary/leaf_indices/leaf_index-"+self.args.identifier+"_"+str(self.cnt)+".pickle", "wb") as f:
-                pickle.dump(new_leaf_index, f, protocol=pickle.HIGHEST_PROTOCOL)
-            self.cnt+=1
+        # if self.args.save:
+        #     data4embedding = {"train_dataset":train_dataset,"valid_dataset":valid_dataset,"test_dataset":test_dataset,\
+        #               "leaf_num":self.data.leaf_num,"importer_num":self.data.importer_size,"item_size":self.data.item_size}
+        #     with open("./intermediary/torch_data/torch_data-"+self.args.identifier+".pickle", 'wb') as f:
+        #         pickle.dump(data4embedding, f, protocol=pickle.HIGHEST_PROTOCOL)
+        #     with open("./intermediary/leaf_indices/leaf_index-"+self.args.identifier+".pickle", "wb") as f:
+        #         pickle.dump(new_leaf_index, f, protocol=pickle.HIGHEST_PROTOCOL)
         
     
     def get_model(self):
@@ -274,7 +272,6 @@ class VanillaDATE:
         self.state_dict = state_dict
         self.model_name = "DATE"
         self.model_path = "./intermediary/saved_models/%s-%s.pkl" % (self.model_name,self.args.identifier)
-        
         
     def train(self, args):
         
@@ -422,10 +419,8 @@ class VanillaDATE:
         best_threshold, val_score, roc = torch_threshold(y_prob,xgb_validy)
 
         # predict test 
-        y_prob, val_loss, (hiddens, revs) = best_model.module.eval_on_batch(test_loader)
+        y_prob, val_loss, (hiddens, revs) = best_model.module.eval_on_batch(test_loader, True)
         overall_f1, auc, precisions, recalls, f1s, revenues = metrics(y_prob,xgb_testy,revenue_test,best_threshold)
         best_score = f1s[0]
-        # print(hiddens)
-        
         return overall_f1, auc, precisions, recalls, f1s, revenues, self.model_path    
     
