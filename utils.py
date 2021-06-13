@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd 
 from scipy.stats import hmean
 from time import time
+from sklearn.preprocessing import MultiLabelBinarizer
 
 
 def timer_func(func):
@@ -14,7 +15,7 @@ def timer_func(func):
         t1 = time()
         result = func(*args, **kwargs)
         t2 = time()
-        print(f'Function {func.__name__!r} executed in {(t2-t1):.4f}s')   # You can turn it on/off for debugging.
+        # print(f'Function {func.__name__!r} executed in {(t2-t1):.4f}s')   # You can turn it on/off for debugging.
         return result
     return wrap_func
 
@@ -160,3 +161,34 @@ def metrics_active(active_rev,active_cls,xgb_testy,revenue_test):
         revenue = 0
     # print('Precision: %.4f, Recall: %.4f, Revenue: %.4f' % (precision, recall, revenue))
     return precision, recall, f1, revenue
+
+
+
+def evaluate_inspection_multiclass(inspected, test, class_labels):
+    
+    inspection_codes = class_labels['검사결과부호']
+    inspection_codes_broad = sorted(list(set(class_labels['검사결과부호'].apply(lambda x: x[0]))))
+    result = {}
+
+    @timer_func
+    def _calculate_metrics(codes, label):
+        mlb = MultiLabelBinarizer(classes = list(range(len(codes))))
+        iresults = inspected[label]
+        tresults = test[label]
+        iresults_mtx = np.array(mlb.fit_transform(iresults)) # change into matrix..
+        tresults_mtx = np.array(mlb.fit_transform(tresults))
+
+        precisions = np.true_divide(iresults_mtx.sum(axis = 0), np.shape(iresults_mtx)[0]) # array of precisions
+        recalls = np.divide(iresults_mtx.sum(axis = 0), tresults_mtx.sum(axis = 0), out = np.zeros(len(codes)), where = tresults_mtx.sum(axis = 0)!=0) # array of recalls
+        f1 = hmean([precisions, recalls], axis = 0)
+        macro_f1 = np.mean(np.array(f1))
+        result['precision'] = dict(zip(codes, precisions))
+        result['recall'] = dict(zip(codes, recalls))
+        result['f1'] = dict(zip(codes, f1))
+        result['macrof1'] = macro_f1
+
+        return result
+
+    result['specific_result'] = _calculate_metrics(inspection_codes, '검사결과코드') 
+    result['broad_result'] = _calculate_metrics(inspection_codes_broad, '검사결과코드-대분류') 
+    return result

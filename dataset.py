@@ -313,12 +313,10 @@ class Import_declarations():
             else:
                 self.X_valid_unlab = np.asarray([])
 
-        print("Data size:")
-
         if self.args.semi_supervised == 1:
-            print(f'Train labeled: {self.train_lab.shape}, Train unlabeled: {self.train_unlab.shape}, Valid labeled: {self.valid_lab.shape}, Valid unlabeled: {self.valid_unlab.shape}, Test: {self.test.shape}')
+            print(f'Data size - Train labeled: {self.train_lab.shape}, Train unlabeled: {self.train_unlab.shape}, Valid labeled: {self.valid_lab.shape}, Valid unlabeled: {self.valid_unlab.shape}, Test: {self.test.shape}')
         elif self.args.semi_supervised == 0:
-            print(f'Train labeled: {self.train_lab.shape}, Valid labeled: {self.valid_lab.shape}, Test: {self.test.shape}')
+            print(f'Data size - Train labeled: {self.train_lab.shape}, Valid labeled: {self.valid_lab.shape}, Test: {self.test.shape}')
         
         # impute nan
         self.X_train_lab = np.nan_to_num(self.X_train_lab, 0)
