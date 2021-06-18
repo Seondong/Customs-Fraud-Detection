@@ -21,7 +21,7 @@ import pandas as pd
 from scipy.stats import hmean
 import torch
 from model.AttTreeEmbedding import Attention, DATEModel
-from utils import timer_func, torch_threshold, metrics, metrics_active, evaluate_inspection_multiclass
+from utils import timer_func, evaluate_inspection, evaluate_inspection_multiclass
 from query_strategies import uncertainty, random
 warnings.filterwarnings("ignore")
 
@@ -33,7 +33,7 @@ class Simulator():
         self.sim_start_time = str(round(time.time(),3))
         print('Experiment starts: ', self.sim_start_time)
         
-        generate_paths()
+        self.generate_paths()
         self.logger = make_logger(self.sim_start_time)
         
         # Parse argument
@@ -59,7 +59,7 @@ class Simulator():
         parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
         parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
         parser.add_argument('--output', type=str, default="result"+"-"+self.sim_start_time, help="Name of output file")
-        parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'risky', 'riskylogistic', 'riskyprod', 'riskyprec', 'riskyMAB', 'riskyMABsum', 'riskyDecayMAB', 'riskyDecayMABsum', 'AttentionAgg', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'upDATE', 'gATE', 'hybrid', 'adahybrid', 'tabnet', 'ssl_ae', 'noupDATE', 'randomupDATE', 'deepSAD', 'multideepSAD', 'pot', 'pvalue', 'rada'], help='Sampling strategy')
+        parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'risky', 'riskylogistic', 'riskyprod', 'riskyprec', 'riskyMAB', 'riskyMABsum', 'riskyDecayMAB', 'riskyDecayMABsum', 'AttentionAgg', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'upDATE', 'gATE', 'hybrid', 'adahybrid', 'tabnet', 'ssl_ae', 'deepSAD', 'multideepSAD', 'pot', 'pvalue', 'rada'], help='Sampling strategy')
         parser.add_argument('--initial_inspection_rate', type=float, default=100, help='Initial inspection rate in training data by percentile')
         parser.add_argument('--final_inspection_rate', type=float, default = 5, help='Percentage of test data need to query')
         parser.add_argument('--inspection_plan', type=str, default = 'direct_decay', choices=['direct_decay','linear_decay','fast_linear_decay'], help='Inspection rate decaying option for simulation time')
@@ -92,26 +92,7 @@ class Simulator():
 
         # Arguments
         args = parser.parse_args()
-        self.args = args
-        epochs = args.epoch
-        dim = args.dim
-        lr = args.lr
-        weight_decay = args.l2
-        head_num = args.head_num
-        act = args.act
-        fusion = args.fusion
-        alpha = args.alpha
-        use_self = args.use_self
-        agg = args.agg
-        samp = args.sampling
-        mode = args.mode
-        chosen_data = args.data
-        save = args.save
-        initial_masking = args.initial_masking
-        ada_lr = args.ada_lr
-        num_arms = args.num_arms
-        semi_supervised = args.semi_supervised
-        
+        self.args = args        
         self.logger.info(self.args)
 
         self.hybrid_strategies = ['hybrid', 'adahybrid', 'pot', 'pvalue', 'rada']
@@ -129,6 +110,24 @@ class Simulator():
         self.logger.info('Inspection rate for testing periods: %s', self.confirmed_inspection_plan)
 
 
+    def generate_paths(self):
+        """ Generate required directories """
+        pathlib.Path('./results').mkdir(parents=True, exist_ok=True) 
+        pathlib.Path('./results/performances').mkdir(parents=True, exist_ok=True)
+        pathlib.Path('./results/ratios').mkdir(parents=True, exist_ok=True)    
+        pathlib.Path('./results/query_indices').mkdir(parents=True, exist_ok=True)
+        pathlib.Path('./intermediary').mkdir(parents=True, exist_ok=True)
+        pathlib.Path('./intermediary/saved_models').mkdir(parents=True, exist_ok=True)
+        pathlib.Path('./intermediary/logs').mkdir(parents=True, exist_ok=True)
+        pathlib.Path('./intermediary/xgb_models').mkdir(parents=True, exist_ok=True)
+        pathlib.Path('./intermediary/tn_models').mkdir(parents=True, exist_ok=True)
+        pathlib.Path('./intermediary/torch_data').mkdir(parents=True, exist_ok=True)
+        pathlib.Path('./intermediary/leaf_indices').mkdir(parents=True, exist_ok=True)
+        pathlib.Path('./intermediary/embeddings').mkdir(parents=True, exist_ok=True)
+        pathlib.Path('./uncertainty_models').mkdir(parents=True, exist_ok=True)
+        pathlib.Path('./temp').mkdir(parents=True, exist_ok=True)
+
+
     def prepare_data(self):
         """ Prepare data to simulate """
 
@@ -142,7 +141,7 @@ class Simulator():
             self.args.initial_masking = 'natural'   # since this data is given as partially labeled, it does not need extra label masking.
             initial_masking = 'natural'   
         elif self.args.data == 'real-k':
-            self.data = dataset.Kdata(path='./data/Anony_0622_merge_total.csv')
+            self.data = dataset.Kdata(path='./data/kdata.csv')
             self.args.initial_masking = 'natural'
             initial_masking = 'natural'
         elif self.args.data == 'real-n':
@@ -158,24 +157,27 @@ class Simulator():
         
 
     def prepare_output_files(self):
+        """ Prepare output files """
 
         samp = self.args.sampling
         subsamps = self.args.subsamplings.replace('/','+')
         if self.args.sampling not in self.hybrid_strategies:
             subsamps = 'single'
 
-         # Saving simulation results: Output file will be saved under ./results/performances/ directory
+        # Saving simulation results: Output file will be saved under ./results/performances/ directory
         self.output_file =  "./results/performances/" + self.args.prefix + '-' + self.args.output + '-' + self.args.data + '-' + samp + '-' + subsamps + '-' + str(self.args.final_inspection_rate) + ".csv"
         with open(self.output_file, 'a') as ff:
-            output_metric_name = ['runID', 'data', 'num_train','num_valid','num_test','num_select','num_inspected','num_uninspected','num_test_illicit','test_illicit_rate', 'upper_bound_precision', 'upper_bound_recall','upper_bound_rev', 'sampling', 'concept_drift', 'mixing',  'ada_lr', 'ada_decay', 'ada_epsilon', 'initial_inspection_rate', 'current_inspection_rate', 'final_inspection_rate', 'inspection_plan', 'mode', 'subsamplings', 'initial_weights', 'current_weights', 'unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue', 'norm-precision', 'norm-recall', 'norm-revenue']
+            output_metric_name = ['runID', 'data', 'num_train','num_valid','num_test','num_select','num_inspected','num_uninspected','num_test_illicit','test_illicit_rate', 'upper_bound_precision', 'upper_bound_recall','upper_bound_rev', 'sampling', 'concept_drift', 'mixing',  'ada_lr', 'ada_decay', 'ada_epsilon', 'initial_inspection_rate', 'current_inspection_rate', 'final_inspection_rate', 'inspection_plan', 'mode', 'subsamplings', 'initial_weights', 'current_weights', 'unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue', 'avg_revenue', 'norm-precision', 'norm-recall', 'norm-revenue']
             print(",".join(output_metric_name),file=ff)
         
+        # Additional output files for adaptive strategies
         if samp == 'adahybrid':
             self.weight_file =  "./results/ratios/" + self.args.prefix + '-' + self.args.output + '-' + samp + '-' + subsamps + '-' + str(self.args.final_inspection_rate) + ".csv"
             with open(self.weight_file, 'a') as ff:
                 output_weight_name = ['runID', 'data', 'sampling', 'subsamplings', 'numWeek', 'norm-precision', 'norm-recall', 'norm-revenue', 'lr'] + [f'{i/(self.args.num_arms-1)} explore rate' for i in range(self.args.num_arms)] + ['chosen_rate', 'chosen_arm']
                 print(",".join(output_weight_name), file=ff)
 
+        # Additional output files for adaptive strategies
         if samp == 'rada':
             self.weight_file =  "./results/ratios/" + self.args.prefix + '-' + self.args.output + '-' + samp + '-' + subsamps + '-' + str(self.args.final_inspection_rate) + ".csv"
             with open(self.weight_file, 'a') as ff:
@@ -187,15 +189,15 @@ class Simulator():
         """ Evaluation - calculate necessary metrics """
 
         # Evaluation
-        active_rev = self.inspected_imports['revenue']
-        active_rev = active_rev.transpose().to_numpy()
+        rev = self.inspected_imports['revenue']
+        rev = rev.transpose().to_numpy()
 
-        active_cls = self.inspected_imports['illicit']
-        active_cls = active_cls.transpose().to_numpy()
+        cls = self.inspected_imports['illicit']
+        cls = cls.transpose().to_numpy()
 
         # Added to handle semi-supervised inputs
-        active_cls_notna = active_cls[~np.isnan(active_cls)]
-        active_rev_notna = active_rev[~np.isnan(active_rev)]
+        cls_notna = cls[~np.isnan(cls)]
+        rev_notna = rev[~np.isnan(rev)]
         illicit_test_notna = self.data.test_cls_label[~np.isnan(self.data.test_cls_label)]
         revenue_test_notna = self.data.test_reg_label[~np.isnan(self.data.test_reg_label)]
 
@@ -203,16 +205,19 @@ class Simulator():
             metric_dict = evaluate_inspection_multiclass(self.inspected_imports, self.data.test, self.data.class_labels)
             self.logger.info(f'Performance:\n specific: MacroF1@{self.current_inspection_rate}:{round(metric_dict["specific_result"]["macrof1"], 4)}\n broad: MacroF1@{self.current_inspection_rate}:{round(metric_dict["broad_result"]["macrof1"], 4)}')
 
-        self.active_precisions, self.active_recalls, self.active_f1s, self.active_revenues = evaluate_inspection(active_rev_notna, active_cls_notna, illicit_test_notna, revenue_test_notna)
-        self.logger.info(f'Performance:\n Pr@{self.current_inspection_rate}:{round(self.active_precisions, 4)}, Re@{self.current_inspection_rate}:{round(self.active_recalls, 4)} Rev@{self.current_inspection_rate}:{round(self.active_revenues, 4)}') 
+        self.precision, self.recall, self.f1, self.revenue_avg, self.revenue_recall = evaluate_inspection(rev_notna, cls_notna, illicit_test_notna, revenue_test_notna)
+        self.logger.info(f'Performance:\n Pr@{self.current_inspection_rate}:{round(self.precision, 4)}, Re@{self.current_inspection_rate}:{round(self.recall, 4)} Rev@{self.current_inspection_rate}:{round(self.revenue_recall, 4)}') 
 
         self.upper_bound_precision = min(np.sum(illicit_test_notna)/len(self.inspected_indices), 1)
         self.upper_bound_recall = min(len(self.chosen)/np.sum(illicit_test_notna), 1)
         self.upper_bound_revenue = min(sum(sorted(revenue_test_notna, reverse=True)[:len(self.chosen)]) / np.sum(revenue_test_notna), 1)
         
-        self.norm_precision = self.active_precisions/self.upper_bound_precision
-        self.norm_recall = self.active_recalls/self.upper_bound_recall
-        self.norm_revenue = self.active_revenues/self.upper_bound_revenue
+        self.norm_precision = self.precision/self.upper_bound_precision
+        self.norm_recall = self.recall/self.upper_bound_recall
+        self.norm_revenue = self.revenue_recall/self.upper_bound_revenue
+
+        # import pdb
+        # pdb.set_trace()
 
 
     def save_results(self):
@@ -244,7 +249,6 @@ class Simulator():
             ada_epsilon = '-'
             ada_lr = '-'
 
-
         with open(self.output_file, 'a') as ff:
             if samp in self.hybrid_strategies:
                 initial_weights_str = '/'.join([str(weight) for weight in initial_weights])
@@ -254,7 +258,7 @@ class Simulator():
                 initial_weights_str = '-'
                 final_weights_str = '-'
             
-            output_metric = [self.sim_start_time, self.args.data, len(self.data.train_lab), len(self.data.valid_lab), len(self.data.test), len(self.chosen), len(self.inspected_imports), len(self.uninspected_imports), np.sum(self.data.test_cls_label), np.mean(self.data.test_cls_label), self.upper_bound_precision, self.upper_bound_recall, self.upper_bound_revenue, samp, drift, mixing, ada_lr, ada_decay, ada_epsilon, self.args.initial_inspection_rate, self.current_inspection_rate, self.args.final_inspection_rate, self.args.inspection_plan, self.args.mode, subsamplings, initial_weights_str, final_weights_str, self.args.uncertainty, self.train_start_day.strftime('%y-%m-%d'), self.valid_start_day.strftime('%y-%m-%d'), self.test_start_day.strftime('%y-%m-%d'), self.test_end_day.strftime('%y-%m-%d'), self.data.episode+1, round(self.active_precisions,4), round(self.active_recalls,4), round(self.active_revenues,4), round(self.norm_precision,4), round(self.norm_recall,4), round(self.norm_revenue,4)]
+            output_metric = [self.sim_start_time, self.args.data, len(self.data.train_lab), len(self.data.valid_lab), len(self.data.test), len(self.chosen), len(self.inspected_imports), len(self.uninspected_imports), np.sum(self.data.test_cls_label), np.mean(self.data.test_cls_label), self.upper_bound_precision, self.upper_bound_recall, self.upper_bound_revenue, samp, drift, mixing, ada_lr, ada_decay, ada_epsilon, self.args.initial_inspection_rate, self.current_inspection_rate, self.args.final_inspection_rate, self.args.inspection_plan, self.args.mode, subsamplings, initial_weights_str, final_weights_str, self.args.uncertainty, self.train_start_day.strftime('%y-%m-%d'), self.valid_start_day.strftime('%y-%m-%d'), self.test_start_day.strftime('%y-%m-%d'), self.test_end_day.strftime('%y-%m-%d'), self.data.episode+1, round(self.precision,4), round(self.recall,4), round(self.revenue_recall,4), round(self.revenue_avg,4), round(self.norm_precision,4), round(self.norm_recall,4), round(self.norm_revenue,4)]
                 
             output_metric = list(map(str,output_metric))
             self.logger.debug(output_metric)
@@ -273,8 +277,6 @@ class Simulator():
                 self.logger.debug(output_metric)
                 print(",".join(output_metric),file=ff)
         
-
-        # # Uncomment this if you want to save the indices of inspected items
         if self.args.save == 1:
             self.output_file_indices =  "./results/query_indices/" + self.sim_start_time + '-' + samp + '-' + subsamplings.replace('/','+') + '-' + str(self.current_inspection_rate) + '-' + self.args.mode + "-week-" + str(self.data.episode) + ".csv"
                 
@@ -301,7 +303,6 @@ class Simulator():
 
     def simulate(self):
         """ Main custom selection simulation part """
-
 
         # Initialize a sampler (We put it outside the week loop since we do not change sampler every week)
         # NOTE: If you put this inside the week loop, new sampler will be initialized every week, which means that parameters in the sampler are also initialized)    
@@ -394,7 +395,6 @@ class Simulator():
             # Save the evaluation results into csv files
             self.save_results()
 
-            
             # Review needed: Check if the weights are updated as desired.
             if samp in ['adahybrid', 'rada']:
                 self.sampler.update_subsampler_weights(self.norm_precision)
@@ -409,22 +409,7 @@ class Simulator():
             self.test_end_day = self.test_start_day + self.test_length
             self.valid_start_day = self.test_start_day - self.valid_length
             
-            
-            """ Variation of the DATE model - only for research purposes (Measure the effect of smarter batch selection)
-            # randomupDATE: Performance evaluation is done by DATE strategy, but newly added instances are random - not realistic)
-            # noupDATE: DATE model does not accept new train data. (But the model anyway needs to be retrained with test data owing to the design choice of our XGB model) 
-            These two strategies will be removed for software release. """
-            
-            if samp == 'noupDATE':
-                self.data.update(self.data.df.loc[[]], self.data.df.loc[set(self.data.test.index)], self.test_start_day, self.test_end_day, self.valid_start_day)
-            elif samp == 'randomupDATE':
-                self.chosen = random.RandomSampling(self.data, self.args).query(num_samples)
-                self.inspected_indices = [point + self.data.offset for point in self.chosen]         
-                self.inspected_imports = self.data.df.loc[self.inspected_indices]
-                self.uninspected_imports = self.data.df.loc[set(self.data.test.index)-set(self.inspected_imports.index)]            
-                self.data.update(self.inspected_imports, self.uninspected_imports, self.test_start_day, self.test_end_day, self.valid_start_day)          
-            else:
-                self.data.update(self.inspected_imports, self.uninspected_imports, self.test_start_day, self.test_end_day, self.valid_start_day)
+            self.data.update(self.inspected_imports, self.uninspected_imports, self.test_start_day, self.test_end_day, self.valid_start_day)
             
             
             del self.inspected_imports
@@ -432,7 +417,6 @@ class Simulator():
             
             print("===========================================================================================")
             print()
-
 
 
 def make_logger(curr_time, name=None):
@@ -459,13 +443,6 @@ def make_logger(curr_time, name=None):
     logger.addHandler(file_handler)
     
     return logger
-
-
-def evaluate_inspection(chosen_rev,chosen_cls,xgb_testy,revenue_test):
-    """ Evaluate the model """
-    precisions, recalls, f1s, revenues = metrics_active(chosen_rev,chosen_cls,xgb_testy,revenue_test)
-    best_score = f1s
-    return precisions, recalls, f1s, revenues
 
 
 def inspection_plan(rate_init, rate_final, numweeks, option):
@@ -524,7 +501,7 @@ def initialize_sampler(samp, args):
     elif samp == 'badge':
         from query_strategies import badge;
         sampler = badge.BadgeSampling(args)
-    elif samp in ['DATE', 'noupDATE', 'randomupDATE']:
+    elif samp in ['DATE']:
         from query_strategies import DATE;
         sampler = DATE.DATESampling(args)
     elif samp == 'diversity':
@@ -573,24 +550,6 @@ def initialize_sampler(samp, args):
         sampler = None
         print('Make sure the sampling strategy is listed in the argument --sampling')
     return sampler
-
-
-def generate_paths():
-    # Initiate directories
-    pathlib.Path('./results').mkdir(parents=True, exist_ok=True) 
-    pathlib.Path('./results/performances').mkdir(parents=True, exist_ok=True)
-    pathlib.Path('./results/ratios').mkdir(parents=True, exist_ok=True)    
-    pathlib.Path('./results/query_indices').mkdir(parents=True, exist_ok=True)
-    pathlib.Path('./intermediary').mkdir(parents=True, exist_ok=True)
-    pathlib.Path('./intermediary/saved_models').mkdir(parents=True, exist_ok=True)
-    pathlib.Path('./intermediary/logs').mkdir(parents=True, exist_ok=True)
-    pathlib.Path('./intermediary/xgb_models').mkdir(parents=True, exist_ok=True)
-    pathlib.Path('./intermediary/tn_models').mkdir(parents=True, exist_ok=True)
-    pathlib.Path('./intermediary/torch_data').mkdir(parents=True, exist_ok=True)
-    pathlib.Path('./intermediary/leaf_indices').mkdir(parents=True, exist_ok=True)
-    pathlib.Path('./intermediary/embeddings').mkdir(parents=True, exist_ok=True)
-    pathlib.Path('./uncertainty_models').mkdir(parents=True, exist_ok=True)
-    pathlib.Path('./temp').mkdir(parents=True, exist_ok=True)
 
 
 def main():

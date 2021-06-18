@@ -9,8 +9,9 @@ from sklearn.preprocessing import MultiLabelBinarizer
 
 
 def timer_func(func):
-    # This function shows the execution time of 
-    # the function object passed
+    """
+    This function shows the execution time of the function object passed
+    """
     def wrap_func(*args, **kwargs):
         t1 = time()
         result = func(*args, **kwargs)
@@ -28,15 +29,15 @@ def find_best_threshold(model,x_list,y_test,best_thresh = None):
     
     Find the best probability threshold to separate probability to 0 and 1
     '''
-    y_pred_prob = model.predict_proba(x_list)[:,1]
+    y_prob = model.predict_proba(x_list)[:,1]
     threshold_list = np.arange(0.1,0.6,0.1)
     best_auc = 0.5    # 0.5 is random for AUC.
     
     if best_thresh ==None:
         for th in threshold_list:
-            y_pred_label = (y_pred_prob > th)*1 
+            y_pred_label = (y_prob > th)*1 
             try:
-                auc_score = roc_auc_score(y_test,y_pred_prob)
+                auc_score = roc_auc_score(y_test,y_prob)
             except ValueError:
                 auc_score = 0.5
             if auc_score > best_auc:
@@ -45,35 +46,33 @@ def find_best_threshold(model,x_list,y_test,best_thresh = None):
         return best_thresh, best_auc
     
     else:
-        y_pred_label = (y_pred_prob > best_thresh)*1 
+        y_pred_label = (y_prob > best_thresh)*1 
         best_auc = roc_auc_score(y_test,y_pred_label)
     print("AUC-score equals to:%.4f"%(best_auc))
     return best_auc
 
 
-def torch_threshold(y_pred_prob,y_test,best_thresh = None):
+def torch_threshold(y_prob,y_test,best_thresh = None):
     threshold_list = np.arange(0.1,0.6,0.1)
     best_f1 = 0
-    # import pdb
-    # pdb.set_trace()
     if best_thresh == None:
         for th in threshold_list:
-            y_pred_label = (y_pred_prob > th)*1 
+            y_pred_label = (y_prob > th)*1 
             f_score = f1_score(y_test[~np.isnan(y_test)],y_pred_label[~np.isnan(y_test)])
             if f_score > best_f1:
                 best_f1 = f_score
                 best_thresh = th 
         try:
-            roc_auc = roc_auc_score(y_test[~np.isnan(y_test)], y_pred_prob[~np.isnan(y_test)])
+            roc_auc = roc_auc_score(y_test[~np.isnan(y_test)], y_prob[~np.isnan(y_test)])
         except ValueError:
             roc_auc = 0.5
         return best_thresh, best_f1, roc_auc
     
     else:
-        y_pred_label = (y_pred_prob > best_thresh)*1 
+        y_pred_label = (y_prob > best_thresh)*1 
         best_f1 = f1_score(y_test[~np.isnan(y_test)],y_pred_label[~np.isnan(y_test)])
         try:
-            roc_auc = roc_auc_score(y_test[~np.isnan(y_test)], y_pred_prob[~np.isnan(y_test)])
+            roc_auc = roc_auc_score(y_test[~np.isnan(y_test)], y_prob[~np.isnan(y_test)])
         except ValueError:
             roc_auc = 0.5
         return best_f1, roc_auc    
@@ -113,27 +112,26 @@ def stratify_sample(y,test_size=0.2,seed=0):
     return train_idx, test_idx
 
 
-def metrics(y_prob,xgb_testy,revenue_test, args, best_thresh=None):
+def metrics(y_prob,y_cls,y_rev, args, best_thresh=None):
     """ Evaluate the performance"""
-    if best_thresh ==None:
-        _,overall_f1,auc = torch_threshold(y_prob,xgb_testy,best_thresh)
+    if best_thresh == None:
+        _,overall_f1,auc = torch_threshold(y_prob,y_cls,best_thresh)
     else:
-        overall_f1,auc = torch_threshold(y_prob,xgb_testy,best_thresh)
+        overall_f1,auc = torch_threshold(y_prob,y_cls,best_thresh)
     pr, re, f, rev = [], [], [], []
     # For validatation, we measure the performance on 5% (previously, 1%, 2%, 5%, and 10%)
     for i in [95]: 
         threshold = np.percentile(y_prob, i)
-        precision = xgb_testy[y_prob > threshold].mean()
-        recall = sum(xgb_testy[y_prob > threshold])/ sum(xgb_testy)
+        precision = y_cls[y_prob > threshold].mean()
+        recall = sum(y_cls[y_prob > threshold])/ sum(y_cls)
         try:
             f1 = hmean([precision, recall])
         except ValueError:
             f1 = 0
-        revenue = sum(revenue_test[y_prob > threshold]) / sum(revenue_test)
+        revenue = sum(y_rev[y_prob > threshold]) / sum(y_rev)
         # if i == 95:
         #     print(f'Checking top {100-i}% suspicious transactions: {len(y_prob[y_prob > threshold])}')
         #     print('Precision: %.4f, Recall: %.4f, Revenue: %.4f' % (precision, recall, revenue))
-        # save results
         pr.append(precision)
         re.append(recall)
         f.append(f1)
@@ -141,31 +139,34 @@ def metrics(y_prob,xgb_testy,revenue_test, args, best_thresh=None):
     return overall_f1,auc,pr, re, f, rev
 
 
-def metrics_active(active_rev,active_cls,xgb_testy,revenue_test):
-    """ Evaluate the performance"""
+def evaluate_inspection(chosen_rev,chosen_cls,y_cls,y_rev):
+    """ Evaluate the model performance """
     try:
-        precision = np.count_nonzero(active_cls == 1) / len(active_cls)
+        precision = np.count_nonzero(chosen_cls == 1) / len(chosen_cls)
     except:
         precision = np.float("nan")
     try:
-        recall = sum(active_cls) / sum(xgb_testy)
+        recall = sum(chosen_cls) / sum(y_cls)
     except:
         recall = np.float("nan")
     try:
         f1 = hmean([precision, recall])
     except ValueError:
-        f1 = 0
+        f1 = np.float("nan")
     try:
-        revenue = sum(active_rev) / sum(revenue_test)
+        revenue_avg = sum(chosen_rev)/len(chosen_cls)
+    except:
+        revenue_avg = np.float("nan")
+    try:
+        revenue_recall = sum(chosen_rev) / sum(y_rev)
     except ZeroDivisionError:
-        revenue = 0
-    # print('Precision: %.4f, Recall: %.4f, Revenue: %.4f' % (precision, recall, revenue))
-    return precision, recall, f1, revenue
-
+        revenue_recall = np.float("nan")
+    return precision, recall, f1, revenue_avg, revenue_recall
 
 
 def evaluate_inspection_multiclass(inspected, test, class_labels):
-    
+    """ Evaluate the model performance - for kdata (multi-class, multi-label datasets)"""
+
     inspection_codes = class_labels['검사결과부호']
     inspection_codes_broad = sorted(list(set(class_labels['검사결과부호'].apply(lambda x: x[0]))))
     result = {}
@@ -180,13 +181,15 @@ def evaluate_inspection_multiclass(inspected, test, class_labels):
 
         precisions = np.true_divide(iresults_mtx.sum(axis = 0), np.shape(iresults_mtx)[0]) # array of precisions
         recalls = np.divide(iresults_mtx.sum(axis = 0), tresults_mtx.sum(axis = 0), out = np.zeros(len(codes)), where = tresults_mtx.sum(axis = 0)!=0) # array of recalls
-        f1 = hmean([precisions, recalls], axis = 0)
+        try:
+            f1 = hmean([precisions, recalls], axis = 0)
+        except ValueError:
+            f1 = np.zeros(len(precisions))
         macro_f1 = np.mean(np.array(f1))
         result['precision'] = dict(zip(codes, precisions))
         result['recall'] = dict(zip(codes, recalls))
         result['f1'] = dict(zip(codes, f1))
         result['macrof1'] = macro_f1
-
         return result
 
     result['specific_result'] = _calculate_metrics(inspection_codes, '검사결과코드') 
