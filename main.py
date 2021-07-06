@@ -22,7 +22,7 @@ import torch
 from model.AttTreeEmbedding import Attention, DATEModel
 from ranger import Ranger
 from utils import torch_threshold, metrics, metrics_active
-from query_strategies import random, xgb, xgb_lr, badge, DATE, diversity, bATE, upDATE, gATE, ssl_ae, tabnet, uncertainty, deepSAD, multideepSAD, VIME, adahybrid, hybrid 
+from query_strategies import random, xgb, xgb_lr, badge, DATE, diversity, bATE, upDATE, gATE, ssl_ae, tabnet, uncertainty, deepSAD, multideepSAD, adahybrid, hybrid 
 warnings.filterwarnings("ignore")
 
 
@@ -55,8 +55,8 @@ def initialize_sampler(samp, args):
         sampler = deepSAD.deepSADSampling(args)
     elif samp == 'multideepSAD':
         sampler = multideepSAD.multideepSADSampling(args)
-    elif samp == 'VIME':
-        sampler = VIME.VIMESampling(args)
+    # elif samp == 'VIME':
+    #     sampler = VIME.VIMESampling(args)
     elif samp == 'hybrid':
         sampler = hybrid.HybridSampling(args)
     elif samp == 'adahybrid':
