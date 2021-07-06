@@ -4,7 +4,6 @@ Use your collected declarations data, fit the provided models, find the best sel
 This framework supports general import declarations. 
 
 
-
 ## How to Install  
 
 1. Setup your Python environment: e.g., Anaconda Python 3.7 [[Guide]](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html)
@@ -22,6 +21,7 @@ $ pip install -r requirements.txt
 ```
 $ export CUDA_VISIBLE_DEVICES=3 && python main.py --data real-m --semi_supervised 0 --batch_size 128 --sampling hybrid --subsamplings XGB/random --weights 0.9/0.1 --mode scratch --train_from 20130101 --test_from 20130701 --test_length 30 --valid_length 30 --initial_inspection_rate 20 --final_inspection_rate 5 --epoch 5 --closs bce --rloss full --save 0 --numweeks 100 --inspection_plan direct_decay
 ```
+
 
 ## Data Format
 For your understanding, we upload the synthetic import declarations in the `data/` directory.
@@ -52,8 +52,7 @@ To run the code with real datasets, please refer to `data/` directory.
 * [multideepSAD](./query_strategies/multideepSAD.py): deepSAD variant with several cluster points.
 * [SSL-AE](./query_strategies/ssl_ae.py): Semi-supervised learning approach by optimizing reconstruction loss of all imports and binary cross-entropy of labeled imports.
 * [Hybrid](./query_strategies/hybrid.py): Support mixing several strategies. (Adahybrid method can adaptively change the exploration rate)
-* [Adahybrid](./query_strategies/hybrid.py): Adaptively changing exploration ratio of the hybrid strategy. Aim to tackle exploitation-exploration dilemma in smarter way. The description of this strategy is introduced in page 21-22 of John's report [[PDF]](./literatures/URP_Report_TungDuongMai.pdf).
-
+* [Adahybrid](./query_strategies/hybrid.py): Adaptively changing exploration ratio of the hybrid strategy. Aim to tackle exploitation-exploration dilemma in smarter way. The description of this strategy is introduced in page 21-22 of the attached report [[PDF]](./literatures/URP_Report_TungDuongMai.pdf).
 
 
 ## Brief Introduction of Our Research Directions
@@ -63,13 +62,6 @@ Please find the attached literatures to study. Some of them are uploaded in `./l
 * Take a Chance: Managing the Exploitation-Exploration Dilemma in Customs Fraud Detection via Online Active Learning [[Link]](https://arxiv.org/abs/2010.14282): The key point of this study is that in the conflicting situation between short term revenue and long-term model performance, adding a certain amount of exploration strategy will ensure that the customs targeting system operates sustainably. To that end, our research team proposed an exploration scheme called bATE and gATE, and showed that the model's performance is maintained for a long time when these strategies are used together with existing exploitation strategies. We can easily reproduce this hybrid approach by running [Hybrid](./query_strategies/hybrid.py) with exploitation-exploration pair, such as 90% [DATE](./query_strategies/DATE.py) and 10% [gATE](./query_strategies/gATE.py). 
 
 
-[comment]: # (
-The comments that we received from the reviewers of The Web Conference 2021 can be found here. [PDF](./literatures/Reviews_and_rebuttals_TheWebConf2021.pdf) 
-* This proposal [[PDF]](./literatures/YSF_proposal_Sundong_Lifelong_tabular_learning.pdf) introduces several research directions that our team is pursuing in a long term.)
-
-
 ## Contribution
 We welcome you to contribute to designing new selection strategies, automating feature engineering adaptive to different feature sets, donating anonymized import declarations dataset, and packaging software (PyPI). To collaborate with us, please contact Sundong Kim (sundong@ibs.re.kr). 
-
-[comment]: # (We often hire interns whenever we have interesting ideas to develop together. KAIST students can also work with us by applying independent studies and URP programs, but please contact Sundong and send your application through below link. We expect you to have strong analytical background and coding skills. [[Application Link]](https://docs.google.com/forms/d/e/1FAIpQLSeoLB0DI_MET1pRuQu5dh-HIUaVwvr3CcGziL03_cPDC5HfCw/viewform))
 
