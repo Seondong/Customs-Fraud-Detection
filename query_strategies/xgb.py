@@ -16,7 +16,7 @@ class XGBSampling(Strategy):
     def train_model(self):
         """ Get trained model """
         print("Training XGBoost model...")
-        self.xgb = XGBClassifier(n_estimators=100, max_depth=4, n_jobs=-1)
+        self.xgb = XGBClassifier(n_estimators=100, max_depth=4, n_jobs=-1, eval_metric='logloss')
         self.xgb.fit(self.data.dftrainx_lab,self.data.train_cls_label)
         
         if self.args.save:

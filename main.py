@@ -62,8 +62,8 @@ def initialize_sampler(samp, args):
     elif samp == 'adahybrid':
         sampler = adahybrid.AdaHybridSampling(args)
     else:
+        sampler = None
         print('Make sure the sampling strategy is listed in the argument --sampling')
-    sampler.set_name(samp)
     return sampler
 
 
@@ -358,7 +358,8 @@ if __name__ == '__main__':
         with open(output_file, 'a') as ff:
             upper_bound_precision = min(100*np.mean(data.test_cls_label)/current_inspection_rate, 1)
             upper_bound_recall = min(current_inspection_rate/np.mean(data.test_cls_label)/100, 1)
-            upper_bound_revenue = sum(sorted(data.test_reg_label, reverse=True)[:len(chosen)]) / sum(data.test_reg_label)
+            upper_bound_revenue = min(sum(sorted(data.test_reg_label, reverse=True)[:len(chosen)]) / np.sum(data.test_reg_label), 1)
+            
             norm_precision = active_precisions/upper_bound_precision
             norm_recall = active_recalls/upper_bound_recall
             norm_revenue = active_revenues/upper_bound_revenue
@@ -403,7 +404,6 @@ if __name__ == '__main__':
         # Review needed: Check if the weights are updated as desired.
         if samp == 'adahybrid':
             sampler.update(norm_precision)
-#             pdb.set_trace()
 
         # Renew valid & test period & dataset
         if i == numWeeks - 1:

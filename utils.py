@@ -138,7 +138,10 @@ def metrics_active(active_rev,active_cls,xgb_testy,revenue_test):
         f1 = hmean([precision, recall])
     except ValueError:
         f1 = 0
-    revenue = sum(active_rev) / sum(revenue_test)
+    try:
+        revenue = sum(active_rev) / sum(revenue_test)
+    except ZeroDivisionError:
+        revenue = 0
     print()
     print("--------Evaluating the model---------")
     print('Precision: %.4f, Recall: %.4f, Revenue: %.4f' % (precision, recall, revenue))

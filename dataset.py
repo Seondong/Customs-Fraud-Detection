@@ -214,7 +214,10 @@ class Import_declarations():
     def featureEngineering(self):
         """ Feature engineering, """
         self.semi_supervised = self.args.semi_supervised
-        self.offset = self.test.index[0]
+        try:
+            self.offset = self.test.index[0]
+        except IndexError:
+            pass
 
         # Run preprocessing
         self.train_lab = preprocess(self.train_lab)
@@ -245,12 +248,18 @@ class Import_declarations():
             self.X_train_unlab = self.train_unlab[self.column_to_use].values
         else:
             self.X_train_unlab = np.asarray([])
-        self.X_valid_lab = self.valid_lab[self.column_to_use].values
+        if not self.valid_lab.empty:
+            self.X_valid_lab = self.valid_lab[self.column_to_use].values
+        else:
+            self.X_valid_lab = np.asarray([])
         if not self.valid_unlab.empty:
             self.X_valid_unlab = self.valid_unlab[self.column_to_use].values
         else:
             self.X_valid_unlab = np.asarray([])
-        self.X_test = self.test[self.column_to_use].values
+        if not self.test.empty:
+            self.X_test = self.test[self.column_to_use].values
+        else:
+            self.X_test = np.asarray([])
         print("Data size:")
         print(f'Train labeled: {self.train_lab.shape}, Train unlabeled: {self.train_unlab.shape}, Valid labeled: {self.valid_lab.shape}, Valid unlabeled: {self.valid_unlab.shape}, Test: {self.test.shape}')
 
@@ -266,21 +275,33 @@ class Import_declarations():
         cnt = Counter(self.train_cls_label)
         print("Training:",cnt[1]/cnt[0])
         cnt = Counter(self.valid_cls_label)
-        print("Validation:",cnt[1]/cnt[0])
+        try:
+            print("Validation:",cnt[1]/cnt[0])
+        except ZeroDivisionError:
+            print("No validation set")
         cnt = Counter(self.test_cls_label)
-        print("Testing:",cnt[1]/cnt[0])
+        try:
+            print("Testing:",cnt[1]/cnt[0])
+        except ZeroDivisionError:
+            print("No test set")
         
         self.dftrainx_lab = pd.DataFrame(self.X_train_lab,columns=self.column_to_use)
         try:
             self.dftrainx_unlab = pd.DataFrame(self.X_train_unlab,columns=self.column_to_use)
         except:
             self.dftrainx_unlab = pd.DataFrame(columns=self.column_to_use)
-        self.dfvalidx_lab = pd.DataFrame(self.X_valid_lab,columns=self.column_to_use) 
+        try:
+            self.dfvalidx_lab = pd.DataFrame(self.X_valid_lab,columns=self.column_to_use) 
+        except:
+            self.dfvalidx_lab = pd.DataFrame(columns=self.column_to_use)
         try:
             self.dfvalidx_unlab = pd.DataFrame(self.X_valid_unlab,columns=self.column_to_use)
         except:
             self.dfvalidx_unlab = pd.DataFrame(columns=self.column_to_use)
-        self.dftestx = pd.DataFrame(self.X_test,columns=self.column_to_use)
+        try:
+            self.dftestx = pd.DataFrame(self.X_test,columns=self.column_to_use)
+        except:
+            self.dftestx = pd.DataFrame(columns=self.column_to_use)
     
     
     def update(self, inspected_imports, uninspected_imports, test_start_day, test_end_day, valid_start_day):

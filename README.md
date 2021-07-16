@@ -19,7 +19,7 @@ $ pip install -r requirements.txt
 
 3. Run the codes: Refer to main.py for hyperparameters, .sh files in `./bash` directory will give you some ideas how to run codes effectively. 
 ```
-$ export CUDA_VISIBLE_DEVICES=3 && python main.py --data synthetic --semi_supervised 0 --batch_size 128 --sampling hybrid --subsamplings XGB/random --weights 0.9/0.1 --mode scratch --train_from 20130101 --test_from 20130701 --test_length 30 --valid_length 30 --initial_inspection_rate 20 --final_inspection_rate 5 --epoch 5 --closs bce --rloss full --save 0 --numweeks 100 --inspection_plan direct_decay
+$ export CUDA_VISIBLE_DEVICES=3 && python main.py --data synthetic --semi_supervised 0 --batch_size 128 --sampling hybrid --subsamplings xgb/random --weights 0.9/0.1 --mode scratch --train_from 20130101 --test_from 20130701 --test_length 30 --valid_length 30 --initial_inspection_rate 20 --final_inspection_rate 5 --epoch 5 --closs bce --rloss full --save 0 --numweeks 100 --inspection_plan direct_decay
 ```
 
 
