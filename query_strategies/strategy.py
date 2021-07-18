@@ -24,6 +24,9 @@ class Strategy:
         self.data = data
         self.num_data = len(self.data.test)
         self.available_indices = np.arange(self.num_data)
+
+        self.num_valid_data = len(self.data.valid)
+        self.available_indices_valid = np.arange(self.num_valid_data)
     
     
     def query(self, k):

@@ -284,13 +284,11 @@ if __name__ == '__main__':
     # Customs selection simulation for long term (if test_length = 7 days, simulate for numWeeks)
     for i in range(numWeeks):
         
-
         if test_start_day.strftime('%y-%m-%d') > max(data.df["sgd.date"]):
             logger.info('Simulation period is over.')
             logger.info('Terminating ...')
             sys.exit()
-        
-                
+         
         # Feature engineering for train, valid, test data
         data.episode = i
         if samp not in ['random']: 
@@ -330,7 +328,10 @@ if __name__ == '__main__':
         # set data to sampler
         sampler.set_data(data)
         
-        # If it fails to query, try one more time. If it fails again, do random sampling.
+        # POT should measure the domain shift just after the data is loaded. 
+        if samp == 'pot':
+            sampler.update_subsampler_weights()
+
         try:
             chosen = sampler.query(num_samples)
             
@@ -417,9 +418,7 @@ if __name__ == '__main__':
         
         # Review needed: Check if the weights are updated as desired.
         if samp == 'adahybrid':
-            sampler.update(norm_precision)
-        elif samp == 'pot':
-            sampler.update(test_start_day, test_end_day, test_end_day + test_length)
+            sampler.update_subsampler_weights(norm_precision)
 
         # Renew valid & test period & dataset
         if i == numWeeks - 1:
@@ -436,7 +435,6 @@ if __name__ == '__main__':
         # randomupDATE: Performance evaluation is done by DATE strategy, but newly added instances are random - not realistic)
         # noupDATE: DATE model does not accept new train data. (But the model anyway needs to be retrained with test data owing to the design choice of our XGB model) 
         These two strategies will be removed for software release. """
-        
         
         if samp == 'noupDATE':
             data.update(data.df.loc[[]], data.df.loc[set(data.test.index)], test_start_day, test_end_day, valid_start_day)

@@ -115,7 +115,7 @@ class AdaHybridSampling(HybridSampling):
         assert len(self.subsamps) == 2   # TODO: Ideally, it should support multiple strategies
         self.weight_sampler = ExpWeights(lr = self.args.ada_lr) # initialize it at the beginning of the simulation
    
-    def update(self, performance):
+    def update_subsampler_weights(self, performance):
         # Update weights for next week
         self.weight_sampler.set_data(self.data)
         self.weight = self.weight_sampler.sample()
