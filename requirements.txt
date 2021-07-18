@@ -10,3 +10,5 @@ pandas>=0.25.3
 pytorch-tabnet
 imbalanced-learn
 matplotlib
+cython
+POT

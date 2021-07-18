@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class Strategy:
     def __init__(self, args):  # model_path, test_data, test_loader
         self.args = args
