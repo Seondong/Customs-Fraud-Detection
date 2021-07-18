@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import copy
+import sys
 import pickle
 
 from collections import defaultdict
@@ -182,6 +183,10 @@ class Import_declarations():
         self.valid = self.df[(self.df["sgd.date"] >= self.valid_start_day) & (self.df["sgd.date"] < self.test_start_day)]    
         self.test = self.df[(self.df["sgd.date"] >= self.test_start_day) & (self.df["sgd.date"] < self.test_end_day)]  
         
+        if len(self.train) == 0:
+            print('Training data is unavailable - Set the parameter \'train_from\' according to the dataset you are using and running main.py')
+            sys.exit()
+
         # Intentionally masking datasets to simulate partially labeled scenario, note that our dataset is 100% inspected.
         # If your dataset is partially labeled already, comment below two lines.
         if args.data in ['synthetic', 'real-n', 'real-m', 'real-t']:

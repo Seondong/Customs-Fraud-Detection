@@ -27,7 +27,7 @@ $ export CUDA_VISIBLE_DEVICES=3 && python main.py --data synthetic --semi_superv
 For your understanding, we upload the synthetic import declarations in the `data/` directory.
 Users are expected to preprocess their import declarations in a similar format.
 Currently, the framework supports single-item declarations that the target labels; illicitness of the item, revenue by inspection, are marked for each item.
-To run the code with real datasets, please refer to `data/` directory.
+To run the code with real datasets, please refer to `data/` directory. [[README]](./data)
 
 |sgd.id|sgd.date  |importer.id| tariff.code| ... |cif.value|total.taxes|illicit|revenue|
 |:----:|:--------:|:---------:|:----------:|:---:|--------:|----------:|:-----:|------:|
@@ -60,6 +60,19 @@ Please find the attached literatures to study. Some of them are uploaded in `./l
 * Machine Learning for Customs Fraud Detection [[Link]](https://github.com/YSCHOI-github/Customs_Fraud_Detection): This repository helps practitioners to get used to machine learning for customs fraud detection. This material is worth to check before catching up the DATE paper.
 * DATE: Dual-Attentive Tree-aware Embedding for Customs Fraud Detection (KDD'2020) [[Github]](https://bit.ly/kdd20-date) [[Paper]](https://dl.acm.org/doi/pdf/10.1145/3394486.3403339) [[Slides]](http://seondong.github.io/assets/papers/2020_KDD_DATE_slides.pdf) [[Presentation (20 min)]](https://youtu.be/S-29rTbvH6c) [[Promotional video]](https://youtu.be/YhfxCHBNM2g): DATE is the Tree-aware dual attentive model for finding the most illicit and valuable imports at the same time. In the 'Take a Chance' paper, we use DATE as a representative of exploitation strategies. We are building algorithms on top of DATE architecture. We can easily reproduce DATE by running [DATE](./query_strategies/DATE.py) on this repository.
 * Take a Chance: Managing the Exploitation-Exploration Dilemma in Customs Fraud Detection via Online Active Learning [[Link]](https://arxiv.org/abs/2010.14282): The key point of this study is that in the conflicting situation between short term revenue and long-term model performance, adding a certain amount of exploration strategy will ensure that the customs targeting system operates sustainably. To that end, our research team proposed an exploration scheme called bATE and gATE, and showed that the model's performance is maintained for a long time when these strategies are used together with existing exploitation strategies. We can easily reproduce this hybrid approach by running [Hybrid](./query_strategies/hybrid.py) with exploitation-exploration pair, such as 90% [DATE](./query_strategies/DATE.py) and 10% [gATE](./query_strategies/gATE.py). 
+
+
+## Citation
+If you find this code useful, please cite the original paper:
+```LaTeX
+@misc{kim2021customs,
+  title={Take a Chance: Managing the Exploitation-Exploration Dilemma in Customs Fraud Detection via Online Active Learning},
+  author={Sundong Kim and Tung-Duong Mai and Thi Nguyen Duc Khanh and Sungwon Han and Sungwon Park and Karandeep Singh and Meeyoung Cha},
+  year={2021},
+  eprint={2010.14282},
+  archivePrefix={arXiv}
+}
+```
 
 
 ## Contribution
