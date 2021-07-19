@@ -23,7 +23,7 @@ class DiversitySampling(DATESampling):
     
     def diversity_sampling(self, k, beta=5):
         # Get embedding from DATE, run diversity strategy
-        emb = self.get_embedding()
+        emb = self.get_embedding_test()
         # get uncertainty and revenue
         uncertainty_score = self.get_uncertainty()
         revs = self.get_revenue()

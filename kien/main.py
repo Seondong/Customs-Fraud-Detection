@@ -22,7 +22,51 @@ import torch
 from model.AttTreeEmbedding import Attention, DATEModel
 from ranger import Ranger
 from utils import torch_threshold, metrics, metrics_active
+from query_strategies import random, xgb, xgb_lr, badge, DATE, diversity, bATE, upDATE, gATE, ssl_ae, tabnet, uncertainty, deepSAD, multideepSAD, VIME, pot, hybrid #, adahybrid
 warnings.filterwarnings("ignore")
+
+
+# Selection stragies
+def initialize_sampler(samp, args):
+    """Initialize selection strategies"""
+    if samp == 'random':
+        sampler = random.RandomSampling(args)
+    elif samp == 'xgb':
+        sampler = xgb.XGBSampling(args)
+    elif samp == 'xgb_lr':
+        sampler = xgb_lr.XGBLRSampling(args)
+    elif samp == 'badge':
+        sampler = badge.BadgeSampling(args)
+    elif samp in ['DATE', 'noupDATE', 'randomupDATE']:
+        sampler = DATE.DATESampling(args)
+    elif samp == 'diversity':
+        sampler = diversity.DiversitySampling(args)
+    elif samp == 'bATE':
+        sampler = bATE.bATESampling(args)
+    elif samp == 'upDATE':
+        sampler = upDATE.upDATESampling(args)
+    elif samp == 'gATE':
+        sampler = gATE.gATESampling(args)
+    elif samp == 'ssl_ae':
+        sampler = ssl_ae.SSLAutoencoderSampling(args)
+    elif samp == 'tabnet':
+        sampler = tabnet.TabnetSampling(args)
+    elif samp == 'deepSAD': # check
+        sampler = deepSAD.deepSADSampling(args)
+    elif samp == 'multideepSAD':
+        sampler = multideepSAD.multideepSADSampling(args)
+    elif samp == 'VIME':
+        sampler = VIME.VIMESampling(args)
+    elif samp == 'hybrid':
+        sampler = hybrid.HybridSampling(args)
+    elif samp == 'pot':
+        sampler = pot.potSampling(args)
+#     elif samp == 'adahybrid':
+#         sampler = adahybrid.AdaHybridSampling(args)
+    else:
+        print('Make sure the sampling strategy is listed in the argument --sampling')
+    sampler.set_name(samp)
+    return sampler
 
 
 def make_logger(curr_time, name=None):
@@ -73,62 +117,8 @@ def inspection_plan(rate_init, rate_final, numWeeks, option):
         second_half = np.linspace(rate_final, rate_final, numWeeks - len(first_half))
         return np.concatenate((first_half, second_half))
 
+    
 
-# Selection stragies
-def initialize_sampler(samp, args):
-    """Initialize selection strategies"""
-    if samp == 'random':
-        from query_strategies import random;
-        sampler = random.RandomSampling(args)
-    elif samp == 'xgb':
-        from query_strategies import xgb;
-        sampler = xgb.XGBSampling(args)
-    elif samp == 'xgb_lr':
-        from query_strategies import xgb_lr;
-        sampler = xgb_lr.XGBLRSampling(args)
-    elif samp == 'badge':
-        from query_strategies import badge;
-        sampler = badge.BadgeSampling(args)
-    elif samp in ['DATE', 'noupDATE', 'randomupDATE']:
-        from query_strategies import DATE;
-        sampler = DATE.DATESampling(args)
-    elif samp == 'diversity':
-        from query_strategies import diversity;
-        sampler = diversity.DiversitySampling(args)
-    elif samp == 'bATE':
-        from query_strategies import bATE;
-        sampler = bATE.bATESampling(args)
-    elif samp == 'upDATE':
-        from query_strategies import upDATE;
-        sampler = upDATE.upDATESampling(args)
-    elif samp == 'gATE':
-        from query_strategies import gATE;
-        sampler = gATE.gATESampling(args)
-    elif samp == 'ssl_ae':
-        from query_strategies import ssl_ae;
-        sampler = ssl_ae.SSLAutoencoderSampling(args)
-    elif samp == 'tabnet':
-        from query_strategies import tabnet;
-        sampler = tabnet.TabnetSampling(args)
-    elif samp == 'deepSAD': # check
-        from query_strategies import deepSAD;
-        sampler = deepSAD.deepSADSampling(args)
-    elif samp == 'multideepSAD':
-        from query_strategies import multideepSAD;
-        sampler = multideepSAD.multideepSADSampling(args)
-    elif samp == 'hybrid':
-        from query_strategies import hybrid;
-        sampler = hybrid.HybridSampling(args)
-    elif samp == 'pot':
-        from query_strategies import pot;
-        sampler = pot.POTSampling(args)
-    elif samp == 'adahybrid':
-        from query_strategies import adahybrid;
-        sampler = adahybrid.AdaHybridSampling(args)
-    else:
-        sampler = None
-        print('Make sure the sampling strategy is listed in the argument --sampling')
-    return sampler
 
 
 if __name__ == '__main__':
@@ -180,8 +170,8 @@ if __name__ == '__main__':
     parser.add_argument('--final_inspection_rate', type=float, default = 5, help='Percentage of test data need to query')
     parser.add_argument('--inspection_plan', type=str, default = 'direct_decay', choices=['direct_decay','linear_decay','fast_linear_decay'], help='Inspection rate decaying option for simulation time')
     parser.add_argument('--mode', type=str, default = 'finetune', choices = ['finetune', 'scratch'], help = 'finetune last model or train from scratch')
-    parser.add_argument('--subsamplings', type=str, default = 'xgb/random', help = 'available for hybrid sampling, the list of sub-sampling techniques seperated by /')
-    parser.add_argument('--weights', type=str, default = '0.9/0.1', help = 'available for hybrid sampling, the list of weights for sub-sampling techniques seperated by /')
+    parser.add_argument('--subsamplings', type=str, default = 'bATE/DATE', help = 'available for hybrid sampling, the list of sub-sampling techniques seperated by /')
+    parser.add_argument('--weights', type=str, default = '0.1/0.9', help = 'available for hybrid sampling, the list of weights for sub-sampling techniques seperated by /')
     parser.add_argument('--uncertainty', type=str, default = 'naive', choices = ['naive', 'self-supervised'], help = 'Uncertainty principle : ambiguity of illicitness or self-supervised manner prediction')
     parser.add_argument('--rev_func', type=str, default = 'log', choices = ['log'], help = 'Uncertainty principle : ambiguity of illicitness or self-supervised manner prediction')
     parser.add_argument('--closs', type=str, default = 'bce', choices = ['bce', 'focal'], help = 'Classification loss function')
@@ -277,18 +267,20 @@ if __name__ == '__main__':
         initial_weights = '-'
         final_weights = '-'
                 
-    # Initialize a sampler (We put it outside the week loop since we do not change sampler every week)
-    # NOTE: If you put this inside the week loop, new sampler is initialized every week, which means that parameters in sampler are also initialized)    
+  # Initialize a sampler (We put it outside the week loop since we do not change sampler every week)
+  # NOTE: If you put this inside the week loop, new sampler is initialized every week, which means that parameters in sampler are also initialized)
     sampler = initialize_sampler(samp, args)      
         
     # Customs selection simulation for long term (if test_length = 7 days, simulate for numWeeks)
+    print("Num Weeks", numWeeks)
     for i in range(numWeeks):
-        
+        print('TEST DAY', i, test_start_day)
         if test_start_day.strftime('%y-%m-%d') > max(data.df["sgd.date"]):
             logger.info('Simulation period is over.')
             logger.info('Terminating ...')
             sys.exit()
-         
+        
+                
         # Feature engineering for train, valid, test data
         data.episode = i
         if samp not in ['random']: 
@@ -327,19 +319,17 @@ if __name__ == '__main__':
         
         # set data to sampler
         sampler.set_data(data)
-        
-        # POT should measure the domain shift just after the data is loaded. 
-        if samp == 'pot':
-            sampler.update_subsampler_weights()
 
+        # If it fails to query, try one more time. If it fails again, do random sampling.
         try:
             chosen = sampler.query(num_samples)
-            
+            # hiddens = sampler.get_embedding()
+            # print(len(hiddens))
+            # print(hiddens)
         except:
             import traceback
             traceback.print_exc()
-            
-            
+         
         logger.info("# of unique queried item: %s, # of queried item: %s, # of samples to be queried: %s", len(set(chosen)), len(chosen), num_samples)
         assert len(set(chosen)) == num_samples
         
@@ -373,8 +363,7 @@ if __name__ == '__main__':
         with open(output_file, 'a') as ff:
             upper_bound_precision = min(100*np.mean(data.test_cls_label)/current_inspection_rate, 1)
             upper_bound_recall = min(current_inspection_rate/np.mean(data.test_cls_label)/100, 1)
-            upper_bound_revenue = min(sum(sorted(data.test_reg_label, reverse=True)[:len(chosen)]) / np.sum(data.test_reg_label), 1)
-            
+            upper_bound_revenue = sum(sorted(data.test_reg_label, reverse=True)[:len(chosen)]) / sum(data.test_reg_label)
             norm_precision = active_precisions/upper_bound_precision
             norm_recall = active_recalls/upper_bound_recall
             norm_revenue = active_revenues/upper_bound_revenue
@@ -418,7 +407,10 @@ if __name__ == '__main__':
         
         # Review needed: Check if the weights are updated as desired.
         if samp == 'adahybrid':
-            sampler.update_subsampler_weights(norm_precision)
+            sampler.update(norm_precision)
+#             pdb.set_trace()
+        elif samp == 'pot':
+            sampler.update(test_start_day, test_end_day, test_end_day + test_length)
 
         # Renew valid & test period & dataset
         if i == numWeeks - 1:
@@ -435,6 +427,7 @@ if __name__ == '__main__':
         # randomupDATE: Performance evaluation is done by DATE strategy, but newly added instances are random - not realistic)
         # noupDATE: DATE model does not accept new train data. (But the model anyway needs to be retrained with test data owing to the design choice of our XGB model) 
         These two strategies will be removed for software release. """
+        
         
         if samp == 'noupDATE':
             data.update(data.df.loc[[]], data.df.loc[set(data.test.index)], test_start_day, test_end_day, valid_start_day)

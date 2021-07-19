@@ -183,10 +183,18 @@ class DATESampling(Strategy):
     
     
     # Below methods are for DATE-dependent selection strategies.
-    def get_embedding(self):
+
+    def get_embedding_valid(self):
+        best_model = self.get_model()
+        final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(self.data.valid_loader)
+        # hiddens = [hiddens[i] for i in self.available_indices_valid]
+        return hiddens
+
+
+    def get_embedding_test(self):
         best_model = self.get_model()
         final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(self.data.test_loader)
-        hiddens = [hiddens[i] for i in self.available_indices]
+        # hiddens = [hiddens[i] for i in self.available_indices]
         return hiddens
     
     
@@ -398,7 +406,7 @@ class VanillaDATE:
         best_threshold, val_score, roc = torch_threshold(y_prob,xgb_validy)
 
         # predict test 
-        y_prob, val_loss, _ = best_model.module.eval_on_batch(test_loader)
+        y_prob, val_loss, (hidden, revs) = best_model.module.eval_on_batch(test_loader)
         overall_f1, auc, precisions, recalls, f1s, revenues = metrics(y_prob,xgb_testy,revenue_test,best_threshold)
         best_score = f1s[0]
         

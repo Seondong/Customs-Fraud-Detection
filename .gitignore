@@ -2,6 +2,7 @@ results/
 __pycache__
 model/__pycache__
 query_strategies/__pycache__
+query_strategies/VIME/
 intermediary/
 uncertainty_models/
 data/raw_datas/
