@@ -187,14 +187,14 @@ class DATESampling(Strategy):
     def get_embedding_valid(self):
         best_model = self.get_model()
         final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(self.data.valid_loader)
-        hiddens = [hiddens[i] for i in self.available_indices_valid]
+        # hiddens = [hiddens[i] for i in self.available_indices_valid]
         return hiddens
 
 
-    def get_embedding(self):
+    def get_embedding_test(self):
         best_model = self.get_model()
         final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(self.data.test_loader)
-        hiddens = [hiddens[i] for i in self.available_indices]
+        # hiddens = [hiddens[i] for i in self.available_indices]
         return hiddens
     
     

@@ -203,7 +203,7 @@ class deepSADSampling(Strategy):
     
     
     # Below methods are for DATE-dependent selection strategies.
-    def get_embedding(self):
+    def get_embedding_test(self):
         best_model = self.get_model()
         final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(self.data.test_loader)
         hiddens = [hiddens[i] for i in self.available_indices]
