@@ -22,6 +22,7 @@ import torch
 from model.AttTreeEmbedding import Attention, DATEModel
 from ranger import Ranger
 from utils import torch_threshold, metrics, metrics_active
+from query_strategies import uncertainty, random
 warnings.filterwarnings("ignore")
 
 
@@ -139,6 +140,7 @@ if __name__ == '__main__':
     # Initiate directories
     pathlib.Path('./results').mkdir(parents=True, exist_ok=True) 
     pathlib.Path('./results/performances').mkdir(parents=True, exist_ok=True)
+    pathlib.Path('./results/ada_ratios').mkdir(parents=True, exist_ok=True)    
     pathlib.Path('./results/query_indices').mkdir(parents=True, exist_ok=True)
     pathlib.Path('./intermediary').mkdir(parents=True, exist_ok=True)
     pathlib.Path('./intermediary/saved_models').mkdir(parents=True, exist_ok=True)
@@ -161,7 +163,6 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=10000, help="Batch size for DATE-related models")
     parser.add_argument('--dim', type=int, default=16, help="Hidden layer dimension")
     parser.add_argument('--lr', type=float, default=0.005, help="learning rate")
-    parser.add_argument('--ada_lr', type=float, default=0.8, help="learning rate for adahybrid")
     parser.add_argument('--l2', type=float, default=0.01, help="l2 reg")
     parser.add_argument('--alpha', type=float, default=10, help="Regression loss weight")
     parser.add_argument('--head_num', type=int, default=4, help="Number of heads for self attention")
@@ -171,6 +172,7 @@ if __name__ == '__main__':
     parser.add_argument('--act', type=str, choices=["mish","relu"], default="relu", help="Activation function")
     
     # Hyperparameters related to customs selection
+    parser.add_argument('--prefix', type=str, default='results', help="experiment name used as prefix for results file")
     parser.add_argument('--ssl_strategy', type=str, default="random", help="sampling strategy for semi-supervised learning")
     parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
     parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
@@ -195,7 +197,11 @@ if __name__ == '__main__':
     parser.add_argument('--semi_supervised', type=int, default=0, help='Additionally using uninspected, unlabeled data (1=semi-supervised, 0=fully-supervised)')
     parser.add_argument('--identifier', type=str, default=curr_time, help='identifier for each execution')
     parser.add_argument('--save', type=int, default=0, help='Save intermediary files (1=save, 0=not save)')
-    
+
+    # Ada hyperparameters:
+    parser.add_argument('--ada_lr', type=float, default=0.8, help="learning rate for adahybrid")
+    parser.add_argument('--num_arms', type=int, default=21, help="number of arms for adahybrid")
+
     # Arguments
     args = parser.parse_args()
     epochs = args.epoch
@@ -224,6 +230,7 @@ if __name__ == '__main__':
     save = args.save
     ssl_strategy = args.ssl_strategy
     ada_lr = args.ada_lr
+    num_arms = args.num_arms
     
     logger.info(args)
     
@@ -248,11 +255,17 @@ if __name__ == '__main__':
     if samp not in ['hybrid', 'adahybrid', 'pot']:
         subsamps = 'single'
         
-    output_file =  "./results/performances/fldsh-" + args.output + '-' + chosen_data + '-' + samp + '-' + subsamps + '-' + str(final_inspection_rate) + ".csv"
+    # Open files:
+    output_file =  "./results/performances/" + args.prefix + '-' + args.output + '-' + chosen_data + '-' + samp + '-' + subsamps + '-' + str(final_inspection_rate) + ".csv"
     with open(output_file, 'a') as ff:
         output_metric_name = ['runID', 'data', 'num_train','num_valid','num_test','num_select','num_inspected','num_uninspected','num_test_illicit','test_illicit_rate', 'upper_bound_precision', 'upper_bound_recall','upper_bound_rev', 'sampling', 'initial_inspection_rate', 'current_inspection_rate', 'final_inspection_rate', 'inspection_rate_option', 'mode', 'subsamplings', 'initial_weights', 'current_weights', 'unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue', 'norm-precision', 'norm-recall', 'norm-revenue', 'save']
         print(",".join(output_metric_name),file=ff)
-
+    
+    if samp == 'adahybrid':
+        weight_file =  "./results/ada_ratios/" + args.prefix + '-' + args.output + '-' + samp + '-' + subsamps + '-' + str(final_inspection_rate) + ".csv"
+        with open(weight_file, 'a') as ff:
+            output_weight_name = ['runID', 'data', 'sampling', 'subsamplings', 'numWeek', 'norm-precision', 'norm-recall', 'norm-revenue', 'lr'] + [f'{i/(num_arms-1)} explore rate' for i in range(num_arms)] + ['chosen_rate', 'chosen_arm']
+            print(",".join(output_weight_name), file=ff)
     path = None
     uncertainty_module = None
     
@@ -392,7 +405,25 @@ if __name__ == '__main__':
             output_metric = list(map(str,output_metric))
             logger.debug(output_metric)
             print(",".join(output_metric),file=ff)
-        
+
+        if samp == 'adahybrid':
+            with open(weight_file, 'a') as ff:
+                subsamplings = args.subsamplings
+                weights = '/'.join([str(weight) for weight in final_weights])
+                    
+                upper_bound_precision = min(100*np.mean(data.test_cls_label)/current_inspection_rate, 1)
+                upper_bound_recall = min(current_inspection_rate/np.mean(data.test_cls_label)/100, 1)
+                upper_bound_revenue = sum(sorted(data.test_reg_label, reverse=True)[:len(chosen)]) / sum(data.test_reg_label)
+                norm_precision = active_precisions/upper_bound_precision
+                norm_recall = active_recalls/upper_bound_recall
+                norm_revenue = active_revenues/upper_bound_revenue
+                
+                
+                output_metric = [curr_time, chosen_data, samp, subsamplings, i+1, round(norm_precision,4), round(norm_recall,4), round(norm_revenue,4), ada_lr] + list(sampler.weight_sampler.p) + [sampler.weight_sampler.value, sampler.weight_sampler.arm]
+                    
+                output_metric = list(map(str,output_metric))
+                logger.debug(output_metric)
+                print(",".join(output_metric),file=ff)
         
         output_file_indices =  "./results/query_indices/" + curr_time + '-' + samp + '-' + subsamplings.replace('/','+') + '-' + str(current_inspection_rate) + '-' + mode + "-week-" + str(i) + ".csv"
             
