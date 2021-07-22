@@ -103,19 +103,19 @@ class POTSampling(HybridSampling):
 
 
     def update_subsampler_weights(self):  
-        
-        domshift = self.domain_shift()
+        self.domshift = self.domain_shift()
 
         # Since the self.coef is very small (0.007), large domain shift leads to smaller weight - exploration ratio. Is it what you intended? 
-        weight = np.exp(self.intercept + self.coef * domshift)/ (1 + np.exp(self.intercept + self.coef * domshift))
+        weight = np.exp(self.intercept + self.coef * self.domshift)/ (1 + np.exp(self.intercept + self.coef * self.domshift))
         
-        self.weight = round(weight, 2).item()
-        print(type(self.weight))
+        self.weight = round(weight, 5).item()
         
-        print(self.weight)
+        print(self.domshift, self.weight)
 
         self.weights = [1 - self.weight, self.weight]
-        
+
+        import pdb
+        pdb.set_trace()
         #self.weights = [1 - 0.14, 0.14]
 
 
