@@ -11,6 +11,7 @@ data/ndata.csv
 data/tdata.csv
 data/cdata.csv
 data/NTMdata.csv
+data/df_syn_ano_0429_merge.csv
 nohup.out
 .ipynb_checkpoints/
 logs/

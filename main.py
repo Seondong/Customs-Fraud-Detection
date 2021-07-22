@@ -190,7 +190,7 @@ if __name__ == '__main__':
     parser.add_argument('--test_from', type=str, default = '20130201', help = 'Testing period start from (YYYYMMDD)')
     parser.add_argument('--test_length', type=int, default=7, help='Single testing period length (e.g., 7)')
     parser.add_argument('--valid_length', type=int, default=7, help='Validation period length (e.g., 7)')
-    parser.add_argument('--data', type=str, default='synthetic', choices = ['synthetic', 'real-n', 'real-m', 'real-t', 'real-k', 'real-c'], help = 'Dataset')
+    parser.add_argument('--data', type=str, default='synthetic', choices = ['synthetic', 'synthetic-k', 'real-n', 'real-m', 'real-t', 'real-c'], help = 'Dataset')
     parser.add_argument('--numweeks', type=int, default=50, help='number of test weeks (week if test_length = 7)')
     parser.add_argument('--semi_supervised', type=int, default=0, help='Additionally using uninspected, unlabeled data (1=semi-supervised, 0=fully-supervised)')
     parser.add_argument('--identifier', type=str, default=curr_time, help='identifier for each execution')
@@ -231,14 +231,14 @@ if __name__ == '__main__':
     # Load datasets 
     if chosen_data == 'synthetic':
         data = dataset.Syntheticdata(path='./data/synthetic-imports-declarations.csv')
+    elif chosen_data == 'synthetic-k':
+        data = dataset.SyntheticKdata(path='./data/df_syn_ano_0429_merge.csv')  
     elif chosen_data == 'real-n':
         data = dataset.Ndata(path='./data/ndata.csv')
     elif chosen_data == 'real-m':
         data = dataset.Mdata(path='./data/mdata.csv')
     elif chosen_data == 'real-t':
         data = dataset.Tdata(path='./data/tdata.csv')
-    elif chosen_data == 'real-k':
-        data = dataset.Kdata(path='./data/kdata.csv')  
     elif chosen_data == 'real-c':
         data = dataset.Cdata(path='./data/cdata.csv')  
     
@@ -341,8 +341,11 @@ if __name__ == '__main__':
             
             
         logger.info("# of unique queried item: %s, # of queried item: %s, # of samples to be queried: %s", len(set(chosen)), len(chosen), num_samples)
-        assert len(set(chosen)) == num_samples
-        
+        try:
+            assert len(set(chosen)) == num_samples
+        except AssertionError:
+            import traceback
+            traceback.print_exc()
   
 
         # Indices of sampled imports (Considered as fraud by model) -> This will be inspected thus annotated.    

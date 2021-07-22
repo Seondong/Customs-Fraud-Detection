@@ -92,6 +92,22 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def preprocess_k(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    dtype df: dataframe
+    rtype df: dataframe
+    """
+    if len(df) == 0:
+        return df
+
+    df.loc[:, 'WUnitprice'] = df['과세가격원화금액']/df['신고중량(KG)']
+    df.loc[:, 'HS6'] = df['HS10단위부호'].apply(lambda x: int(x // 10000))
+    df.loc[:, 'HS4'] = df['HS6'].apply(lambda x: int(x // 100))
+    df.loc[:, 'HS2'] = df['HS4'].apply(lambda x: int(x // 100))
+    
+    return df
+
+
 def find_risk_profile(df: pd.DataFrame, feature: str, topk_ratio: float, adj: float, option: str) -> list or dict:
     """
     dtype feature: str
@@ -158,7 +174,6 @@ class Import_declarations():
         self.path = path
         self.df = pd.read_csv(self.path, encoding = "ISO-8859-1")
         self.profile_candidates = None
-        self.firstCheck()
         
      
     def firstCheck(self):
@@ -178,7 +193,7 @@ class Import_declarations():
         self.valid_length = valid_length
         self.test_length = test_length
         self.args = args
-        
+
         self.train = self.df[(self.df["sgd.date"] >= self.train_start_day) & (self.df["sgd.date"] < self.valid_start_day)]
         self.valid = self.df[(self.df["sgd.date"] >= self.valid_start_day) & (self.df["sgd.date"] < self.test_start_day)]    
         self.test = self.df[(self.df["sgd.date"] >= self.test_start_day) & (self.df["sgd.date"] < self.test_end_day)]  
@@ -225,11 +240,18 @@ class Import_declarations():
             pass
 
         # Run preprocessing
-        self.train_lab = preprocess(self.train_lab)
-        self.train_unlab = preprocess(self.train_unlab)
-        self.valid_lab = preprocess(self.valid_lab)
-        self.valid_unlab = preprocess(self.valid_unlab)
-        self.test = preprocess(self.test)
+        if self.args.data == 'synthetic-k':
+            self.train_lab = preprocess_k(self.train_lab)
+            self.train_unlab = preprocess_k(self.train_unlab)
+            self.valid_lab = preprocess_k(self.valid_lab)
+            self.valid_unlab = preprocess_k(self.valid_unlab)
+            self.test = preprocess_k(self.test)
+        else:
+            self.train_lab = preprocess(self.train_lab)
+            self.train_unlab = preprocess(self.train_unlab)
+            self.valid_lab = preprocess(self.valid_lab)
+            self.valid_unlab = preprocess(self.valid_unlab)
+            self.test = preprocess(self.test)
         
         
         # Add a few more risky profiles
@@ -246,7 +268,16 @@ class Import_declarations():
             self.test = tag_risky_profiles(self.test, profile, risk_profiles[profile], option=option)
         
         # Features to use in a classifier
-        self.column_to_use = ['cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'TaxUnitquantity', 'tariff.code', 'HS6', 'HS4', 'HS2', 'SGD.DayofYear', 'SGD.WeekofYear', 'SGD.MonthofYear'] + [col for col in self.train_lab.columns if 'RiskH' in col] 
+
+        numeric_variables = ['cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'TaxUnitquantity', 'tariff.code', 'HS6', 'HS4', 'HS2', 'SGD.DayofYear', 'SGD.WeekofYear', 'SGD.MonthofYear']
+        flagged_variables = [col for col in self.train_lab.columns if 'RiskH' in col]
+
+        if self.args.data == 'synthetic-k':
+            numeric_variables = ['신고중량(KG)', '관세율']
+
+        self.column_to_use = numeric_variables + flagged_variables
+
+
         
         self.X_train_lab = self.train_lab[self.column_to_use].values
         if not self.train_unlab.empty:
@@ -354,7 +385,7 @@ class Syntheticdata(Import_declarations):
     def __init__(self, path):
         super(Syntheticdata, self).__init__(path)
         self.profile_candidates = ['importer.id', 'declarant.id', 'country', 'tariff.code', 'HS6', 'HS4', 'HS2', 'office.id']
-        
+        self.firstCheck()
         
         
 class Ndata(Import_declarations):
@@ -362,14 +393,14 @@ class Ndata(Import_declarations):
     def __init__(self, path):
         super(Ndata, self).__init__(path)
         self.profile_candidates = ['importer.id', 'declarant.id', 'country', 'tariff.code', 'HS6', 'HS4', 'HS2', 'office.id']
-
+        self.firstCheck()
         
 class Mdata(Import_declarations):
     """ Class for Mdata"""
     def __init__(self, path):
         super(Mdata, self).__init__(path)
         self.profile_candidates = ['importer.id', 'exporter.name', 'expcty', 'country', 'declarant.id', 'tariff.code', 'HS6', 'HS4', 'HS2', 'office.id']
-        
+        self.firstCheck()
         
 class Tdata(Import_declarations):
     """ Class for Tdata"""
@@ -377,26 +408,49 @@ class Tdata(Import_declarations):
         super(Tdata, self).__init__(path)
         self.profile_candidates = ['importer.id', 'country', 'last.departure.code', 'contract.party.code',
                       'tariff.code', 'quantity', 'HS6', 'HS4', 'HS2', 'office.id']
-
+        self.firstCheck()
         
 class Cdata(Import_declarations):
     """ Class for Cdata"""
     def __init__(self, path):
         super(Cdata, self).__init__(path)
+
         self.profile_candidates = ['importer.id', 'declarant.id', 'country', 'tariff.code', 'HS6', 'HS4', 'HS2', 'office.id']
-        
+        self.firstCheck()
 
-
-class Kdata(Import_declarations):
-    """ Class for Kdata - waiting"""
+class SyntheticKdata(Import_declarations):
+    """ Class for Kdata (Synthetic)"""
     def __init__(self, path):
-        super(Kdata, self).__init__(path)
+        super(SyntheticKdata, self).__init__(path)
+        self.df = pd.read_csv(self.path)
 
+        self.df['신고일자'] = self.df['신고일자'].apply(lambda x: x[2:])
+        self.df.rename(columns={'우범여부':'illicit', '신고일자':'sgd.date'}, inplace=True)
         
+        import itertools
+        from collections import defaultdict
+        w = pd.read_csv("./data/inspection-result-code.csv", encoding = 'CP949')
 
+        def _findweight(x, code_weight):
+            rslt = []
+            for y in x:
+                rslt.append(code_weight[y])
+            return rslt
 
+        weight_dict = defaultdict(int, w['검사결과부호'])
+        weight_dict = {y:x for x,y in weight_dict.items()}
+        label_indices = self.df['검사결과코드'].apply(lambda x: x.split('_')).apply(lambda y: list(map(weight_dict.get, y)))
+        code_weight = dict(w[['검사결과부호', '가중치']].values)
+        self.df['가중치최대치'] = self.df['검사결과코드'].apply(lambda x: x.split('_')).apply(lambda x: _findweight(x, code_weight)).apply(max)
+        self.df.rename(columns={'가중치최대치':'revenue'}, inplace=True)
 
-
-        
+        self.profile_candidates = ['통관지세관부호',  '신고인부호', '수입자부호', '해외거래처부호', '특송업체부호',
+       '수입통관계획코드', '수입신고구분코드', '수입거래구분코드', '수입종류코드', '징수형태코드', '운송수단유형코드', '반입보세구역부호', 'HS6', '적출국가코드', '원산지국가코드', '검사결과코드']
+        self.firstCheck()
     
 
+    def firstCheck(self):
+        """ Sorting and indexing necessary for data preparation """
+        self.df = self.df.dropna(subset=["illicit"])
+        self.df = self.df.sort_values("sgd.date")
+        self.df = self.df.reset_index(drop=True)
