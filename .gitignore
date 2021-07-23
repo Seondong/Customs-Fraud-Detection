@@ -17,5 +17,3 @@ nohup.out
 .ipynb_checkpoints/
 logs/
 temp/
-dataset_transfer.py
-main_transfer_v4.py
