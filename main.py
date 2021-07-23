@@ -171,7 +171,7 @@ if __name__ == '__main__':
     parser.add_argument('--act', type=str, choices=["mish","relu"], default="relu", help="Activation function")
     
     # Hyperparameters related to customs selection
-    parser.add_argument('--ssl_strategy', type=str, default="random", help="sampling strategy for semi-supervised learning")
+    parser.add_argument('--initial_masking', type=str, default="random", choices = ['random', 'importer', 'natural'], help="Masking some initial training data for simulating partially labeled scenario (for synthetic and m, n, t dataset)")
     parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
     parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
     parser.add_argument('--output', type=str, default="result"+"-"+curr_time, help="Name of output file")
@@ -192,7 +192,7 @@ if __name__ == '__main__':
     parser.add_argument('--valid_length', type=int, default=7, help='Validation period length (e.g., 7)')
     parser.add_argument('--data', type=str, default='synthetic', choices = ['synthetic', 'synthetic-k', 'real-n', 'real-m', 'real-t', 'real-c'], help = 'Dataset')
     parser.add_argument('--numweeks', type=int, default=50, help='number of test weeks (week if test_length = 7)')
-    parser.add_argument('--semi_supervised', type=int, default=0, help='Additionally using uninspected, unlabeled data (1=semi-supervised, 0=fully-supervised)')
+    # parser.add_argument('--semi_supervised', type=int, default=0, help='Additionally using uninspected, unlabeled data (1=semi-supervised, 0=fully-supervised)')
     parser.add_argument('--identifier', type=str, default=curr_time, help='identifier for each execution')
     parser.add_argument('--save', type=int, default=0, help='Save intermediary files (1=save, 0=not save)')
     
@@ -220,9 +220,9 @@ if __name__ == '__main__':
     valid_length = args.valid_length
     chosen_data = args.data
     numWeeks = args.numweeks
-    semi_supervised = args.semi_supervised
+    # semi_supervised = args.semi_supervised
     save = args.save
-    ssl_strategy = args.ssl_strategy
+    initial_masking = args.initial_masking
     ada_lr = args.ada_lr
     
     logger.info(args)
@@ -248,7 +248,7 @@ if __name__ == '__main__':
     if samp not in ['hybrid', 'adahybrid', 'pot']:
         subsamps = 'single'
         
-    output_file =  "./results/performances/fldsh-" + args.output + '-' + chosen_data + '-' + samp + '-' + subsamps + '-' + str(final_inspection_rate) + ".csv"
+    output_file =  "./results/performances/debugging-" + args.output + '-' + chosen_data + '-' + samp + '-' + subsamps + '-' + str(final_inspection_rate) + ".csv"
     with open(output_file, 'a') as ff:
         output_metric_name = ['runID', 'data', 'num_train','num_valid','num_test','num_select','num_inspected','num_uninspected','num_test_illicit','test_illicit_rate', 'upper_bound_precision', 'upper_bound_recall','upper_bound_rev', 'sampling', 'initial_inspection_rate', 'current_inspection_rate', 'final_inspection_rate', 'inspection_rate_option', 'mode', 'subsamplings', 'initial_weights', 'current_weights', 'unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue', 'norm-precision', 'norm-recall', 'norm-revenue', 'save']
         print(",".join(output_metric_name),file=ff)

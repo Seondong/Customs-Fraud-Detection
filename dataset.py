@@ -12,18 +12,18 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-def mask_labels(df: pd.DataFrame, ir_init: float, ssl_strategy: str) -> pd.DataFrame:
+def mask_labels(df: pd.DataFrame, ir_init: float, initial_masking: str) -> pd.DataFrame:
     """
-    Masking certain amount of data for semi-supervised learning by specific strategy.
-    ssl_strategy = importer
+    Masking certain amount of data for semi-supervised learning by specific strategy - This function is used for masking initial training set.
+    initial_masking = importer
         Masking certain amount of importer_id, to mimic the situation that not all imports are inspected.
-    ssl_strategy = = random
+    initial_masking = = random
         Masking transactions by random sampling.
     ir_init is the inspection ratio at the beginning.
     """
     print('Before masking:\n', df['illicit'].value_counts())
     # To do: For more consistent results, we can control the random seed while selecting inspected_id.
-    if ssl_strategy == "importer":
+    if initial_masking == "importer":
         inspected_id = {}
         train_id = list(set(df['importer.id']))
         inspected_id[ir_init] = np.random.choice(train_id, size= int(len(train_id) * ir_init / 100), replace=False)
@@ -34,11 +34,12 @@ def mask_labels(df: pd.DataFrame, ir_init: float, ssl_strategy: str) -> pd.DataF
             d[id] = 1
         df['illicit'] = df['importer.id'].apply(lambda x: d[x]) * df['illicit']
         df['revenue'] = df['importer.id'].apply(lambda x: d[x]) * df['revenue']
-    elif ssl_strategy == "random":
+    elif initial_masking == "random":
         sampled_idx = list(df.sample(frac=1 - ir_init / 100, replace=False).index)
         df.loc[sampled_idx,"illicit"] = df.loc[sampled_idx,"illicit"]* np.nan
         df.loc[sampled_idx,"revenue"] = df.loc[sampled_idx,"revenue"]* np.nan
-
+    else:
+        return df
     print('After masking:\n', df['illicit'].value_counts())
     return df
 
@@ -204,8 +205,8 @@ class Import_declarations():
 
         # Intentionally masking datasets to simulate partially labeled scenario, note that our dataset is 100% inspected.
         # If your dataset is partially labeled already, comment below two lines.
-        if args.data in ['synthetic', 'real-n', 'real-m', 'real-t']:
-            self.train = mask_labels(self.train, args.initial_inspection_rate, args.ssl_strategy)
+        if args.data in ['synthetic', 'synthetic-k', 'real-n', 'real-m', 'real-t']:
+            self.train = mask_labels(self.train, args.initial_inspection_rate, args.initial_masking)
       
         self.train_lab = self.train[self.train['illicit'].notna()]
         self.train_unlab = self.train[self.train['illicit'].isna()]
@@ -233,7 +234,6 @@ class Import_declarations():
         
     def featureEngineering(self):
         """ Feature engineering, """
-        self.semi_supervised = self.args.semi_supervised
         try:
             self.offset = self.test.index[0]
         except IndexError:
@@ -451,6 +451,6 @@ class SyntheticKdata(Import_declarations):
 
     def firstCheck(self):
         """ Sorting and indexing necessary for data preparation """
-        self.df = self.df.dropna(subset=["illicit"])
+        # self.df = self.df.dropna(subset=["illicit"])  # This can be relaxed in actual semi-supervised dataset
         self.df = self.df.sort_values("sgd.date")
         self.df = self.df.reset_index(drop=True)
