@@ -38,8 +38,8 @@ class DATESampling(Strategy):
     
     def train_xgb_model(self):
         """ Train XGB model """
-        print("Training XGBoost model...")
-        self.xgb = XGBClassifier(n_estimators=100, max_depth=4, n_jobs=-1)
+        # print("Training XGBoost model...")
+        self.xgb = XGBClassifier(n_estimators=100, max_depth=4, n_jobs=-1, eval_metric='logloss', verbosity = 0)
         self.xgb.fit(self.data.dftrainx_lab, self.data.train_cls_label)     
         
         if self.args.save:
@@ -159,7 +159,7 @@ class DATESampling(Strategy):
     def train_DATE_model(self):
         """ Train DATE model """
         
-        print(f'Mode: {self.args.mode}, Episode: {self.data.episode}')
+        # print(f'Mode: {self.args.mode}, Episode: {self.data.episode}')
         
         if self.args.mode == 'scratch' or self.data.episode == 0:
             self.date_model = VanillaDATE(self.data, self.args)
@@ -229,7 +229,7 @@ class DATESampling(Strategy):
         best_model = torch.load(self.model_path)
         final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(self.data.test_loader)
         nLab = 2
-        print(len(final_output), hiddens[0].shape, len(hiddens))
+        # print(len(final_output), hiddens[0].shape, len(hiddens))
         embedding = np.zeros([self.num_data, embDim * nLab])
         with torch.no_grad():
             for idx, prob in enumerate(final_output):
@@ -331,8 +331,8 @@ class VanillaDATE:
         no_improvement = 0
         current_score = None 
         
-        print()
-        print("Training DATE model ...")
+        # print()
+        # print("Training DATE model ...")
         for epoch in range(epochs):
             for step, (batch_feature,batch_user,batch_item,batch_cls,batch_reg) in enumerate(train_loader):
                 self.model.train() # prep to train model
@@ -359,33 +359,33 @@ class VanillaDATE:
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-                if (step+1) % 1000 ==0:  
-                    print("CLS loss:%.4f, REG loss:%.4f, Loss:%.4f"\
-                    %(cls_loss.item(),revenue_loss.item(),loss.item()))
+                # if (step+1) % 1000 ==0:  
+                    # print("CLS loss:%.4f, REG loss:%.4f, Loss:%.4f"\
+                    # %(cls_loss.item(),revenue_loss.item(),loss.item()))
                     
             # evaluate 
             self.model.eval()
-            print("------------")
-            print("Validate at epoch %s"%(epoch+1))
+            # print("------------")
+            # print("Validate at epoch %s"%(epoch+1))
             y_prob, val_loss, _ = self.model.module.eval_on_batch(valid_loader)
             y_pred_tensor = torch.tensor(y_prob).float().to(device)
             best_threshold, val_score, roc = torch_threshold(y_prob,xgb_validy)
             overall_f1, auc, precisions, recalls, f1s, revenues = metrics(y_prob,xgb_validy,revenue_valid,self.args)
             select_best = np.mean(precisions+revenues)  # instead of f1s
-            print("Overall F1:%.4f, AUC:%.4f, F1-top:%.4f" % (overall_f1, auc, select_best))
+            # print("Overall F1:%.4f, AUC:%.4f, F1-top:%.4f" % (overall_f1, auc, select_best))
 
             # save best model 
             if select_best >= global_best_score:
                 global_best_score = select_best
                 self.model.module.performance = np.mean(revenues)
                 torch.save(self.model, self.model_path)
-                print(os.path.abspath(self.model_path))
+                # print(os.path.abspath(self.model_path))
                 no_improvement = 0
             else:
                 no_improvement += 1
             
             if no_improvement >= stop_rounds:
-                print("Early stopping...")
+                # print("Early stopping...")
                 break 
                 
                 
@@ -402,8 +402,8 @@ class VanillaDATE:
         revenue_valid = self.data.valid_reg_label 
         revenue_test = self.data.test_reg_label 
         
-        print()
-        print("--------Evaluating DATE model---------")
+        # print()
+        # print("--------Evaluating DATE model---------")
         # create best model
         best_model = torch.load(self.model_path)
         best_model.eval()

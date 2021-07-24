@@ -54,7 +54,6 @@ def make_logger(curr_time, name=None):
 
 def evaluate_inspection(chosen_rev,chosen_cls,xgb_testy,revenue_test):
     """ Evaluate the model """
-    logger.info("--------Evaluating the model---------")
     precisions, recalls, f1s, revenues = metrics_active(chosen_rev,chosen_cls,xgb_testy,revenue_test)
     best_score = f1s
     return precisions, recalls, f1s, revenues
@@ -232,7 +231,12 @@ if __name__ == '__main__':
     if chosen_data == 'synthetic':
         data = dataset.Syntheticdata(path='./data/synthetic-imports-declarations.csv')
     elif chosen_data == 'synthetic-k':
-        data = dataset.SyntheticKdata(path='./data/df_syn_ano_0429_merge.csv')  
+        filepath = './data/df_syn_ano_0429_merge.csv'  # fully labeled
+        # filepath = './data/df_syn_ano_0429_merge_partially_labeled.csv'     # partially labeled
+        data = dataset.SyntheticKdata(path=filepath)     
+        if filepath == './data/df_syn_ano_0429_merge_partially_labeled.csv':
+            args.initial_masking = 'natural'
+            initial_masking = 'natural' 
     elif chosen_data == 'real-n':
         data = dataset.Ndata(path='./data/ndata.csv')
     elif chosen_data == 'real-m':
@@ -288,16 +292,16 @@ if __name__ == '__main__':
             logger.info('Simulation period is over.')
             logger.info('Terminating ...')
             sys.exit()
-         
+        
         # Feature engineering for train, valid, test data
         data.episode = i
+        current_inspection_rate = confirmed_inspection_plan[i]  # ToDo: Add multiple decaying strategy
+        logger.info(f'Test episode: #{i}, Current inspection rate: {current_inspection_rate}')
+
         if samp not in ['random']: 
             data.featureEngineering()
         else:
             data.offset = data.test.index[0]
-        current_inspection_rate = confirmed_inspection_plan[i]  # ToDo: Add multiple decaying strategy
-        print(f'Test episode: #{i}, Current inspection rate: {current_inspection_rate}')
-        logger.info('%s, %s', data.train_lab.shape, data.test.shape)
         
         # Initialize uncertainty module for some cases
         if unc_mode == 'self-supervised':
@@ -339,24 +343,26 @@ if __name__ == '__main__':
             import traceback
             traceback.print_exc()
             
-            
+        logger.info("--------Evaluating selection results---------")   
         logger.info("# of unique queried item: %s, # of queried item: %s, # of samples to be queried: %s", len(set(chosen)), len(chosen), num_samples)
         try:
             assert len(set(chosen)) == num_samples
         except AssertionError:
             import traceback
             traceback.print_exc()
-  
 
         # Indices of sampled imports (Considered as fraud by model) -> This will be inspected thus annotated.    
         indices = [point + data.offset for point in chosen]
+        
+        # Originally, chosen trade should be annotated.
+        # Used for simulating on synthetic-k-partial dataset. We need this procedure to evaluate the selection strategy on given partially-labeled datasets. 
+        indices = data.df['illicit'][indices].notnull().loc[lambda x: x==True].index.values
         
         inspected_imports = data.df.iloc[indices]
         uninspected_imports = data.df.loc[set(data.test.index)-set(inspected_imports.index)]
         uninspected_imports['illicit'] = float('nan')
         uninspected_imports['revenue'] = float('nan')
-           
-                
+      
         logger.debug(inspected_imports[:5])
         
         # tune the uncertainty
@@ -370,14 +376,20 @@ if __name__ == '__main__':
         active_cls = inspected_imports['illicit']
         active_cls = active_cls.transpose().to_numpy()
 
-        active_precisions, active_recalls, active_f1s, active_revenues = evaluate_inspection(active_rev,active_cls,data.test_cls_label,data.test_reg_label)
+        # Added to handle semi-supervised inputs
+        active_cls_notna = active_cls[~np.isnan(active_cls)]
+        active_rev_notna = active_rev[~np.isnan(active_rev)]
+        illicit_test_notna = data.test_cls_label[~np.isnan(data.test_cls_label)]
+        revenue_test_notna = data.test_reg_label[~np.isnan(data.test_reg_label)]
+
+        active_precisions, active_recalls, active_f1s, active_revenues = evaluate_inspection(active_rev_notna, active_cls_notna, illicit_test_notna, revenue_test_notna)
         logger.info(f'Metrics Active DATE:\n Pr@{current_inspection_rate}:{round(active_precisions, 4)}, Re@{current_inspection_rate}:{round(active_recalls, 4)} Rev@{current_inspection_rate}:{round(active_revenues, 4)}') 
-        
+
         with open(output_file, 'a') as ff:
-            upper_bound_precision = min(100*np.mean(data.test_cls_label)/current_inspection_rate, 1)
-            upper_bound_recall = min(current_inspection_rate/np.mean(data.test_cls_label)/100, 1)
-            upper_bound_revenue = min(sum(sorted(data.test_reg_label, reverse=True)[:len(chosen)]) / np.sum(data.test_reg_label), 1)
-            
+            upper_bound_precision = min(np.sum(illicit_test_notna)/len(chosen), 1)
+            upper_bound_recall = min(len(chosen)/np.sum(illicit_test_notna), 1)
+            upper_bound_revenue = min(sum(sorted(revenue_test_notna, reverse=True)[:len(chosen)]) / np.sum(revenue_test_notna), 1)
+
             norm_precision = active_precisions/upper_bound_precision
             norm_recall = active_recalls/upper_bound_recall
             norm_revenue = active_revenues/upper_bound_revenue
@@ -395,7 +407,6 @@ if __name__ == '__main__':
             output_metric = list(map(str,output_metric))
             logger.debug(output_metric)
             print(",".join(output_metric),file=ff)
-        
         
         output_file_indices =  "./results/query_indices/" + curr_time + '-' + samp + '-' + subsamplings.replace('/','+') + '-' + str(current_inspection_rate) + '-' + mode + "-week-" + str(i) + ".csv"
             
@@ -455,3 +466,4 @@ if __name__ == '__main__':
         del uninspected_imports
         
         print("===========================================================================================")
+        print()

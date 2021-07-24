@@ -207,7 +207,7 @@ class Import_declarations():
         # If your dataset is partially labeled already, comment below two lines.
         if args.data in ['synthetic', 'synthetic-k', 'real-n', 'real-m', 'real-t']:
             self.train = mask_labels(self.train, args.initial_inspection_rate, args.initial_masking)
-      
+
         self.train_lab = self.train[self.train['illicit'].notna()]
         self.train_unlab = self.train[self.train['illicit'].isna()]
         self.valid_lab = self.valid[self.valid['illicit'].notna()]
@@ -230,7 +230,6 @@ class Import_declarations():
         
         self.train_valid_lab = pd.concat([self.train_lab, self.valid_lab])
         self.train_valid_unlab = pd.concat([self.train_unlab, self.valid_unlab])
-        
         
     def featureEngineering(self):
         """ Feature engineering, """
@@ -307,17 +306,17 @@ class Import_declarations():
         self.X_test = np.nan_to_num(self.X_test, 0)
 
         from collections import Counter
-        print("Checking label distribution")
+        print("Checking illicit rate: ")
         cnt = Counter(self.train_cls_label)
-        print("Training:",cnt[1]/cnt[0])
+        print("Training:",round(cnt[1]/(cnt[0]+cnt[1]), 3))
         cnt = Counter(self.valid_cls_label)
         try:
-            print("Validation:",cnt[1]/cnt[0])
+            print("Validation:",round(cnt[1]/(cnt[0]+cnt[1]), 3))
         except ZeroDivisionError:
             print("No validation set")
         cnt = Counter(self.test_cls_label)
         try:
-            print("Testing:",cnt[1]/cnt[0])
+            print("Testing:", round(cnt[1]/(cnt[0]+cnt[1]), 3))
         except ZeroDivisionError:
             print("No test set")
         
@@ -439,9 +438,16 @@ class SyntheticKdata(Import_declarations):
 
         weight_dict = defaultdict(int, w['검사결과부호'])
         weight_dict = {y:x for x,y in weight_dict.items()}
-        label_indices = self.df['검사결과코드'].apply(lambda x: x.split('_')).apply(lambda y: list(map(weight_dict.get, y)))
+
+        def _measure_(x):
+            y = x.split('_')
+            list(map(weight_dict.get, y))
+
+        label_indices = self.df['검사결과코드'].apply(lambda x: x.split('_') if pd.notnull(x) else [x]).apply(lambda y: list(map(weight_dict.get, y)))
         code_weight = dict(w[['검사결과부호', '가중치']].values)
-        self.df['가중치최대치'] = self.df['검사결과코드'].apply(lambda x: x.split('_')).apply(lambda x: _findweight(x, code_weight)).apply(max)
+        code_weight[np.nan] = np.nan
+
+        self.df['가중치최대치'] = self.df['검사결과코드'].apply(lambda x: x.split('_') if pd.notnull(x) else [x]).apply(lambda x: _findweight(x, code_weight)).apply(max)
         self.df.rename(columns={'가중치최대치':'revenue'}, inplace=True)
 
         self.profile_candidates = ['통관지세관부호',  '신고인부호', '수입자부호', '해외거래처부호', '특송업체부호',
