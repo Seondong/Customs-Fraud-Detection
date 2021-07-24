@@ -12,6 +12,7 @@ data/tdata.csv
 data/cdata.csv
 data/NTMdata.csv
 data/df_syn_ano_0429_merge.csv
+data/df_syn_ano_0429_merge_partially_labeled.csv
 data/inspection-result-code.csv
 nohup.out
 .ipynb_checkpoints/

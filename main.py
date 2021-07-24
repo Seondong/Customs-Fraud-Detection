@@ -189,7 +189,7 @@ if __name__ == '__main__':
     parser.add_argument('--test_from', type=str, default = '20130201', help = 'Testing period start from (YYYYMMDD)')
     parser.add_argument('--test_length', type=int, default=7, help='Single testing period length (e.g., 7)')
     parser.add_argument('--valid_length', type=int, default=7, help='Validation period length (e.g., 7)')
-    parser.add_argument('--data', type=str, default='synthetic', choices = ['synthetic', 'synthetic-k', 'real-n', 'real-m', 'real-t', 'real-c'], help = 'Dataset')
+    parser.add_argument('--data', type=str, default='synthetic', choices = ['synthetic', 'synthetic-k', 'synthetic-k-partial', 'real-n', 'real-m', 'real-t', 'real-c'], help = 'Dataset')
     parser.add_argument('--numweeks', type=int, default=50, help='number of test weeks (week if test_length = 7)')
     # parser.add_argument('--semi_supervised', type=int, default=0, help='Additionally using uninspected, unlabeled data (1=semi-supervised, 0=fully-supervised)')
     parser.add_argument('--identifier', type=str, default=curr_time, help='identifier for each execution')
@@ -231,12 +231,11 @@ if __name__ == '__main__':
     if chosen_data == 'synthetic':
         data = dataset.Syntheticdata(path='./data/synthetic-imports-declarations.csv')
     elif chosen_data == 'synthetic-k':
-        filepath = './data/df_syn_ano_0429_merge.csv'  # fully labeled
-        # filepath = './data/df_syn_ano_0429_merge_partially_labeled.csv'     # partially labeled
-        data = dataset.SyntheticKdata(path=filepath)     
-        if filepath == './data/df_syn_ano_0429_merge_partially_labeled.csv':
-            args.initial_masking = 'natural'
-            initial_masking = 'natural' 
+        data = dataset.SyntheticKdata(path='./data/df_syn_ano_0429_merge.csv')  # fully labeled
+    elif chosen_data == 'synthetic-k-partial':
+        data = dataset.SyntheticKdata(path='./data/df_syn_ano_0429_merge_partially_labeled.csv')   # partially labeled
+        args.initial_masking = 'natural'   # since this data is given as partially labeled, it does not need extra label masking.
+        initial_masking = 'natural'   
     elif chosen_data == 'real-n':
         data = dataset.Ndata(path='./data/ndata.csv')
     elif chosen_data == 'real-m':
@@ -355,7 +354,7 @@ if __name__ == '__main__':
         indices = [point + data.offset for point in chosen]
         
         # Originally, chosen trade should be annotated.
-        # Used for simulating on synthetic-k-partial dataset. We need this procedure to evaluate the selection strategy on given partially-labeled datasets. 
+        # Compatible with simulating on synthetic-k-partial dataset. We need this procedure to evaluate the selection strategy on given partially-labeled datasets. 
         indices = data.df['illicit'][indices].notnull().loc[lambda x: x==True].index.values
         
         inspected_imports = data.df.iloc[indices]

@@ -204,7 +204,7 @@ class Import_declarations():
             sys.exit()
 
         # Intentionally masking datasets to simulate partially labeled scenario, note that our dataset is 100% inspected.
-        # If your dataset is partially labeled already, comment below two lines.
+        # If your dataset is partially labeled already, does not need this procedure.
         if args.data in ['synthetic', 'synthetic-k', 'real-n', 'real-m', 'real-t']:
             self.train = mask_labels(self.train, args.initial_inspection_rate, args.initial_masking)
 
@@ -239,7 +239,7 @@ class Import_declarations():
             pass
 
         # Run preprocessing
-        if self.args.data == 'synthetic-k':
+        if self.args.data in ['synthetic-k', 'synthetic-k-partial']:
             self.train_lab = preprocess_k(self.train_lab)
             self.train_unlab = preprocess_k(self.train_unlab)
             self.valid_lab = preprocess_k(self.valid_lab)
@@ -271,7 +271,7 @@ class Import_declarations():
         numeric_variables = ['cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'TaxUnitquantity', 'tariff.code', 'HS6', 'HS4', 'HS2', 'SGD.DayofYear', 'SGD.WeekofYear', 'SGD.MonthofYear']
         flagged_variables = [col for col in self.train_lab.columns if 'RiskH' in col]
 
-        if self.args.data == 'synthetic-k':
+        if self.args.data in ['synthetic-k', 'synthetic-k-partial']:
             numeric_variables = ['신고중량(KG)', '관세율']
 
         self.column_to_use = numeric_variables + flagged_variables

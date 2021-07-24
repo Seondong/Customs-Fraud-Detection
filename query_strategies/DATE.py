@@ -51,7 +51,7 @@ class DATESampling(Strategy):
         """ Prepare input for Dual-Attentive Tree-Aware Embedding model, DATE """
                 
         # user & item information 
-        if self.data.args.data != 'synthetic-k':
+        if self.data.args.data not in ['synthetic-k', 'synthetic-k-partial']:
             importer_id = 'importer.id'
             tariff_code = 'tariff.code'
         else:
