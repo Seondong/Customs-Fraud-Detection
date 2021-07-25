@@ -99,7 +99,7 @@ class DATEModel(nn.Module):
         self.layer_norm = nn.LayerNorm((100,dim))
         self.fussionlayer = nn.Linear(dim*3,dim)
         self.hidden = nn.Linear(dim,dim)
-        self.norm = nn.BatchNorm1d(dim)      
+        #self.norm = nn.BatchNorm1d(dim)      
         self.output_cls_layer = nn.Linear(dim,1)
         self.output_reg_layer = nn.Linear(dim,1)
         
@@ -129,7 +129,7 @@ class DATEModel(nn.Module):
             raise "Fusion type error"
         hidden = self.hidden(fusion)
         hidden = self.act(hidden)
-        hidden = self.norm(hidden)          # For generating reliable embedding - Added by Tosha & Kien
+        #hidden = self.norm(hidden)          # For generating reliable embedding - Added by Tosha & Kien
 
         # multi-task output 
         classification_output = torch.sigmoid(self.output_cls_layer(hidden))
