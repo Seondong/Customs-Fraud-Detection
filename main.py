@@ -354,8 +354,11 @@ if __name__ == '__main__':
             
             
         logger.info("# of unique queried item: %s, # of queried item: %s, # of samples to be queried: %s", len(set(chosen)), len(chosen), num_samples)
-        assert len(set(chosen)) == num_samples
-        
+        try:
+            assert len(set(chosen)) == num_samples
+        except AssertionError:
+            import traceback
+            traceback.print_exc()        
   
 
         # Indices of sampled imports (Considered as fraud by model) -> This will be inspected thus annotated.    

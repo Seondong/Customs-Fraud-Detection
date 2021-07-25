@@ -129,7 +129,7 @@ class DATEModel(nn.Module):
             raise "Fusion type error"
         hidden = self.hidden(fusion)
         hidden = self.act(hidden)
-        hidden = self.norm(hidden)          # For generating reliable embedding - Added by Tosha & Kien
+        # hidden = self.norm(hidden)          # For generating reliable embedding - Added by Tosha & Kien
 
         # multi-task output 
         classification_output = torch.sigmoid(self.output_cls_layer(hidden))
