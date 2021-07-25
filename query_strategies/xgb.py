@@ -16,8 +16,9 @@ class XGBSampling(Strategy):
     def train_model(self):
         """ Get trained model """
         print("Training XGBoost model...")
-        self.xgb = XGBClassifier(n_estimators=100, max_depth=4, n_jobs=-1, eval_metric='logloss')
+        self.xgb = XGBClassifier(n_estimators=100, max_depth=4, n_jobs=-1, eval_metric='logloss', verbosity = 0)
         self.xgb.fit(self.data.dftrainx_lab,self.data.train_cls_label)
+        print('fit is done')
         
         if self.args.save:
             self.xgb.get_booster().dump_model('./intermediary/xgb_models/xgb_model-readable-'+self.args.identifier+'.txt', with_stats=False)
@@ -34,6 +35,7 @@ class XGBSampling(Strategy):
         self.train_model()
         self.predict_frauds()
         chosen = np.argpartition(self.y_prob[self.available_indices], -k)[-k:]
+        print('chosen done')
         return self.available_indices[chosen].tolist()
     
     

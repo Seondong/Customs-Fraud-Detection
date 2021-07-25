@@ -55,7 +55,6 @@ def make_logger(curr_time, name=None):
 
 def evaluate_inspection(chosen_rev,chosen_cls,xgb_testy,revenue_test):
     """ Evaluate the model """
-    logger.info("--------Evaluating the model---------")
     precisions, recalls, f1s, revenues = metrics_active(chosen_rev,chosen_cls,xgb_testy,revenue_test)
     best_score = f1s
     return precisions, recalls, f1s, revenues
@@ -174,6 +173,7 @@ if __name__ == '__main__':
     # Hyperparameters related to customs selection
     parser.add_argument('--prefix', type=str, default='results', help="experiment name used as prefix for results file")
     parser.add_argument('--ssl_strategy', type=str, default="random", help="sampling strategy for semi-supervised learning")
+    parser.add_argument('--initial_masking', type=str, default="random", choices = ['random', 'importer', 'natural'], help="Masking some initial training data for simulating partially labeled scenario (for synthetic and m, n, t dataset)")
     parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
     parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
     parser.add_argument('--output', type=str, default="result"+"-"+curr_time, help="Name of output file")
@@ -192,9 +192,9 @@ if __name__ == '__main__':
     parser.add_argument('--test_from', type=str, default = '20130201', help = 'Testing period start from (YYYYMMDD)')
     parser.add_argument('--test_length', type=int, default=7, help='Single testing period length (e.g., 7)')
     parser.add_argument('--valid_length', type=int, default=7, help='Validation period length (e.g., 7)')
-    parser.add_argument('--data', type=str, default='synthetic', choices = ['synthetic', 'real-n', 'real-m', 'real-t', 'real-k', 'real-c'], help = 'Dataset')
+    parser.add_argument('--data', type=str, default='synthetic', choices = ['synthetic', 'synthetic-k', 'synthetic-k-partial', 'real-n', 'real-m', 'real-t', 'real-c'], help = 'Dataset')
     parser.add_argument('--numweeks', type=int, default=50, help='number of test weeks (week if test_length = 7)')
-    parser.add_argument('--semi_supervised', type=int, default=0, help='Additionally using uninspected, unlabeled data (1=semi-supervised, 0=fully-supervised)')
+    # parser.add_argument('--semi_supervised', type=int, default=0, help='Additionally using uninspected, unlabeled data (1=semi-supervised, 0=fully-supervised)')
     parser.add_argument('--identifier', type=str, default=curr_time, help='identifier for each execution')
     parser.add_argument('--save', type=int, default=0, help='Save intermediary files (1=save, 0=not save)')
 
@@ -226,9 +226,9 @@ if __name__ == '__main__':
     valid_length = args.valid_length
     chosen_data = args.data
     numWeeks = args.numweeks
-    semi_supervised = args.semi_supervised
+    # semi_supervised = args.semi_supervised
     save = args.save
-    ssl_strategy = args.ssl_strategy
+    initial_masking = args.initial_masking
     ada_lr = args.ada_lr
     num_arms = args.num_arms
     
@@ -238,14 +238,18 @@ if __name__ == '__main__':
     # Load datasets 
     if chosen_data == 'synthetic':
         data = dataset.Syntheticdata(path='./data/synthetic-imports-declarations.csv')
+    elif chosen_data == 'synthetic-k':
+        data = dataset.SyntheticKdata(path='./data/df_syn_ano_0429_merge.csv')  # fully labeled
+    elif chosen_data == 'synthetic-k-partial':
+        data = dataset.SyntheticKdata(path='./data/df_syn_ano_0429_merge_partially_labeled.csv')   # partially labeled
+        args.initial_masking = 'natural'   # since this data is given as partially labeled, it does not need extra label masking.
+        initial_masking = 'natural'   
     elif chosen_data == 'real-n':
         data = dataset.Ndata(path='./data/ndata.csv')
     elif chosen_data == 'real-m':
         data = dataset.Mdata(path='./data/mdata.csv')
     elif chosen_data == 'real-t':
         data = dataset.Tdata(path='./data/tdata.csv')
-    elif chosen_data == 'real-k':
-        data = dataset.Kdata(path='./data/kdata.csv')  
     elif chosen_data == 'real-c':
         data = dataset.Cdata(path='./data/cdata.csv')  
     
@@ -301,16 +305,16 @@ if __name__ == '__main__':
             logger.info('Simulation period is over.')
             logger.info('Terminating ...')
             sys.exit()
-         
+        
         # Feature engineering for train, valid, test data
         data.episode = i
+        current_inspection_rate = confirmed_inspection_plan[i]  # ToDo: Add multiple decaying strategy
+        logger.info(f'Test episode: #{i}, Current inspection rate: {current_inspection_rate}')
+
         if samp not in ['random']: 
             data.featureEngineering()
         else:
             data.offset = data.test.index[0]
-        current_inspection_rate = confirmed_inspection_plan[i]  # ToDo: Add multiple decaying strategy
-        print(f'Test episode: #{i}, Current inspection rate: {current_inspection_rate}')
-        logger.info('%s, %s', data.train_lab.shape, data.test.shape)
         
         # Initialize uncertainty module for some cases
         if unc_mode == 'self-supervised':
@@ -352,24 +356,26 @@ if __name__ == '__main__':
             import traceback
             traceback.print_exc()
             
-            
+        logger.info("--------Evaluating selection results---------")   
         logger.info("# of unique queried item: %s, # of queried item: %s, # of samples to be queried: %s", len(set(chosen)), len(chosen), num_samples)
         try:
             assert len(set(chosen)) == num_samples
         except AssertionError:
             import traceback
             traceback.print_exc()        
-  
-
+ 
         # Indices of sampled imports (Considered as fraud by model) -> This will be inspected thus annotated.    
         indices = [point + data.offset for point in chosen]
+        
+        # Originally, chosen trade should be annotated.
+        # Compatible with simulating on synthetic-k-partial dataset. We need this procedure to evaluate the selection strategy on given partially-labeled datasets. 
+        indices = data.df['illicit'][indices].notnull().loc[lambda x: x==True].index.values
         
         inspected_imports = data.df.iloc[indices]
         uninspected_imports = data.df.loc[set(data.test.index)-set(inspected_imports.index)]
         uninspected_imports['illicit'] = float('nan')
         uninspected_imports['revenue'] = float('nan')
-           
-                
+      
         logger.debug(inspected_imports[:5])
         
         # tune the uncertainty
@@ -383,14 +389,20 @@ if __name__ == '__main__':
         active_cls = inspected_imports['illicit']
         active_cls = active_cls.transpose().to_numpy()
 
-        active_precisions, active_recalls, active_f1s, active_revenues = evaluate_inspection(active_rev,active_cls,data.test_cls_label,data.test_reg_label)
+        # Added to handle semi-supervised inputs
+        active_cls_notna = active_cls[~np.isnan(active_cls)]
+        active_rev_notna = active_rev[~np.isnan(active_rev)]
+        illicit_test_notna = data.test_cls_label[~np.isnan(data.test_cls_label)]
+        revenue_test_notna = data.test_reg_label[~np.isnan(data.test_reg_label)]
+
+        active_precisions, active_recalls, active_f1s, active_revenues = evaluate_inspection(active_rev_notna, active_cls_notna, illicit_test_notna, revenue_test_notna)
         logger.info(f'Metrics Active DATE:\n Pr@{current_inspection_rate}:{round(active_precisions, 4)}, Re@{current_inspection_rate}:{round(active_recalls, 4)} Rev@{current_inspection_rate}:{round(active_revenues, 4)}') 
-        
+
         with open(output_file, 'a') as ff:
-            upper_bound_precision = min(100*np.mean(data.test_cls_label)/current_inspection_rate, 1)
-            upper_bound_recall = min(current_inspection_rate/np.mean(data.test_cls_label)/100, 1)
-            upper_bound_revenue = min(sum(sorted(data.test_reg_label, reverse=True)[:len(chosen)]) / np.sum(data.test_reg_label), 1)
-            
+            upper_bound_precision = min(np.sum(illicit_test_notna)/len(chosen), 1)
+            upper_bound_recall = min(len(chosen)/np.sum(illicit_test_notna), 1)
+            upper_bound_revenue = min(sum(sorted(revenue_test_notna, reverse=True)[:len(chosen)]) / np.sum(revenue_test_notna), 1)
+
             norm_precision = active_precisions/upper_bound_precision
             norm_recall = active_recalls/upper_bound_recall
             norm_revenue = active_revenues/upper_bound_revenue
@@ -486,3 +498,4 @@ if __name__ == '__main__':
         del uninspected_imports
         
         print("===========================================================================================")
+        print()

@@ -40,25 +40,26 @@ def find_best_threshold(model,x_list,y_test,best_thresh = None):
 def torch_threshold(y_pred_prob,y_test,best_thresh = None):
     threshold_list = np.arange(0.1,0.6,0.1)
     best_f1 = 0
-    
+    # import pdb
+    # pdb.set_trace()
     if best_thresh == None:
         for th in threshold_list:
             y_pred_label = (y_pred_prob > th)*1 
-            f_score = f1_score(y_test,y_pred_label)
+            f_score = f1_score(y_test[~np.isnan(y_test)],y_pred_label[~np.isnan(y_test)])
             if f_score > best_f1:
                 best_f1 = f_score
                 best_thresh = th 
         try:
-            roc_auc = roc_auc_score(y_test, y_pred_prob)
+            roc_auc = roc_auc_score(y_test[~np.isnan(y_test)], y_pred_prob[~np.isnan(y_test)])
         except ValueError:
             roc_auc = 0.5
         return best_thresh, best_f1, roc_auc
     
     else:
         y_pred_label = (y_pred_prob > best_thresh)*1 
-        best_f1 = f1_score(y_test,y_pred_label)
+        best_f1 = f1_score(y_test[~np.isnan(y_test)],y_pred_label[~np.isnan(y_test)])
         try:
-            roc_auc = roc_auc_score(y_test, y_pred_prob)
+            roc_auc = roc_auc_score(y_test[~np.isnan(y_test)], y_pred_prob[~np.isnan(y_test)])
         except ValueError:
             roc_auc = 0.5
         return best_f1, roc_auc    
@@ -115,9 +116,9 @@ def metrics(y_prob,xgb_testy,revenue_test, args, best_thresh=None):
         except ValueError:
             f1 = 0
         revenue = sum(revenue_test[y_prob > threshold]) / sum(revenue_test)
-        if i == 95:
-            print(f'Checking top {100-i}% suspicious transactions: {len(y_prob[y_prob > threshold])}')
-            print('Precision: %.4f, Recall: %.4f, Revenue: %.4f' % (precision, recall, revenue))
+        # if i == 95:
+        #     print(f'Checking top {100-i}% suspicious transactions: {len(y_prob[y_prob > threshold])}')
+        #     print('Precision: %.4f, Recall: %.4f, Revenue: %.4f' % (precision, recall, revenue))
         # save results
         pr.append(precision)
         re.append(recall)
@@ -128,11 +129,14 @@ def metrics(y_prob,xgb_testy,revenue_test, args, best_thresh=None):
 
 def metrics_active(active_rev,active_cls,xgb_testy,revenue_test):
     """ Evaluate the performance"""
+
     try:
         precision = np.count_nonzero(active_cls == 1) / len(active_cls)
-        recall = sum(active_cls) / sum(xgb_testy)
     except:
         precision = np.float("nan")
+    try:
+        recall = sum(active_cls) / sum(xgb_testy)
+    except:
         recall = np.float("nan")
     try:
         f1 = hmean([precision, recall])
