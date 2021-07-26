@@ -14,14 +14,15 @@ class ExpWeights(object):
         update_dists(feedback): update the underlying distribution with new feedback (should be loss)
     """
     def __init__(self, 
-                 arms=[0.99,0.98,0.95,0.9,0.8,0.7,0.6,0.5],
+                 num = 21,
                  lr = 2,
                  window = 20, # we don't use this yet.. 
                  epsilon = 0,
-                 decay = 0.95):
+                 decay = 1):
         
-        self.arms = arms
+        self.arms = [i/(num-1) for i in range(num)]
         self.l = {i:0 for i in range(len(self.arms))}
+        self.p = [1/num for x in range(len(self.arms))]
         self.arm = 0
         self.value = self.arms[self.arm]
         self.error_buffer = []
@@ -38,7 +39,7 @@ class ExpWeights(object):
         
         
     def sample(self):
-        if np.random.uniform() > self.epsilon:
+        if np.random.uniform() >= self.epsilon:
             self.p = [np.exp(x) for x in self.l.values()]
             self.p /= np.sum(self.p) # normalize to make it a distribution
 #             print(f'p = {self.p}')
@@ -113,7 +114,7 @@ class AdaHybridSampling(HybridSampling):
     def __init__(self, args):
         super(AdaHybridSampling,self).__init__(args)
         assert len(self.subsamps) == 2   # TODO: Ideally, it should support multiple strategies
-        self.weight_sampler = ExpWeights(lr = self.args.ada_lr) # initialize it at the beginning of the simulation
+        self.weight_sampler = ExpWeights(lr = self.args.ada_lr, num = args.num_arms) # initialize it at the beginning of the simulation
    
     def update_subsampler_weights(self, performance):
         # Update weights for next week
@@ -123,8 +124,8 @@ class AdaHybridSampling(HybridSampling):
         print(f'weight_sampler.p = {self.weight_sampler.p}')
         
         # Update underlying distribution for each arm using predicted results
-#         self.weight_sampler.update_dists(1-performance)
-        self.weight_sampler.update_dists_advanced(self.each_chosen, 1-performance)
+        self.weight_sampler.update_dists(1-performance)
+        # self.weight_sampler.update_dists_advanced(self.each_chosen, 1-performance)
         print(f'Ada distribution: {self.weight_sampler.p}')
         print(f'Ada arm: {self.weight_sampler.value}')
         print(f'Feedbacks: {self.weight_sampler.data}')        

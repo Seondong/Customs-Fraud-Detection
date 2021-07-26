@@ -167,7 +167,7 @@ class DATEModel(nn.Module):
                 if self.cls_loss_func == 'focal':
                     cls_losses = FocalLoss()(y_pred_prob, batch_cls)
                 cls_loss.append(cls_losses.item())
-
+                
                 # compute regression loss 
                 if self.reg_loss_func == 'full':
                     reg_losses = nn.MSELoss()(y_pred_rev, batch_reg)
@@ -184,7 +184,7 @@ class DATEModel(nn.Module):
                 del reg_losses
                 del y_pred
 
-        print("CLS loss: %.4f, REG loss: %.4f"% (np.mean(cls_loss), np.mean(reg_loss)) )
+        # print("CLS loss: %.4f, REG loss: %.4f"% (np.mean(cls_loss), np.mean(reg_loss)) )
         return np.array(final_output).ravel(), np.mean(cls_loss)+ np.mean(reg_loss), (hiddens, revs)
 
 class TransferDATEModel(nn.Module):
@@ -299,7 +299,7 @@ class TransferDATEModel(nn.Module):
                 del reg_losses
                 del y_pred
 
-        print("CLS loss: %.4f, REG loss: %.4f"% (np.mean(cls_loss), np.mean(reg_loss)) )
+        # print("CLS loss: %.4f, REG loss: %.4f"% (np.mean(cls_loss), np.mean(reg_loss)) )
         return np.array(final_output).ravel(), np.mean(cls_loss)+ np.mean(reg_loss), (hiddens, revs)
     
     
@@ -459,7 +459,7 @@ class AnomalyDATEModel(nn.Module):
                 del reg_losses
                 del y_pred
 
-        print("CLS loss: %.4f, REG loss: %.4f"% (np.mean(cls_loss), np.mean(reg_loss)) )
+        # print("CLS loss: %.4f, REG loss: %.4f"% (np.mean(cls_loss), np.mean(reg_loss)) )
         return np.array(final_output).ravel(), np.mean(cls_loss)+ np.mean(reg_loss), (hiddens, revs)
 
 
@@ -491,5 +491,5 @@ class AnomalyDATEModel(nn.Module):
                 
             test_auc = roc_auc_score(np.array(labels), np.array(normality_scores))
 
-        print("Test AUC: %.4f"% (test_auc))
+        # print("Test AUC: %.4f"% (test_auc))
         return normality_scores, test_auc, hiddens

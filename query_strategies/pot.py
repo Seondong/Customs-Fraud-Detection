@@ -27,55 +27,38 @@ class POTSampling(HybridSampling):
 
         # self.data already exists - In main.py, we declared in: sampler.set_data(data)
         
-
-        
-    def small_shift(self, xs, xt):
-        
-        M = torch.cdist(xs, xt)
     
+    def small_shift(self, xs, xt):
+        M = torch.cdist(xs, xt)
         lol = torch.max(M)
-        
         M = M/lol
         M = M.data.cpu().numpy()
-    
         a = [1/xs.shape[0]] * xs.shape[0]
         b = [1/xt.shape[0]] * xt.shape[0]
-    
         prep = ot.emd2(a, b, M)
-        
         unnorm = prep * lol
-        
         return unnorm
     
+    
     def small_shift2(self, xs, xt):
-    
-        M = torch.cdist(xs, xt)
-    
-        lol = torch.max(M)
-        
+        M = torch.cdist(xs, xt)    
+        lol = torch.max(M)        
         M = M/lol
-        M = M.data.cpu().numpy()
-    
+        M = M.data.cpu().numpy()    
         a = [1/xs.shape[0]] * xs.shape[0]
-        b = [1/xt.shape[0]] * xt.shape[0]
-    
-        prep = ot.emd2(a, b, M)
-        
+        b = [1/xt.shape[0]] * xt.shape[0]    
+        prep = ot.emd2(a, b, M)        
         unnorm = prep * lol
         
         xsnorm = torch.norm(xs, dim = 1)
-        xssumnorm = xsnorm.sum()/xs.shape[0]
-        
+        xssumnorm = xsnorm.sum()/xs.shape[0]        
         xtnorm = torch.norm(xt, dim = 1)
-        xtsumnorm = xtnorm.sum()/xt.shape[0]
-        
-        inf = xssumnorm + xtsumnorm
-        
+        xtsumnorm = xtnorm.sum()/xt.shape[0]        
+        inf = xssumnorm + xtsumnorm        
         return unnorm/inf # should be in range 0 and 1 :D Closer to 1 meaning more Domain Shift
 
-    
+ 
     def generate_DATE_embeddings(self):
-
 
         date_sampler = DATESampling(self.args)
         date_sampler.set_data(self.data)
@@ -92,7 +75,6 @@ class POTSampling(HybridSampling):
         # Measure domain shift between validation data and test data.
     
         valid_embeddings, test_embeddings = self.generate_DATE_embeddings()
-
         stack = []
         
         # The code becomes slow when we control this number larger, need to optimize the calculation in 'small_shift'
@@ -106,24 +88,14 @@ class POTSampling(HybridSampling):
             stack.append(self.small_shift2(xv, xt).item())
 
         xd = np.mean(stack)
-
         return xd
 
 
     def update_subsampler_weights(self):  
-        
-        #domshift = self.domain_shift()
-
-        #weight = np.exp(self.intercept + self.coef * domshift)/ (1 + np.exp(self.intercept + self.coef * domshift))
         weight = self.domain_shift()
-        
         self.weight = round(weight, 2).item()
-
         self.weights = [1 - self.weight, self.weight]
         print("prob:", weight)
-        
-        #self.weights = [1 - 0.14, 0.14]
-
 
 
 
