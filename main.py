@@ -347,11 +347,8 @@ if __name__ == '__main__':
         sampler.set_data(data)
         
         # POT should measure the domain shift just after the data is loaded. 
-        if samp == 'pot':
+        if samp in ['pot', 'pvalue']:
             sampler.update_subsampler_weights()
-        elif samp == 'pvalue':
-            sampler.update_subsampler_weights()
-
         try:
             chosen = sampler.query(num_samples)
             
