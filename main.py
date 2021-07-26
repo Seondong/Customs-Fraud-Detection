@@ -172,7 +172,6 @@ if __name__ == '__main__':
     
     # Hyperparameters related to customs selection
     parser.add_argument('--prefix', type=str, default='results', help="experiment name used as prefix for results file")
-    parser.add_argument('--ssl_strategy', type=str, default="random", help="sampling strategy for semi-supervised learning")
     parser.add_argument('--initial_masking', type=str, default="random", choices = ['random', 'importer', 'natural'], help="Masking some initial training data for simulating partially labeled scenario (for synthetic and m, n, t dataset)")
     parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
     parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
