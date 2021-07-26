@@ -50,8 +50,11 @@ class pvalueSampling(HybridSampling):
         stack = []
         
         for j in range(60):                  # 60
-            ind_valid = torch.tensor(random.sample(range(len(valid_embeddings)), 500)).cuda()       # 500
-            ind_test = torch.tensor(random.sample(range(len(test_embeddings)), 500)).cuda()         # 500
+            num_sample_valid = min(len(valid_embeddings), 500)
+            num_sample_test = min(len(test_embeddings), 500)
+
+            ind_valid = torch.tensor(random.sample(range(len(valid_embeddings)), num_sample_valid)).cuda()       
+            ind_test = torch.tensor(random.sample(range(len(test_embeddings)), num_sample_test)).cuda()
 
             xv = torch.index_select(valid_embeddings, 0, ind_valid)
             xt = torch.index_select(test_embeddings, 0, ind_test)
