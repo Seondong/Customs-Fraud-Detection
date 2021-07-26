@@ -426,9 +426,10 @@ if __name__ == '__main__':
                 subsamplings = args.subsamplings
                 weights = '/'.join([str(weight) for weight in final_weights])
                     
-                upper_bound_precision = min(100*np.mean(data.test_cls_label)/current_inspection_rate, 1)
-                upper_bound_recall = min(current_inspection_rate/np.mean(data.test_cls_label)/100, 1)
-                upper_bound_revenue = sum(sorted(data.test_reg_label, reverse=True)[:len(chosen)]) / sum(data.test_reg_label)
+                upper_bound_precision = min(np.sum(illicit_test_notna)/len(chosen), 1)
+                upper_bound_recall = min(len(chosen)/np.sum(illicit_test_notna), 1)
+                upper_bound_revenue = min(sum(sorted(revenue_test_notna, reverse=True)[:len(chosen)]) / np.sum(revenue_test_notna), 1)
+
                 norm_precision = active_precisions/upper_bound_precision
                 norm_recall = active_recalls/upper_bound_recall
                 norm_revenue = active_revenues/upper_bound_revenue
