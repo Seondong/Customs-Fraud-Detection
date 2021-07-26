@@ -125,6 +125,9 @@ def initialize_sampler(samp, args):
     elif samp == 'adahybrid':
         from query_strategies import adahybrid;
         sampler = adahybrid.AdaHybridSampling(args)
+    elif samp == 'pvalue':
+        from query_strategies import p_value;
+        sampler = p_value.pvalueSampling(args)
     else:
         sampler = None
         print('Make sure the sampling strategy is listed in the argument --sampling')
@@ -176,7 +179,7 @@ if __name__ == '__main__':
     parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
     parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
     parser.add_argument('--output', type=str, default="result"+"-"+curr_time, help="Name of output file")
-    parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'upDATE', 'gATE', 'hybrid', 'adahybrid', 'tabnet', 'ssl_ae', 'noupDATE', 'randomupDATE', 'deepSAD', 'multideepSAD', 'pot'], help='Sampling strategy')
+    parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'upDATE', 'gATE', 'hybrid', 'adahybrid', 'tabnet', 'ssl_ae', 'noupDATE', 'randomupDATE', 'deepSAD', 'multideepSAD', 'pot', 'pvalue'], help='Sampling strategy')
     parser.add_argument('--initial_inspection_rate', type=float, default=100, help='Initial inspection rate in training data by percentile')
     parser.add_argument('--final_inspection_rate', type=float, default = 5, help='Percentage of test data need to query')
     parser.add_argument('--inspection_plan', type=str, default = 'direct_decay', choices=['direct_decay','linear_decay','fast_linear_decay'], help='Inspection rate decaying option for simulation time')
@@ -255,7 +258,7 @@ if __name__ == '__main__':
         
     # Saving simulation results: Output file will be saved under ./results/performances/ directory
     subsamps = args.subsamplings.replace('/','+')
-    if samp not in ['hybrid', 'adahybrid', 'pot']:
+    if samp not in ['hybrid', 'adahybrid', 'pot', 'pvalue']:
         subsamps = 'single'
         
     # Open files:
@@ -282,9 +285,8 @@ if __name__ == '__main__':
     data.split(train_start_day, valid_start_day, test_start_day, test_end_day, valid_length, test_length, args)
     confirmed_inspection_plan = inspection_plan(initial_inspection_rate, final_inspection_rate, numWeeks, inspection_rate_option)
     logger.info('Inspection rate for testing periods: %s', confirmed_inspection_plan)
-        
-    
-    if samp in ['hybrid', 'adahybrid', 'pot']:
+       
+    if samp in ['hybrid', 'adahybrid', 'pot', 'pvalue']:
         subsamplings = args.subsamplings
         initial_weights = [float(weight) for weight in args.weights.split("/")]
         final_weights = initial_weights
@@ -304,7 +306,7 @@ if __name__ == '__main__':
             logger.info('Simulation period is over.')
             logger.info('Terminating ...')
             sys.exit()
-        
+
         # Feature engineering for train, valid, test data
         data.episode = i
         current_inspection_rate = confirmed_inspection_plan[i]  # ToDo: Add multiple decaying strategy
@@ -317,7 +319,7 @@ if __name__ == '__main__':
         
         # Initialize uncertainty module for some cases
         if unc_mode == 'self-supervised':
-            if samp in ['bATE', 'diversity', 'hybrid', 'upDATE', 'gATE', 'adahybrid', 'pot']:
+            if samp in ['bATE', 'diversity', 'hybrid', 'upDATE', 'gATE', 'adahybrid', 'pot', 'pvalue']:
                 if uncertainty_module is None :
                     uncertainty_module = uncertainty.Uncertainty(data.train_lab, './uncertainty_models/')
                     uncertainty_module.train()
@@ -326,7 +328,7 @@ if __name__ == '__main__':
         num_samples = int(len(data.test)*current_inspection_rate/100)
         
         # Retrieve subsampler weights from the previous week, for hybrid models
-        if samp in ['hybrid', 'adahybrid', 'pot']:
+        if samp in ['hybrid', 'adahybrid', 'pot', 'pvalue']:
             try:
                 final_weights = sampler.get_weights()
             except NameError:
@@ -338,16 +340,15 @@ if __name__ == '__main__':
         sampler.set_uncertainty_module(uncertainty_module)
         
         # set previous weeks' weights, for hybrid models
-        if samp in ['hybrid', 'adahybrid', 'pot']:
+        if samp in ['hybrid', 'adahybrid', 'pot', 'pvalue']:
             sampler.set_weights(final_weights)
         
         # set data to sampler
         sampler.set_data(data)
         
         # POT should measure the domain shift just after the data is loaded. 
-        if samp == 'pot':
+        if samp in ['pot', 'pvalue']:
             sampler.update_subsampler_weights()
-
         try:
             chosen = sampler.query(num_samples)
             
@@ -378,7 +379,7 @@ if __name__ == '__main__':
         logger.debug(inspected_imports[:5])
         
         # tune the uncertainty
-        if unc_mode == 'self-supervised' and samp in ['bATE', 'diversity', 'hybrid', 'upDATE', 'gATE', 'adahybrid', 'pot']:
+        if unc_mode == 'self-supervised' and samp in ['bATE', 'diversity', 'hybrid', 'upDATE', 'gATE', 'adahybrid', 'pot', 'pvalue']:
             uncertainty_module.retrain(data.test.iloc[indices - data.offset])
         
         # Evaluation
@@ -406,7 +407,7 @@ if __name__ == '__main__':
             norm_recall = active_recalls/upper_bound_recall
             norm_revenue = active_revenues/upper_bound_revenue
             
-            if samp in ['hybrid', 'adahybrid', 'pot']:
+            if samp in ['hybrid', 'adahybrid', 'pot', 'pvalue']:
                 initial_weights_str = '/'.join([str(weight) for weight in initial_weights])
                 final_weights_str = '/'.join([str(weight) for weight in final_weights])
 
@@ -450,7 +451,7 @@ if __name__ == '__main__':
             wr.writerow(['Test_start_day', test_start_day])
             wr.writerow(['Test_end_day', test_end_day])
             
-            if samp in ['hybrid', 'adahybrid', 'pot']:
+            if samp in ['hybrid', 'adahybrid', 'pot', 'pvalue']:
                 tmpIdx = 0
                 for subsampler, num in zip(args.subsamplings.split('/'), sampler.ks):
                     row = [subsampler]
