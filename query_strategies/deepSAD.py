@@ -16,7 +16,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.data as Data
 
-from ranger import Ranger
+from torch_optimizer import Ranger
 from .strategy import Strategy
 from xgboost import XGBClassifier
 from torch.utils.data import DataLoader

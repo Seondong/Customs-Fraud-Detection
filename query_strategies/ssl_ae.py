@@ -11,7 +11,8 @@ import copy
 from imblearn.over_sampling import SMOTE
 from sklearn.preprocessing import OneHotEncoder
 
-from ranger import Ranger
+from torch_optimizer import Ranger
+
 from utils import find_best_threshold, metrics, torch_threshold
 
 
