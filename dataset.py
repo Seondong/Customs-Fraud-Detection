@@ -109,65 +109,6 @@ def preprocess_k(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def find_risk_profile(df: pd.DataFrame, feature: str, topk_ratio: float, adj: float, option: str) -> list or dict:
-    """
-    dtype feature: str
-    dtype topk_ratio: float (range: 0-1)
-    dtype adj: float (to modify the mean)
-    dtype option: str ('topk', 'ratio')
-    rtype: list(option='topk') or dict(option='ratio')
-    
-    The option topk is usually better than the ratio because of overfitting.
-    """
-
-    # Top-k suspicious item flagging
-    if option == 'topk':
-        total_cnt = df.groupby([feature])['illicit']
-        nrisky_profile = int(topk_ratio*len(total_cnt))+1
-        # prob_illicit = total_cnt.mean()  # Simple mean
-        adj_prob_illicit = total_cnt.sum() / (total_cnt.count()+adj)  # Smoothed mean
-        return list(adj_prob_illicit.sort_values(ascending=False).head(nrisky_profile).index)
-    
-    # Illicit-ratio encoding (Mean target encoding)
-    # Refer: http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-munging/target-encoding.html
-    # Refer: https://towardsdatascience.com/why-you-should-try-mean-encoding-17057262cd0
-    elif option == 'ratio':
-        # For target encoding, we just use 70% of train data to avoid overfitting (otherwise, test AUC drops significantly)
-        total_cnt = df.sample(frac=0.7).groupby([feature])['illicit']
-        nrisky_profile = int(topk_ratio*len(total_cnt))+1
-        # prob_illicit = total_cnt.mean()  # Simple mean
-        adj_prob_illicit = total_cnt.sum() / (total_cnt.count()+adj)  # Smoothed mean
-        return adj_prob_illicit.to_dict()
-    
-    
-def tag_risky_profiles(df: pd.DataFrame, profile: str, profiles: list or dict, option: str) -> pd.DataFrame:
-    """
-    dtype df: dataframe
-    dtype profile: str
-    dtype profiles: list(option='topk') or dictionary(option='ratio')
-    dtype option: str ('topk', 'ratio')
-    rtype: dataframe
-    
-    The option topk is usually better than the ratio because of overfitting.
-    """
-    if len(df) == 0:
-        return df
-    
-    # Top-k suspicious item flagging
-    if option == 'topk':
-        d = defaultdict(int)
-        for id in profiles:
-            d[id] = 1
-    #     print(list(islice(d.items(), 10)))  # For debugging
-        df.loc[:, 'RiskH.'+profile] = df[profile].apply(lambda x: d[x])
-    
-    # Illicit-ratio encoding
-    elif option == 'ratio':
-        overall_ratio_train = np.mean(train.illicit) # When scripting, saving it as a class variable is clearer.
-        df.loc[:, 'RiskH.'+profile] = df[profile].apply(lambda x: profiles.get(x), overall_ratio_train)
-    return df
-
-
 
 class Import_declarations():
     """ Class for dataset engineering """
@@ -230,7 +171,69 @@ class Import_declarations():
         
         self.train_valid_lab = pd.concat([self.train_lab, self.valid_lab])
         self.train_valid_unlab = pd.concat([self.train_unlab, self.valid_unlab])
+    
+
+    def find_risk_profile(self, df: pd.DataFrame, feature: str, topk_ratio: float, adj: float, option: str) -> list or dict:
+        """
+        dtype feature: str
+        dtype topk_ratio: float (range: 0-1)
+        dtype adj: float (to modify the mean)
+        dtype option: str ('topk', 'ratio')
+        rtype: list(option='topk') or dict(option='ratio')
         
+        The option topk is usually better than the ratio because of overfitting.
+        """
+
+        # Top-k suspicious item flagging
+        if option == 'topk':
+            total_cnt = df.groupby([feature])['illicit']
+            nrisky_profile = int(topk_ratio*len(total_cnt))+1
+            # prob_illicit = total_cnt.mean()  # Simple mean
+            adj_prob_illicit = total_cnt.sum() / (total_cnt.count()+adj)  # Smoothed mean
+            return list(adj_prob_illicit.sort_values(ascending=False).head(nrisky_profile).index)
+        
+        # Illicit-ratio encoding (Mean target encoding)
+        # Refer: http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-munging/target-encoding.html
+        # Refer: https://towardsdatascience.com/why-you-should-try-mean-encoding-17057262cd0
+        elif option == 'ratio':
+            # For target encoding, we just use 70% of train data to avoid overfitting (otherwise, test AUC drops significantly)
+            total_cnt = df.sample(frac=0.7).groupby([feature])['illicit']
+            nrisky_profile = int(topk_ratio*len(total_cnt))+1
+            # prob_illicit = total_cnt.mean()  # Simple mean
+            adj_prob_illicit = total_cnt.sum() / (total_cnt.count()+adj)  # Smoothed mean
+            return adj_prob_illicit.to_dict()
+        
+        
+    def tag_risky_profiles(self, df: pd.DataFrame, profile: str, profiles: list or dict, option: str) -> pd.DataFrame:
+        """
+        dtype df: dataframe
+        dtype profile: str
+        dtype profiles: list(option='topk') or dictionary(option='ratio')
+        dtype option: str ('topk', 'ratio')
+        rtype: dataframe
+        
+        The option topk is usually better than the ratio because of overfitting.
+        """
+        if len(df) == 0:
+            return df
+        
+        # Top-k suspicious item flagging
+        if option == 'topk':
+            d = defaultdict(int)
+            for id in profiles:
+                d[id] = 1
+        #     print(list(islice(d.items(), 10)))  # For debugging
+            df.loc[:, 'RiskH.'+profile] = df[profile].apply(lambda x: d[x])
+        
+        # Illicit-ratio encoding
+        elif option == 'ratio':
+            # overall_ratio_train = 0
+            overall_ratio_train = np.mean(self.train_lab.illicit) # When scripting, saving it as a class variable is clearer.
+            df.loc[:, 'RiskH.'+profile] = df[profile].apply(lambda x: profiles.get(x), overall_ratio_train)
+        return df
+
+
+
     def featureEngineering(self):
         """ Feature engineering, """
         try:
@@ -258,13 +261,13 @@ class Import_declarations():
         profile_candidates = self.profile_candidates + [col for col in self.train_lab.columns if '&' in col]
 
         for profile in profile_candidates:
-            option = 'topk'
-            risk_profiles[profile] = find_risk_profile(self.train_lab, profile, 0.1, 10, option=option)
-            self.train_lab = tag_risky_profiles(self.train_lab, profile, risk_profiles[profile], option=option)
-            self.train_unlab = tag_risky_profiles(self.train_unlab, profile, risk_profiles[profile], option=option)
-            self.valid_lab = tag_risky_profiles(self.valid_lab, profile, risk_profiles[profile], option=option)
-            self.valid_unlab = tag_risky_profiles(self.valid_unlab, profile, risk_profiles[profile], option=option)
-            self.test = tag_risky_profiles(self.test, profile, risk_profiles[profile], option=option)
+            option = self.args.risk_profile   # topk or ratio
+            risk_profiles[profile] = self.find_risk_profile(self.train_lab, profile, 0.1, 10, option=option)
+            self.train_lab = self.tag_risky_profiles(self.train_lab, profile, risk_profiles[profile], option=option)
+            self.train_unlab = self.tag_risky_profiles(self.train_unlab, profile, risk_profiles[profile], option=option)
+            self.valid_lab = self.tag_risky_profiles(self.valid_lab, profile, risk_profiles[profile], option=option)
+            self.valid_unlab = self.tag_risky_profiles(self.valid_unlab, profile, risk_profiles[profile], option=option)
+            self.test = self.tag_risky_profiles(self.test, profile, risk_profiles[profile], option=option)
         
         # Features to use in a classifier
 
