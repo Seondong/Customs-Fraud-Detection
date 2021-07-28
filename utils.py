@@ -146,5 +146,5 @@ def metrics_active(active_rev,active_cls,xgb_testy,revenue_test):
         revenue = sum(active_rev) / sum(revenue_test)
     except ZeroDivisionError:
         revenue = 0
-    print('Precision: %.4f, Recall: %.4f, Revenue: %.4f' % (precision, recall, revenue))
+    # print('Precision: %.4f, Recall: %.4f, Revenue: %.4f' % (precision, recall, revenue))
     return precision, recall, f1, revenue

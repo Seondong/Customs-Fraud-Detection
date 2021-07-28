@@ -74,5 +74,6 @@ class pvalueSampling(HybridSampling):
         self.weight = round(weight, 2).item()
 
         self.weights = [1 - self.weight, self.weight]
+        print(self.weights)
         
         

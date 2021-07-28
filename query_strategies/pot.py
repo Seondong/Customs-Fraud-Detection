@@ -22,11 +22,6 @@ class POTSampling(HybridSampling):
         super(POTSampling,self).__init__(args)
         assert len(self.subsamps) == 2
         
-        self.intercept = -1.88325971450706   # SD: How to decide this value?
-        self.coef = 0.00709741           # SD: How to decide this value? (Very small)
-
-        # self.data already exists - In main.py, we declared in: sampler.set_data(data)
-        
     
     def small_shift(self, xs, xt):
         M = torch.cdist(xs, xt)

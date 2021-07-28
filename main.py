@@ -79,6 +79,9 @@ def initialize_sampler(samp, args):
     if samp == 'random':
         from query_strategies import random;
         sampler = random.RandomSampling(args)
+    elif samp == 'risky':
+        from query_strategies import risky;
+        sampler = risky.RiskProfileSampling(args)
     elif samp == 'xgb':
         from query_strategies import xgb;
         sampler = xgb.XGBSampling(args)
@@ -171,6 +174,7 @@ if __name__ == '__main__':
     parser.add_argument('--fusion', type=str, choices=["concat","attention"], default="concat", help="Fusion method for final embedding")
     parser.add_argument('--agg', type=str, choices=["sum","max","mean"], default="sum", help="Aggreate type for leaf embedding")
     parser.add_argument('--act', type=str, choices=["mish","relu"], default="relu", help="Activation function")
+    parser.add_argument('--risk_profile', type=str, choices=["topk","ratio"], default="topk", help="Risk profile criteria")
     
     # Hyperparameters related to customs selection
     parser.add_argument('--prefix', type=str, default='results', help="experiment name used as prefix for results file")
@@ -178,7 +182,7 @@ if __name__ == '__main__':
     parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
     parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
     parser.add_argument('--output', type=str, default="result"+"-"+curr_time, help="Name of output file")
-    parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'upDATE', 'gATE', 'hybrid', 'adahybrid', 'tabnet', 'ssl_ae', 'noupDATE', 'randomupDATE', 'deepSAD', 'multideepSAD', 'pot', 'pvalue'], help='Sampling strategy')
+    parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'risky', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'upDATE', 'gATE', 'hybrid', 'adahybrid', 'tabnet', 'ssl_ae', 'noupDATE', 'randomupDATE', 'deepSAD', 'multideepSAD', 'pot', 'pvalue'], help='Sampling strategy')
     parser.add_argument('--initial_inspection_rate', type=float, default=100, help='Initial inspection rate in training data by percentile')
     parser.add_argument('--final_inspection_rate', type=float, default = 5, help='Percentage of test data need to query')
     parser.add_argument('--inspection_plan', type=str, default = 'direct_decay', choices=['direct_decay','linear_decay','fast_linear_decay'], help='Inspection rate decaying option for simulation time')
@@ -261,7 +265,7 @@ if __name__ == '__main__':
         subsamps = 'single'
         
     # Open files:
-    output_file =  "./results/performances/debugging-" + args.prefix + '-' + args.output + '-' + chosen_data + '-' + samp + '-' + subsamps + '-' + str(final_inspection_rate) + ".csv"
+    output_file =  "./results/performances/" + args.prefix + '-' + args.output + '-' + chosen_data + '-' + samp + '-' + subsamps + '-' + str(final_inspection_rate) + ".csv"
     with open(output_file, 'a') as ff:
         output_metric_name = ['runID', 'data', 'num_train','num_valid','num_test','num_select','num_inspected','num_uninspected','num_test_illicit','test_illicit_rate', 'upper_bound_precision', 'upper_bound_recall','upper_bound_rev', 'sampling', 'initial_inspection_rate', 'current_inspection_rate', 'final_inspection_rate', 'inspection_rate_option', 'mode', 'subsamplings', 'initial_weights', 'current_weights', 'unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue', 'norm-precision', 'norm-recall', 'norm-revenue', 'save']
         print(",".join(output_metric_name),file=ff)
@@ -395,7 +399,7 @@ if __name__ == '__main__':
         revenue_test_notna = data.test_reg_label[~np.isnan(data.test_reg_label)]
 
         active_precisions, active_recalls, active_f1s, active_revenues = evaluate_inspection(active_rev_notna, active_cls_notna, illicit_test_notna, revenue_test_notna)
-        logger.info(f'Metrics Active DATE:\n Pr@{current_inspection_rate}:{round(active_precisions, 4)}, Re@{current_inspection_rate}:{round(active_recalls, 4)} Rev@{current_inspection_rate}:{round(active_revenues, 4)}') 
+        logger.info(f'Performance:\n Pr@{current_inspection_rate}:{round(active_precisions, 4)}, Re@{current_inspection_rate}:{round(active_recalls, 4)} Rev@{current_inspection_rate}:{round(active_revenues, 4)}') 
 
         with open(output_file, 'a') as ff:
             upper_bound_precision = min(np.sum(illicit_test_notna)/len(chosen), 1)
