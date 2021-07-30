@@ -32,7 +32,6 @@ def make_logger(curr_time, name=None):
     
     # five levels of logging: DEBUG, INFO, WARNING, ERROR, CRITICAL (from mild to severe)
     logger = logging.getLogger(name)
-    
     logger.setLevel(logging.DEBUG)
     
     formatter = logging.Formatter("%(message)s")
@@ -353,14 +352,13 @@ if __name__ == '__main__':
         if samp in ['pot', 'pvalue']:
             sampler.update_subsampler_weights()
         try:
-            chosen = sampler.query(num_samples)
-            
+            chosen = sampler.query(num_samples)  
         except:
             import traceback
             traceback.print_exc()
             
         logger.info("--------Evaluating selection results---------")   
-        logger.info("# of unique queried item: %s, # of queried item: %s, # of samples to be queried: %s", len(set(chosen)), len(chosen), num_samples)
+        logger.info("# of queried item: %s, # of samples to be queried: %s", len(chosen), num_samples)
         try:
             assert len(set(chosen)) == num_samples
         except AssertionError:
@@ -402,10 +400,10 @@ if __name__ == '__main__':
         logger.info(f'Performance:\n Pr@{current_inspection_rate}:{round(active_precisions, 4)}, Re@{current_inspection_rate}:{round(active_recalls, 4)} Rev@{current_inspection_rate}:{round(active_revenues, 4)}') 
 
         with open(output_file, 'a') as ff:
-            upper_bound_precision = min(np.sum(illicit_test_notna)/len(chosen), 1)
+            upper_bound_precision = min(np.sum(illicit_test_notna)/len(indices), 1)
             upper_bound_recall = min(len(chosen)/np.sum(illicit_test_notna), 1)
             upper_bound_revenue = min(sum(sorted(revenue_test_notna, reverse=True)[:len(chosen)]) / np.sum(revenue_test_notna), 1)
-
+            
             norm_precision = active_precisions/upper_bound_precision
             norm_recall = active_recalls/upper_bound_recall
             norm_revenue = active_revenues/upper_bound_revenue

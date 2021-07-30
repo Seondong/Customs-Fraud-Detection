@@ -10,8 +10,10 @@ from itertools import islice, combinations
 from datetime import datetime as dt
 import warnings
 warnings.filterwarnings("ignore")
+from utils import timer_func
 
 
+@timer_func
 def merge_attributes(df: pd.DataFrame, *args: str) -> None:
     """
     dtype df: dataframe
@@ -19,10 +21,10 @@ def merge_attributes(df: pd.DataFrame, *args: str) -> None:
     """
     iterables = [df[arg].astype(str) for arg in args]
     columnName = '&'.join([*args]) 
-    fs = [''.join([v for v in var]) for var in zip(*iterables)]
+    fs = [''.join([v for v in var]) for var in zip(*iterables)]  
     df.loc[:, columnName] = fs
     
-    
+@timer_func    
 def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     """
     dtype df: dataframe
@@ -31,17 +33,15 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     if len(df) == 0:
         return df
     
-    
     df = df.dropna(subset=['cif.value', 'total.taxes', 'quantity'])
     df.loc[:, 'Unitprice'] = df['cif.value']/df['quantity']
     df.loc[:, 'WUnitprice'] = df['cif.value']/df['gross.weight']
     df.loc[:, 'TaxRatio'] = df['total.taxes'] / df['cif.value']
     df.loc[:, 'TaxUnitquantity'] = df['total.taxes'] / df['quantity']
-    df.loc[:, 'HS6'] = df['tariff.code'].apply(lambda x: int(x // 10000))
-    df.loc[:, 'HS4'] = df['HS6'].apply(lambda x: int(x // 100))
-    df.loc[:, 'HS2'] = df['HS4'].apply(lambda x: int(x // 100))
+    df.loc[:, 'HS6'] = df['tariff.code'] // 10000
+    df.loc[:, 'HS4'] = df['HS6'] // 100
+    df.loc[:, 'HS2'] = df['HS4'] // 100
 
-    
 #     candFeaturesCombine = ['office.id','importer.id','country','HS6','declarant.id']
 #     for subset in combinations(candFeaturesCombine, 2):
 #         merge_attributes(df, *subset)
@@ -61,6 +61,7 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+@timer_func
 def preprocess_k(df: pd.DataFrame) -> pd.DataFrame:
     """
     dtype df: dataframe
@@ -70,9 +71,9 @@ def preprocess_k(df: pd.DataFrame) -> pd.DataFrame:
         return df
 
     df.loc[:, 'WUnitprice'] = df['과세가격원화금액']/df['신고중량(KG)']
-    df.loc[:, 'HS6'] = df['HS10단위부호'].apply(lambda x: int(x // 10000))
-    df.loc[:, 'HS4'] = df['HS6'].apply(lambda x: int(x // 100))
-    df.loc[:, 'HS2'] = df['HS4'].apply(lambda x: int(x // 100))
+    df.loc[:, 'HS6'] = df['HS10단위부호'] // 10000
+    df.loc[:, 'HS4'] = df['HS6'] // 100
+    df.loc[:, 'HS2'] = df['HS4'] // 100
     
     return df
 
@@ -93,6 +94,7 @@ class Import_declarations():
         self.df = self.df.reset_index(drop=True)
         
 
+    @timer_func
     def mask_labels(self, df: pd.DataFrame, ir_init: float, initial_masking: str) -> pd.DataFrame:
         """
         Masking certain amount of data for semi-supervised learning by specific strategy - This function is used for masking initial training set.
@@ -129,6 +131,7 @@ class Import_declarations():
         return df
 
 
+    @timer_func
     def split(self, train_start_day, valid_start_day, test_start_day, test_end_day, valid_length, test_length, args):
         """ Split data into train / valid / test """
             
@@ -177,6 +180,7 @@ class Import_declarations():
         self.train_valid_unlab = pd.concat([self.train_unlab, self.valid_unlab])
     
 
+    @timer_func
     def find_risk_profile(self, df: pd.DataFrame, feature: str, topk_ratio: float, adj: float, option: str) -> list or dict:
         """
         dtype feature: str
@@ -207,7 +211,8 @@ class Import_declarations():
             adj_prob_illicit = total_cnt.sum() / (total_cnt.count()+adj)  # Smoothed mean
             return adj_prob_illicit.to_dict()
         
-        
+
+    @timer_func   
     def tag_risky_profiles(self, df: pd.DataFrame, profile: str, profiles: list or dict, option: str) -> pd.DataFrame:
         """
         dtype df: dataframe
@@ -237,7 +242,7 @@ class Import_declarations():
         return df
 
 
-
+    @timer_func
     def featureEngineering(self):
         """ Feature engineering, """
         try:
@@ -312,20 +317,20 @@ class Import_declarations():
         self.X_valid_unlab = np.nan_to_num(self.X_valid_unlab, 0)
         self.X_test = np.nan_to_num(self.X_test, 0)
 
-        from collections import Counter
-        print("Checking illicit rate: ")
-        cnt = Counter(self.train_cls_label)
-        print("Training:",round(cnt[1]/(cnt[0]+cnt[1]), 3))
-        cnt = Counter(self.valid_cls_label)
-        try:
-            print("Validation:",round(cnt[1]/(cnt[0]+cnt[1]), 3))
-        except ZeroDivisionError:
-            print("No validation set")
-        cnt = Counter(self.test_cls_label)
-        try:
-            print("Testing:", round(cnt[1]/(cnt[0]+cnt[1]), 3))
-        except ZeroDivisionError:
-            print("No test set")
+        # from collections import Counter
+        # print("Checking illicit rate: ")
+        # cnt = Counter(self.train_cls_label)
+        # print("Training:",round(cnt[1]/(cnt[0]+cnt[1]), 3))
+        # cnt = Counter(self.valid_cls_label)
+        # try:
+        #     print("Validation:",round(cnt[1]/(cnt[0]+cnt[1]), 3))
+        # except ZeroDivisionError:
+        #     print("No validation set")
+        # cnt = Counter(self.test_cls_label)
+        # try:
+        #     print("Testing:", round(cnt[1]/(cnt[0]+cnt[1]), 3))
+        # except ZeroDivisionError:
+        #     print("No test set")
         
         self.dftrainx_lab = pd.DataFrame(self.X_train_lab,columns=self.column_to_use)
         try:
@@ -345,7 +350,7 @@ class Import_declarations():
         except:
             self.dftestx = pd.DataFrame(columns=self.column_to_use)
     
-    
+    @timer_func
     def update(self, inspected_imports, uninspected_imports, test_start_day, test_end_day, valid_start_day):
         """ Update the dataset for next test phase. 
             Newly inspected imports are updated to train-labeled data, newly uninspected imports are updated to train-unlabeled data. """
@@ -388,6 +393,7 @@ class Syntheticdata(Import_declarations):
     
     ToDo: For later usage, we should support flexibility towards different datasets with different features. End-users would like to use their existing features. For this program, initial preprocessings were done to make columns consistently.
     """
+    @timer_func
     def __init__(self, path):
         super(Syntheticdata, self).__init__(path)
         self.profile_candidates = ['importer.id', 'declarant.id', 'country', 'tariff.code', 'HS6', 'HS4', 'HS2', 'office.id']
@@ -396,6 +402,7 @@ class Syntheticdata(Import_declarations):
         
 class Ndata(Import_declarations):
     """ Class for Ndata"""
+    @timer_func
     def __init__(self, path):
         super(Ndata, self).__init__(path)
         self.profile_candidates = ['importer.id', 'declarant.id', 'country', 'tariff.code', 'HS6', 'HS4', 'HS2', 'office.id']
@@ -403,6 +410,7 @@ class Ndata(Import_declarations):
         
 class Mdata(Import_declarations):
     """ Class for Mdata"""
+    @timer_func
     def __init__(self, path):
         super(Mdata, self).__init__(path)
         self.profile_candidates = ['importer.id', 'exporter.name', 'expcty', 'country', 'declarant.id', 'tariff.code', 'HS6', 'HS4', 'HS2', 'office.id']
@@ -410,6 +418,7 @@ class Mdata(Import_declarations):
         
 class Tdata(Import_declarations):
     """ Class for Tdata"""
+    @timer_func
     def __init__(self, path):
         super(Tdata, self).__init__(path)
         self.profile_candidates = ['importer.id', 'country', 'last.departure.code', 'contract.party.code',
@@ -418,6 +427,7 @@ class Tdata(Import_declarations):
         
 class Cdata(Import_declarations):
     """ Class for Cdata"""
+    @timer_func
     def __init__(self, path):
         super(Cdata, self).__init__(path)
 
@@ -426,6 +436,7 @@ class Cdata(Import_declarations):
 
 class SyntheticKdata(Import_declarations):
     """ Class for Kdata (Synthetic)"""
+    @timer_func
     def __init__(self, path):
         super(SyntheticKdata, self).__init__(path)
         self.df = pd.read_csv(self.path)

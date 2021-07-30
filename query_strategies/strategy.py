@@ -1,4 +1,5 @@
 import numpy as np
+from utils import timer_func
 
 
 class Strategy:
@@ -28,6 +29,6 @@ class Strategy:
         self.num_valid_data = len(self.data.valid)
         self.available_indices_valid = np.arange(self.num_valid_data)
     
-    
+    @timer_func
     def query(self, k):
         pass
