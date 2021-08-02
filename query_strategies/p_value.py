@@ -8,29 +8,15 @@ import pickle
 import numpy as np
 import pandas as pd
 import torch
-from .strategy import Strategy
-from .DATE import DATESampling
-from .hybrid import HybridSampling
+from .drift import DriftSampling
 from scipy.stats import anderson_ksamp
 
-class pvalueSampling(HybridSampling):
+class pvalueSampling(DriftSampling):
     
     def __init__(self, args):
         super(pvalueSampling, self).__init__(args)
         assert len(self.subsamps) == 2
-        
-    def generate_DATE_embeddings(self):
-
-        date_sampler = DATESampling(self.args)
-        date_sampler.set_data(self.data)
-        date_sampler.train_xgb_model()
-        date_sampler.prepare_DATE_input()
-        date_sampler.train_DATE_model()
-        valid_embeddings = torch.stack(date_sampler.get_embedding_valid())  # Embeddings for validation data
-        test_embeddings = torch.stack(date_sampler.get_embedding_test())         # Embeddings for test data
-
-        return valid_embeddings, test_embeddings
-    
+            
     def small_shift(self, xs, xt):
         xs = xs.data.cpu().numpy()
         xt = xt.data.cpu().numpy()
@@ -42,8 +28,8 @@ class pvalueSampling(HybridSampling):
         
         return result
     
-    def domain_shift(self):
-        # Measure domain shift between validation data and test data.
+    def concept_drift(self):
+        # Measure concept drift between validation data and test data.
     
         valid_embeddings, test_embeddings = self.generate_DATE_embeddings()
 
@@ -61,19 +47,15 @@ class pvalueSampling(HybridSampling):
 
             stack.append(self.small_shift(xv, xt))
         
-        xd = np.mean(stack, axis = 0)
+        xd = np.mean(stack, axis = 0) # smaller value means greater shift :|
+        xd = (xd < 0.05).sum()/ 16 # 16 is the dimension 
+        # xd = 1 - min(1, xd.mean()/0.1)
+        return xd.item()
+    
+    def query(self, k):
+        # Drift sampler should measure the concept drift and update subsampler weights before the query selection is made. 
+        self.update_subsampler_weights()
+        super(pvalueSampling, self).query(k)
+        return self.chosen
 
-        return xd # smaller value means greater shift :|
-
-
-    def update_subsampler_weights(self):  
-        
-        weight = (self.domain_shift() < 0.05).sum()/ 16 # 16 is the dimension 
-        # weight = 0.95 ** ((self.domain_shift() < 0.05).sum())
-        
-        self.weight = round(weight, 2).item()
-
-        self.weights = [1 - self.weight, self.weight]
-        print(self.weights)
-        
         

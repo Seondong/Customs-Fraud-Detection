@@ -33,7 +33,12 @@ class ExpWeights(object):
         self.choices = [self.arm]
         self.feedbacks = []
     
-    
+    def reinit(self):
+        num = len(self.arms)
+        self.p = [1/num for x in range(num)]
+        self.l = {i:0 for i in range(len(self.arms))}
+        # self.error_buffer = []
+
     def set_data(self, data):
         self.data = data
         
@@ -114,7 +119,7 @@ class AdaHybridSampling(HybridSampling):
     def __init__(self, args):
         super(AdaHybridSampling,self).__init__(args)
         assert len(self.subsamps) == 2   # TODO: Ideally, it should support multiple strategies
-        self.weight_sampler = ExpWeights(lr = self.args.ada_lr, num = args.num_arms) # initialize it at the beginning of the simulation
+        self.weight_sampler = ExpWeights(lr = self.args.ada_lr, num = args.num_arms, epsilon = args.ada_epsilon, decay = args.ada_decay) # initialize it at the beginning of the simulation
    
     def update_subsampler_weights(self, performance):
         # Update weights for next week

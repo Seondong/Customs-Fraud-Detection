@@ -8,13 +8,12 @@ import pickle
 import numpy as np
 import pandas as pd
 import torch
-from .strategy import Strategy
 from .DATE import DATESampling
-from .hybrid import HybridSampling
+from .drift import DriftSampling
 
             
-class POTSampling(HybridSampling):
-    """ Optimal Transport strategy: Using POT library to measure domain shift and control subsampler weights 
+class POTSampling(DriftSampling):
+    """ Optimal Transport strategy: Using POT library to measure concept drift and control subsampler weights 
         Reference: https://pythonot.github.io/all.html?highlight=emd2#ot.emd2 """
 
 
@@ -50,24 +49,11 @@ class POTSampling(HybridSampling):
         xtnorm = torch.norm(xt, dim = 1)
         xtsumnorm = xtnorm.sum()/xt.shape[0]        
         inf = xssumnorm + xtsumnorm        
-        return unnorm/inf # should be in range 0 and 1 :D Closer to 1 meaning more Domain Shift
-
- 
-    def generate_DATE_embeddings(self):
-
-        date_sampler = DATESampling(self.args)
-        date_sampler.set_data(self.data)
-        date_sampler.train_xgb_model()
-        date_sampler.prepare_DATE_input()
-        date_sampler.train_DATE_model()
-        valid_embeddings = torch.stack(date_sampler.get_embedding_valid())  # Embeddings for validation data
-        test_embeddings = torch.stack(date_sampler.get_embedding_test())         # Embeddings for test data
-
-        return valid_embeddings, test_embeddings
+        return unnorm/inf # should be in range 0 and 1 :D Closer to 1 meaning more concept drift
 
 
-    def domain_shift(self):
-        # Measure domain shift between validation data and test data.
+    def concept_drift(self):
+        # Measure concept drift between validation data and test data.
     
         valid_embeddings, test_embeddings = self.generate_DATE_embeddings()
         stack = []
@@ -86,14 +72,14 @@ class POTSampling(HybridSampling):
             stack.append(self.small_shift2(xv, xt).item())
 
         xd = np.mean(stack)
-        return xd
+        return xd.item()
 
 
-    def update_subsampler_weights(self):  
-        weight = self.domain_shift()
-        self.weight = round(weight, 2).item()
-        self.weights = [1 - self.weight, self.weight]
-        print("prob:", weight)
+    def query(self, k):
+        # Drift sampler should measure the concept drift and update subsampler weights before the query selection is made. 
+        self.update_subsampler_weights()
+        super(POTSampling, self).query(k)
+        return self.chosen
 
 
 

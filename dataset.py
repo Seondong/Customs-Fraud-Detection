@@ -279,7 +279,6 @@ class Import_declarations():
             self.test = self.tag_risky_profiles(self.test, profile, risk_profiles[profile], option=option)
         
         # Features to use in a classifier
-
         numeric_variables = ['cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'TaxUnitquantity', 'tariff.code', 'HS6', 'HS4', 'HS2', 'SGD.DayofYear', 'SGD.WeekofYear', 'SGD.MonthofYear']
         flagged_variables = [col for col in self.train_lab.columns if 'RiskH' in col]
 

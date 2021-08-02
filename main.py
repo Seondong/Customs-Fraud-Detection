@@ -129,6 +129,9 @@ def initialize_sampler(samp, args):
     elif samp == 'pvalue':
         from query_strategies import p_value;
         sampler = p_value.pvalueSampling(args)
+    elif samp == 'rada':
+        from query_strategies import radahybrid;
+        sampler = radahybrid.RegulatedAdaHybridSampling(args)
     else:
         sampler = None
         print('Make sure the sampling strategy is listed in the argument --sampling')
@@ -143,7 +146,7 @@ if __name__ == '__main__':
     # Initiate directories
     pathlib.Path('./results').mkdir(parents=True, exist_ok=True) 
     pathlib.Path('./results/performances').mkdir(parents=True, exist_ok=True)
-    pathlib.Path('./results/ada_ratios').mkdir(parents=True, exist_ok=True)    
+    pathlib.Path('./results/ratios').mkdir(parents=True, exist_ok=True)    
     pathlib.Path('./results/query_indices').mkdir(parents=True, exist_ok=True)
     pathlib.Path('./intermediary').mkdir(parents=True, exist_ok=True)
     pathlib.Path('./intermediary/saved_models').mkdir(parents=True, exist_ok=True)
@@ -181,7 +184,7 @@ if __name__ == '__main__':
     parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
     parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
     parser.add_argument('--output', type=str, default="result"+"-"+curr_time, help="Name of output file")
-    parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'risky', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'upDATE', 'gATE', 'hybrid', 'adahybrid', 'tabnet', 'ssl_ae', 'noupDATE', 'randomupDATE', 'deepSAD', 'multideepSAD', 'pot', 'pvalue'], help='Sampling strategy')
+    parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'risky', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'upDATE', 'gATE', 'hybrid', 'adahybrid', 'tabnet', 'ssl_ae', 'noupDATE', 'randomupDATE', 'deepSAD', 'multideepSAD', 'pot', 'pvalue', 'rada'], help='Sampling strategy')
     parser.add_argument('--initial_inspection_rate', type=float, default=100, help='Initial inspection rate in training data by percentile')
     parser.add_argument('--final_inspection_rate', type=float, default = 5, help='Percentage of test data need to query')
     parser.add_argument('--inspection_plan', type=str, default = 'direct_decay', choices=['direct_decay','linear_decay','fast_linear_decay'], help='Inspection rate decaying option for simulation time')
@@ -202,9 +205,15 @@ if __name__ == '__main__':
     parser.add_argument('--identifier', type=str, default=curr_time, help='identifier for each execution')
     parser.add_argument('--save', type=int, default=0, help='Save intermediary files (1=save, 0=not save)')
 
-    # Ada hyperparameters:
+    # Hyperparameters for adahybrid.py and its childs:
     parser.add_argument('--ada_lr', type=float, default=0.8, help="learning rate for adahybrid")
+    parser.add_argument('--ada_decay', type=float, default=1, help="decay factor for adahybrid, 1 for no decay")
+    parser.add_argument('--ada_epsilon', type=float, default=0, help="degree of randomness for adahybrid")
     parser.add_argument('--num_arms', type=int, default=21, help="number of arms for adahybrid")
+
+    # Hyperparameters for radahybrid.py:
+    parser.add_argument('--drift', type=str, default='pot', choices = ['pot', 'pvalue'], help="algorithms for measuring concept drift")
+    parser.add_argument('--mixing', type=str, default='multiply', choices = ['multiply', 'reinit'], help="method of mixing concept drift with regulated adahybrid")
 
     # Arguments
     args = parser.parse_args()
@@ -230,7 +239,6 @@ if __name__ == '__main__':
     valid_length = args.valid_length
     chosen_data = args.data
     numWeeks = args.numweeks
-    # semi_supervised = args.semi_supervised
     save = args.save
     initial_masking = args.initial_masking
     ada_lr = args.ada_lr
@@ -260,20 +268,27 @@ if __name__ == '__main__':
         
     # Saving simulation results: Output file will be saved under ./results/performances/ directory
     subsamps = args.subsamplings.replace('/','+')
-    if samp not in ['hybrid', 'adahybrid', 'pot', 'pvalue']:
+    if samp not in ['hybrid', 'adahybrid', 'pot', 'pvalue', 'rada']:
         subsamps = 'single'
         
     # Open files:
     output_file =  "./results/performances/" + args.prefix + '-' + args.output + '-' + chosen_data + '-' + samp + '-' + subsamps + '-' + str(final_inspection_rate) + ".csv"
     with open(output_file, 'a') as ff:
-        output_metric_name = ['runID', 'data', 'num_train','num_valid','num_test','num_select','num_inspected','num_uninspected','num_test_illicit','test_illicit_rate', 'upper_bound_precision', 'upper_bound_recall','upper_bound_rev', 'sampling', 'initial_inspection_rate', 'current_inspection_rate', 'final_inspection_rate', 'inspection_rate_option', 'mode', 'subsamplings', 'initial_weights', 'current_weights', 'unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue', 'norm-precision', 'norm-recall', 'norm-revenue', 'save']
+        output_metric_name = ['runID', 'data', 'num_train','num_valid','num_test','num_select','num_inspected','num_uninspected','num_test_illicit','test_illicit_rate', 'upper_bound_precision', 'upper_bound_recall','upper_bound_rev', 'sampling', 'concept_drift', 'mixing',  'ada_lr', 'ada_decay', 'ada_epsilon', 'initial_inspection_rate', 'current_inspection_rate', 'final_inspection_rate', 'inspection_rate_option', 'mode', 'subsamplings', 'initial_weights', 'current_weights', 'unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue', 'norm-precision', 'norm-recall', 'norm-revenue', 'save']
         print(",".join(output_metric_name),file=ff)
     
     if samp == 'adahybrid':
-        weight_file =  "./results/ada_ratios/" + args.prefix + '-' + args.output + '-' + samp + '-' + subsamps + '-' + str(final_inspection_rate) + ".csv"
+        weight_file =  "./results/ratios/" + args.prefix + '-' + args.output + '-' + samp + '-' + subsamps + '-' + str(final_inspection_rate) + ".csv"
         with open(weight_file, 'a') as ff:
             output_weight_name = ['runID', 'data', 'sampling', 'subsamplings', 'numWeek', 'norm-precision', 'norm-recall', 'norm-revenue', 'lr'] + [f'{i/(num_arms-1)} explore rate' for i in range(num_arms)] + ['chosen_rate', 'chosen_arm']
             print(",".join(output_weight_name), file=ff)
+
+    if samp == 'rada':
+        weight_file =  "./results/ratios/" + args.prefix + '-' + args.output + '-' + samp + '-' + subsamps + '-' + str(final_inspection_rate) + ".csv"
+        with open(weight_file, 'a') as ff:
+            output_weight_name = ['runID', 'data', 'sampling', 'subsamplings', 'numWeek', 'norm-precision', 'norm-recall', 'norm-revenue', 'lr', 'drift', 'mixing', 'drift_weight'] + [f'{i/(num_arms-1)} explore rate' for i in range(num_arms)] + ['chosen_rate', 'chosen_arm']
+            print(",".join(output_weight_name), file=ff)
+
     path = None
     uncertainty_module = None
     
@@ -288,7 +303,7 @@ if __name__ == '__main__':
     confirmed_inspection_plan = inspection_plan(initial_inspection_rate, final_inspection_rate, numWeeks, inspection_rate_option)
     logger.info('Inspection rate for testing periods: %s', confirmed_inspection_plan)
        
-    if samp in ['hybrid', 'adahybrid', 'pot', 'pvalue']:
+    if samp in ['hybrid', 'adahybrid', 'pot', 'pvalue', 'rada']:
         subsamplings = args.subsamplings
         initial_weights = [float(weight) for weight in args.weights.split("/")]
         final_weights = initial_weights
@@ -296,7 +311,23 @@ if __name__ == '__main__':
         subsamplings = '-'
         initial_weights = '-'
         final_weights = '-'
-                
+
+    if samp == 'rada':
+        drift = args.drift
+        mixing = args.mixing
+    else:
+        drift = '-'
+        mixing = '-'
+    
+    if samp in ['adahybrid', 'rada']:
+        ada_decay = args.ada_decay
+        ada_epsilon = args.ada_epsilon
+        ada_lr = args.ada_lr
+    else:
+        ada_decay = '-'
+        ada_epsilon = '-'
+        ada_lr = '-'
+
     # Initialize a sampler (We put it outside the week loop since we do not change sampler every week)
     # NOTE: If you put this inside the week loop, new sampler is initialized every week, which means that parameters in sampler are also initialized)    
     sampler = initialize_sampler(samp, args)      
@@ -321,7 +352,7 @@ if __name__ == '__main__':
         
         # Initialize uncertainty module for some cases
         if unc_mode == 'self-supervised':
-            if samp in ['bATE', 'diversity', 'hybrid', 'upDATE', 'gATE', 'adahybrid', 'pot', 'pvalue']:
+            if samp in ['bATE', 'diversity', 'hybrid', 'upDATE', 'gATE', 'adahybrid', 'pot', 'pvalue', 'rada']:
                 if uncertainty_module is None :
                     uncertainty_module = uncertainty.Uncertainty(data.train_lab, './uncertainty_models/')
                     uncertainty_module.train()
@@ -330,7 +361,7 @@ if __name__ == '__main__':
         num_samples = int(len(data.test)*current_inspection_rate/100)
         
         # Retrieve subsampler weights from the previous week, for hybrid models
-        if samp in ['hybrid', 'adahybrid', 'pot', 'pvalue']:
+        if samp in ['hybrid', 'adahybrid', 'pot', 'pvalue', 'rada']:
             try:
                 final_weights = sampler.get_weights()
             except NameError:
@@ -342,21 +373,19 @@ if __name__ == '__main__':
         sampler.set_uncertainty_module(uncertainty_module)
         
         # set previous weeks' weights, for hybrid models
-        if samp in ['hybrid', 'adahybrid', 'pot', 'pvalue']:
+        if samp in ['hybrid', 'adahybrid', 'pot', 'pvalue', 'rada']:
             sampler.set_weights(final_weights)
         
         # set data to sampler
         sampler.set_data(data)
         
-        # POT should measure the domain shift just after the data is loaded. 
-        if samp in ['pot', 'pvalue']:
-            sampler.update_subsampler_weights()
+        # query selection
         try:
             chosen = sampler.query(num_samples)  
         except:
             import traceback
             traceback.print_exc()
-            
+        
         logger.info("--------Evaluating selection results---------")   
         logger.info("# of queried item: %s, # of samples to be queried: %s", len(chosen), num_samples)
         try:
@@ -380,7 +409,7 @@ if __name__ == '__main__':
         logger.debug(inspected_imports[:5])
         
         # tune the uncertainty
-        if unc_mode == 'self-supervised' and samp in ['bATE', 'diversity', 'hybrid', 'upDATE', 'gATE', 'adahybrid', 'pot', 'pvalue']:
+        if unc_mode == 'self-supervised' and samp in ['bATE', 'diversity', 'hybrid', 'upDATE', 'gATE', 'adahybrid', 'pot', 'pvalue', 'rada']:
             uncertainty_module.retrain(data.test.iloc[indices - data.offset])
         
         # Evaluation
@@ -408,7 +437,7 @@ if __name__ == '__main__':
             norm_recall = active_recalls/upper_bound_recall
             norm_revenue = active_revenues/upper_bound_revenue
             
-            if samp in ['hybrid', 'adahybrid', 'pot', 'pvalue']:
+            if samp in ['hybrid', 'adahybrid', 'pot', 'pvalue', 'rada']:
                 initial_weights_str = '/'.join([str(weight) for weight in initial_weights])
                 final_weights_str = '/'.join([str(weight) for weight in final_weights])
 
@@ -416,13 +445,13 @@ if __name__ == '__main__':
                 initial_weights_str = '-'
                 final_weights_str = '-'
             
-            output_metric = [curr_time, chosen_data, len(data.train_lab), len(data.valid_lab), len(data.test), len(chosen), len(inspected_imports), len(uninspected_imports), np.sum(data.test_cls_label), np.mean(data.test_cls_label), upper_bound_precision, upper_bound_recall, upper_bound_revenue, samp, initial_inspection_rate, current_inspection_rate, final_inspection_rate, inspection_rate_option, mode, subsamplings, initial_weights_str, final_weights_str, unc_mode, train_start_day.strftime('%y-%m-%d'), valid_start_day.strftime('%y-%m-%d'), test_start_day.strftime('%y-%m-%d'), test_end_day.strftime('%y-%m-%d'), i+1, round(active_precisions,4), round(active_recalls,4), round(active_revenues,4), round(norm_precision,4), round(norm_recall,4), round(norm_revenue,4), save]
+            output_metric = [curr_time, chosen_data, len(data.train_lab), len(data.valid_lab), len(data.test), len(chosen), len(inspected_imports), len(uninspected_imports), np.sum(data.test_cls_label), np.mean(data.test_cls_label), upper_bound_precision, upper_bound_recall, upper_bound_revenue, samp, drift, mixing, ada_lr, ada_decay, ada_epsilon, initial_inspection_rate, current_inspection_rate, final_inspection_rate, inspection_rate_option, mode, subsamplings, initial_weights_str, final_weights_str, unc_mode, train_start_day.strftime('%y-%m-%d'), valid_start_day.strftime('%y-%m-%d'), test_start_day.strftime('%y-%m-%d'), test_end_day.strftime('%y-%m-%d'), i+1, round(active_precisions,4), round(active_recalls,4), round(active_revenues,4), round(norm_precision,4), round(norm_recall,4), round(norm_revenue,4), save]
                 
             output_metric = list(map(str,output_metric))
             logger.debug(output_metric)
             print(",".join(output_metric),file=ff)
 
-        if samp == 'adahybrid':
+        if samp in ['adahybrid', 'rada']:
             with open(weight_file, 'a') as ff:
                 subsamplings = args.subsamplings
                 weights = '/'.join([str(weight) for weight in final_weights])
@@ -435,9 +464,10 @@ if __name__ == '__main__':
                 norm_recall = active_recalls/upper_bound_recall
                 norm_revenue = active_revenues/upper_bound_revenue
                 
-                
                 output_metric = [curr_time, chosen_data, samp, subsamplings, i+1, round(norm_precision,4), round(norm_recall,4), round(norm_revenue,4), ada_lr] + list(sampler.weight_sampler.p) + [sampler.weight_sampler.value, sampler.weight_sampler.arm]
-                    
+                if samp == 'rada':
+                    output_metric += [drift, mixing, sampler.drift_detector.dms_weight]
+                       
                 output_metric = list(map(str,output_metric))
                 logger.debug(output_metric)
                 print(",".join(output_metric),file=ff)
@@ -452,7 +482,7 @@ if __name__ == '__main__':
             wr.writerow(['Test_start_day', test_start_day])
             wr.writerow(['Test_end_day', test_end_day])
             
-            if samp in ['hybrid', 'adahybrid', 'pot', 'pvalue']:
+            if samp in ['hybrid', 'adahybrid', 'pot', 'pvalue', 'rada']:
                 tmpIdx = 0
                 for subsampler, num in zip(args.subsamplings.split('/'), sampler.ks):
                     row = [subsampler]
@@ -465,7 +495,7 @@ if __name__ == '__main__':
                 wr.writerow(row)
         
         # Review needed: Check if the weights are updated as desired.
-        if samp == 'adahybrid':
+        if samp in ['adahybrid', 'rada']:
             sampler.update_subsampler_weights(norm_precision)
 
         # Renew valid & test period & dataset
