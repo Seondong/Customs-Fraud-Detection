@@ -8,12 +8,11 @@ import pickle
 import numpy as np
 import pandas as pd
 import torch
-from .strategy import Strategy
 from .DATE import DATESampling
-from .hybrid import HybridSampling
+from .drift import DriftSampling
 
             
-class POTSampling(HybridSampling):
+class POTSampling(DriftSampling):
     """ Optimal Transport strategy: Using POT library to measure domain shift and control subsampler weights 
         Reference: https://pythonot.github.io/all.html?highlight=emd2#ot.emd2 """
 
@@ -52,20 +51,6 @@ class POTSampling(HybridSampling):
         inf = xssumnorm + xtsumnorm        
         return unnorm/inf # should be in range 0 and 1 :D Closer to 1 meaning more Domain Shift
 
- 
-    def generate_DATE_embeddings(self):
-
-        date_sampler = DATESampling(self.args)
-        date_sampler.set_data(self.data)
-        date_sampler.train_xgb_model()
-        date_sampler.prepare_DATE_input()
-        date_sampler.train_DATE_model()
-        valid_embeddings = torch.stack(date_sampler.get_embedding_valid())  # Embeddings for validation data
-        test_embeddings = torch.stack(date_sampler.get_embedding_test())         # Embeddings for test data
-
-        return valid_embeddings, test_embeddings
-
-
     def domain_shift(self):
         # Measure domain shift between validation data and test data.
     
@@ -86,14 +71,7 @@ class POTSampling(HybridSampling):
             stack.append(self.small_shift2(xv, xt).item())
 
         xd = np.mean(stack)
-        return xd
-
-
-    def update_subsampler_weights(self):  
-        weight = self.domain_shift()
-        self.weight = round(weight, 2).item()
-        self.weights = [1 - self.weight, self.weight]
-        print("prob:", weight)
+        return xd.item()
 
 
 
