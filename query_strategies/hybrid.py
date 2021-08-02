@@ -49,9 +49,9 @@ class HybridSampling(Strategy):
             subsamp.set_available_indices(self.chosen)
             if isinstance(subsamp, DATESampling):
                 self.chosen = [*self.chosen, *subsamp.query(num_samp, model_available = trained_DATE_available)]
-                self.each_chosen[subsamp.name] = subsamp.query(num_samp, model_available = trained_DATE_available) 
+                self.each_chosen[subsamp] = subsamp.query(num_samp, model_available = trained_DATE_available) 
                 trained_DATE_available = True
             else:
                 self.chosen = [*self.chosen, *subsamp.query(num_samp)]
-                self.each_chosen[subsamp.name] = subsamp.query(num_samp) 
+                self.each_chosen[subsamp] = subsamp.query(num_samp) 
         return self.chosen

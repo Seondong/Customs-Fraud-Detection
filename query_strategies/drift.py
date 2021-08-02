@@ -21,15 +21,12 @@ class DriftSampling(HybridSampling):
 
         return valid_embeddings, test_embeddings
 
-
-    def domain_shift(self):
+    def concept_drift(self):
         pass
 
-
     def update_subsampler_weights(self):  
-        self.dms_weight = round(self.domain_shift(), 2)
+        self.dms_weight = round(self.concept_drift(), 2)
         self.weights = [1 - self.dms_weight, self.dms_weight]
-
 
 
     

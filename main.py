@@ -205,14 +205,14 @@ if __name__ == '__main__':
     parser.add_argument('--identifier', type=str, default=curr_time, help='identifier for each execution')
     parser.add_argument('--save', type=int, default=0, help='Save intermediary files (1=save, 0=not save)')
 
-    # Ada hyperparameters:
+    # Hyperparameters for adahybrid.py and its childs:
     parser.add_argument('--ada_lr', type=float, default=0.8, help="learning rate for adahybrid")
     parser.add_argument('--ada_decay', type=float, default=1, help="decay factor for adahybrid, 1 for no decay")
     parser.add_argument('--ada_epsilon', type=float, default=0, help="degree of randomness for adahybrid")
     parser.add_argument('--num_arms', type=int, default=21, help="number of arms for adahybrid")
 
-    # Regulated Ada hyperparameters:
-    parser.add_argument('--drift', type=str, default='pot', choices = ['pot', 'pvalue'], help="algorithm for concept drift")
+    # Hyperparameters for radahybrid.py:
+    parser.add_argument('--drift', type=str, default='pot', choices = ['pot', 'pvalue'], help="algorithms for measuring concept drift")
     parser.add_argument('--mixing', type=str, default='multiply', choices = ['multiply', 'reinit'], help="method of mixing concept drift with regulated adahybrid")
 
     # Arguments
@@ -239,7 +239,6 @@ if __name__ == '__main__':
     valid_length = args.valid_length
     chosen_data = args.data
     numWeeks = args.numweeks
-    # semi_supervised = args.semi_supervised
     save = args.save
     initial_masking = args.initial_masking
     ada_lr = args.ada_lr
@@ -275,7 +274,7 @@ if __name__ == '__main__':
     # Open files:
     output_file =  "./results/performances/" + args.prefix + '-' + args.output + '-' + chosen_data + '-' + samp + '-' + subsamps + '-' + str(final_inspection_rate) + ".csv"
     with open(output_file, 'a') as ff:
-        output_metric_name = ['runID', 'data', 'num_train','num_valid','num_test','num_select','num_inspected','num_uninspected','num_test_illicit','test_illicit_rate', 'upper_bound_precision', 'upper_bound_recall','upper_bound_rev', 'sampling', 'concept drift', 'mixing',  'ada_lr', 'ada_decay', 'ada_epsilon', 'initial_inspection_rate', 'current_inspection_rate', 'final_inspection_rate', 'inspection_rate_option', 'mode', 'subsamplings', 'initial_weights', 'current_weights', 'unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue', 'norm-precision', 'norm-recall', 'norm-revenue', 'save']
+        output_metric_name = ['runID', 'data', 'num_train','num_valid','num_test','num_select','num_inspected','num_uninspected','num_test_illicit','test_illicit_rate', 'upper_bound_precision', 'upper_bound_recall','upper_bound_rev', 'sampling', 'concept_drift', 'mixing',  'ada_lr', 'ada_decay', 'ada_epsilon', 'initial_inspection_rate', 'current_inspection_rate', 'final_inspection_rate', 'inspection_rate_option', 'mode', 'subsamplings', 'initial_weights', 'current_weights', 'unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue', 'norm-precision', 'norm-recall', 'norm-revenue', 'save']
         print(",".join(output_metric_name),file=ff)
     
     if samp == 'adahybrid':
@@ -380,20 +379,13 @@ if __name__ == '__main__':
         # set data to sampler
         sampler.set_data(data)
         
-        # POT should measure the domain shift just after the data is loaded. 
-        if samp in ['pot', 'pvalue']:
-            sampler.update_subsampler_weights()
-        elif samp == 'rada':
-            sampler.drift_detector.set_data(data)
-            sampler.drift_detector.update_subsampler_weights()
-
-
+        # query selection
         try:
             chosen = sampler.query(num_samples)  
         except:
             import traceback
             traceback.print_exc()
-            
+        
         logger.info("--------Evaluating selection results---------")   
         logger.info("# of queried item: %s, # of samples to be queried: %s", len(chosen), num_samples)
         try:
@@ -459,7 +451,7 @@ if __name__ == '__main__':
             logger.debug(output_metric)
             print(",".join(output_metric),file=ff)
 
-        if samp == 'adahybrid' or samp == 'rada':
+        if samp in ['adahybrid', 'rada']:
             with open(weight_file, 'a') as ff:
                 subsamplings = args.subsamplings
                 weights = '/'.join([str(weight) for weight in final_weights])
@@ -471,7 +463,6 @@ if __name__ == '__main__':
                 norm_precision = active_precisions/upper_bound_precision
                 norm_recall = active_recalls/upper_bound_recall
                 norm_revenue = active_revenues/upper_bound_revenue
-                
                 
                 output_metric = [curr_time, chosen_data, samp, subsamplings, i+1, round(norm_precision,4), round(norm_recall,4), round(norm_revenue,4), ada_lr] + list(sampler.weight_sampler.p) + [sampler.weight_sampler.value, sampler.weight_sampler.arm]
                 if samp == 'rada':

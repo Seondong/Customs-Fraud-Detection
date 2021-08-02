@@ -28,8 +28,8 @@ class pvalueSampling(DriftSampling):
         
         return result
     
-    def domain_shift(self):
-        # Measure domain shift between validation data and test data.
+    def concept_drift(self):
+        # Measure concept drift between validation data and test data.
     
         valid_embeddings, test_embeddings = self.generate_DATE_embeddings()
 
@@ -50,6 +50,12 @@ class pvalueSampling(DriftSampling):
         xd = np.mean(stack, axis = 0) # smaller value means greater shift :|
         xd = (xd < 0.05).sum()/ 16 # 16 is the dimension 
         # xd = 1 - min(1, xd.mean()/0.1)
-        return xd.item() 
+        return xd.item()
+    
+    def query(self, k):
+        # Drift sampler should measure the concept drift and update subsampler weights before the query selection is made. 
+        self.update_subsampler_weights()
+        super(pvalueSampling, self).query(k)
+        return self.chosen
 
         
