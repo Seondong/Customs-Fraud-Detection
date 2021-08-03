@@ -201,7 +201,7 @@ class Import_declarations():
         if len(df) == 0:
             return df
         
-        if self.args.data in ['synthetic', 'real-n', 'real-m', 'real-t']:
+        if self.args.data in ['synthetic', 'real-n', 'real-m', 'real-t', 'real-c']:
             df = df.dropna(subset=['cif.value', 'total.taxes', 'quantity'])
             df.loc[:, 'Unitprice'] = df['cif.value']/df['quantity']
             df.loc[:, 'WUnitprice'] = df['cif.value']/df['gross.weight']
