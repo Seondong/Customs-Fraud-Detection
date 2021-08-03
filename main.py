@@ -199,7 +199,7 @@ if __name__ == '__main__':
     parser.add_argument('--test_from', type=str, default = '20130201', help = 'Testing period start from (YYYYMMDD)')
     parser.add_argument('--test_length', type=int, default=7, help='Single testing period length (e.g., 7)')
     parser.add_argument('--valid_length', type=int, default=7, help='Validation period length (e.g., 7)')
-    parser.add_argument('--data', type=str, default='synthetic', choices = ['synthetic', 'synthetic-k', 'synthetic-k-partial', 'real-n', 'real-m', 'real-t', 'real-c'], help = 'Dataset')
+    parser.add_argument('--data', type=str, default='synthetic', choices = ['synthetic', 'synthetic-k', 'synthetic-k-partial', 'real-n', 'real-m', 'real-t', 'real-c', 'real-k'], help = 'Dataset')
     parser.add_argument('--numweeks', type=int, default=50, help='number of test weeks (week if test_length = 7)')
     # parser.add_argument('--semi_supervised', type=int, default=0, help='Additionally using uninspected, unlabeled data (1=semi-supervised, 0=fully-supervised)')
     parser.add_argument('--identifier', type=str, default=curr_time, help='identifier for each execution')
@@ -256,6 +256,10 @@ if __name__ == '__main__':
         data = dataset.SyntheticKdata(path='./data/df_syn_ano_0429_merge_partially_labeled.csv')   # partially labeled
         args.initial_masking = 'natural'   # since this data is given as partially labeled, it does not need extra label masking.
         initial_masking = 'natural'   
+    elif chosen_data == 'real-k':
+        data = dataset.Kdata(path='./data/Anony_0622_merge_total.csv')
+        args.initial_masking = 'natural'
+        initial_masking = 'natural'
     elif chosen_data == 'real-n':
         data = dataset.Ndata(path='./data/ndata.csv')
     elif chosen_data == 'real-m':

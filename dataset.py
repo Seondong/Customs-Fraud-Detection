@@ -251,7 +251,7 @@ class Import_declarations():
             pass
 
         # Run preprocessing
-        if self.args.data in ['synthetic-k', 'synthetic-k-partial']:
+        if self.args.data in ['synthetic-k', 'synthetic-k-partial', 'real-k']:
             self.train_lab = preprocess_k(self.train_lab)
             self.train_unlab = preprocess_k(self.train_unlab)
             self.valid_lab = preprocess_k(self.valid_lab)
@@ -268,6 +268,7 @@ class Import_declarations():
         # Add a few more risky profiles
         risk_profiles = {}
         profile_candidates = self.profile_candidates + [col for col in self.train_lab.columns if '&' in col]
+        print(profile_candidates)
 
         for profile in profile_candidates:
             option = self.args.risk_profile   # topk or ratio
@@ -282,13 +283,11 @@ class Import_declarations():
         numeric_variables = ['cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'TaxUnitquantity', 'tariff.code', 'HS6', 'HS4', 'HS2', 'SGD.DayofYear', 'SGD.WeekofYear', 'SGD.MonthofYear']
         flagged_variables = [col for col in self.train_lab.columns if 'RiskH' in col]
 
-        if self.args.data in ['synthetic-k', 'synthetic-k-partial']:
+        if self.args.data in ['synthetic-k', 'synthetic-k-partial', 'real-k']:
             numeric_variables = ['신고중량(KG)', '관세율']
 
         self.column_to_use = numeric_variables + flagged_variables
 
-
-        
         self.X_train_lab = self.train_lab[self.column_to_use].values
         if not self.train_unlab.empty:
             self.X_train_unlab = self.train_unlab[self.column_to_use].values
@@ -354,7 +353,6 @@ class Import_declarations():
         """ Update the dataset for next test phase. 
             Newly inspected imports are updated to train-labeled data, newly uninspected imports are updated to train-unlabeled data. """
         
-        
         self.train_valid_lab = pd.concat([self.train_valid_lab, inspected_imports]).sort_index()
         self.train_valid_unlab = pd.concat([self.train_valid_unlab, uninspected_imports]).sort_index()
         
@@ -384,7 +382,6 @@ class Import_declarations():
         self.norm_revenue_train = self.norm_revenue_train/global_max
         self.norm_revenue_valid = self.norm_revenue_valid/global_max
         self.norm_revenue_test = self.norm_revenue_test/global_max
-        
         
         
 class Syntheticdata(Import_declarations):
@@ -468,10 +465,33 @@ class SyntheticKdata(Import_declarations):
         self.df.rename(columns={'가중치최대치':'revenue'}, inplace=True)
 
         self.profile_candidates = ['통관지세관부호',  '신고인부호', '수입자부호', '해외거래처부호', '특송업체부호',
-       '수입통관계획코드', '수입신고구분코드', '수입거래구분코드', '수입종류코드', '징수형태코드', '운송수단유형코드', '반입보세구역부호', 'HS6', '적출국가코드', '원산지국가코드', '검사결과코드']
+       '수입통관계획코드', '수입신고구분코드', '수입거래구분코드', '수입종류코드', '징수형태코드', '운송수단유형코드', '반입보세구역부호', 'HS6', '적출국가코드', '원산지국가코드']
         self.firstCheck()
     
 
+    def firstCheck(self):
+        """ Sorting and indexing necessary for data preparation """
+        # self.df = self.df.dropna(subset=["illicit"])  # This can be relaxed in actual semi-supervised dataset
+        self.df = self.df.sort_values("sgd.date")
+        self.df = self.df.reset_index(drop=True)
+
+
+class Kdata(Import_declarations):
+    """ Class for Kdata (Real)"""
+    @timer_func
+    def __init__(self, path):
+        super(Kdata, self).__init__(path)
+        self.df = pd.read_csv(self.path)
+
+        self.df['신고일자'] = self.df['신고일자'].apply(lambda x: x[2:])
+        self.df.rename(columns={'우범여부':'illicit', '신고일자':'sgd.date'}, inplace=True)
+        self.df.rename(columns={'최대값':'revenue'}, inplace=True)
+
+        self.profile_candidates = ['통관지세관부호',  '신고인부호', '수입자부호', '해외거래처부호', '특송업체부호',
+       '수입통관계획코드', '수입신고구분코드', '수입거래구분코드', '수입종류코드', '징수형태코드', '운송수단유형코드', '반입보세구역부호', 'HS6', '적출국가코드', '원산지국가코드', '검사결과코드']
+        self.firstCheck()
+    
+    @timer_func
     def firstCheck(self):
         """ Sorting and indexing necessary for data preparation """
         # self.df = self.df.dropna(subset=["illicit"])  # This can be relaxed in actual semi-supervised dataset
