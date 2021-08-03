@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from .DATE import DATESampling
 from .hybrid import HybridSampling
+from utils import timer_func
 
             
 class DriftSampling(HybridSampling):
@@ -23,7 +24,8 @@ class DriftSampling(HybridSampling):
 
     def concept_drift(self):
         pass
-
+    
+    @timer_func
     def update_subsampler_weights(self):  
         self.dms_weight = round(self.concept_drift(), 2)
         self.weights = [1 - self.dms_weight, self.dms_weight]

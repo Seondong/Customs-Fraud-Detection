@@ -24,6 +24,7 @@ from utils import find_best_threshold,process_leaf_idx, torch_threshold, metrics
 from model.AttTreeEmbedding import Attention, AnomalyDATEModel
 from model.utils import FocalLoss
 from sklearn.metrics import roc_curve, auc
+from utils import timer_func
 
 
 class multideepSADSampling(Strategy):
@@ -190,8 +191,11 @@ class multideepSADSampling(Strategy):
         normality_scores, _, hiddens = best_model.module.eval_on_batch(self.data.test_loader)
         self.y_prob = np.array(normality_scores)
         
-        
+    
+    @timer_func
     def query(self, k, model_available = False):
+        if self.args.semi_supervised == 0:
+            sys.exit('(multideepSAD is a semi-supervised algorithm, check if the parameter --semi_supervised is set as 1')
         if not model_available:
             self.train_xgb_model()
             self.prepare_multideepSAD_input()

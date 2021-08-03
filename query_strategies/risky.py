@@ -1,6 +1,7 @@
 import numpy as np
 import random
 from .strategy import Strategy
+from utils import timer_func
 
 class RiskProfileSampling(Strategy):
     """ Naive Risk Profile Sampling strategy """
@@ -14,7 +15,7 @@ class RiskProfileSampling(Strategy):
         """ Prediction for new dataset (test_model) """
         self.y_totalrisk = self.data.dftestx[[col for col in self.data.dftestx.columns if 'RiskH' in col]].sum(axis=1)
         
-        
+    @timer_func
     def query(self, k):
         self.predict_frauds()
         chosen = np.argpartition(self.y_totalrisk[self.available_indices], -k)[-k:]

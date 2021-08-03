@@ -5,6 +5,7 @@ import pickle
 sys.path.append("..")
 from .strategy import Strategy
 from pytorch_tabnet.tab_model import TabNetClassifier
+from utils import timer_func
 
 
 class TabnetSampling(Strategy):
@@ -28,7 +29,7 @@ class TabnetSampling(Strategy):
         """ Prediction for new dataset (test_model) """
         self.y_prob = self.tn.predict_proba(self.data.X_test)[:,1]
         
-
+    @timer_func
     def query(self, k):
         self.train_model()
         self.predict_frauds()

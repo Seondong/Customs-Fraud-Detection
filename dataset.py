@@ -23,60 +23,6 @@ def merge_attributes(df: pd.DataFrame, *args: str) -> None:
     columnName = '&'.join([*args]) 
     fs = [''.join([v for v in var]) for var in zip(*iterables)]  
     df.loc[:, columnName] = fs
-    
-@timer_func    
-def preprocess(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    dtype df: dataframe
-    rtype df: dataframe
-    """
-    if len(df) == 0:
-        return df
-    
-    df = df.dropna(subset=['cif.value', 'total.taxes', 'quantity'])
-    df.loc[:, 'Unitprice'] = df['cif.value']/df['quantity']
-    df.loc[:, 'WUnitprice'] = df['cif.value']/df['gross.weight']
-    df.loc[:, 'TaxRatio'] = df['total.taxes'] / df['cif.value']
-    df.loc[:, 'TaxUnitquantity'] = df['total.taxes'] / df['quantity']
-    df.loc[:, 'HS6'] = df['tariff.code'] // 10000
-    df.loc[:, 'HS4'] = df['HS6'] // 100
-    df.loc[:, 'HS2'] = df['HS4'] // 100
-
-#     candFeaturesCombine = ['office.id','importer.id','country','HS6','declarant.id']
-#     for subset in combinations(candFeaturesCombine, 2):
-#         merge_attributes(df, *subset)
-    
-#     for subset in combinations(candFeaturesCombine, 3):
-#         merge_attributes(df, *subset)
-        
-    merge_attributes(df, 'office.id','importer.id')
-    merge_attributes(df, 'office.id','HS6')
-    merge_attributes(df, 'office.id','country')
-    merge_attributes(df, 'HS6','country')
-    
-    df['sgd.date'] = df['sgd.date'].apply(lambda x: dt.strptime(x, '%y-%m-%d'))
-    df.loc[:, 'SGD.DayofYear'] = df['sgd.date'].dt.dayofyear
-    df.loc[:, 'SGD.WeekofYear'] = df['sgd.date'].dt.weekofyear
-    df.loc[:, 'SGD.MonthofYear'] = df['sgd.date'].dt.month
-    return df
-
-
-@timer_func
-def preprocess_k(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    dtype df: dataframe
-    rtype df: dataframe
-    """
-    if len(df) == 0:
-        return df
-
-    df.loc[:, 'WUnitprice'] = df['과세가격원화금액']/df['신고중량(KG)']
-    df.loc[:, 'HS6'] = df['HS10단위부호'] // 10000
-    df.loc[:, 'HS4'] = df['HS6'] // 100
-    df.loc[:, 'HS2'] = df['HS4'] // 100
-    
-    return df
-
 
 
 class Import_declarations():
@@ -157,9 +103,11 @@ class Import_declarations():
             self.train = self.mask_labels(self.train, args.initial_inspection_rate, args.initial_masking)
 
         self.train_lab = self.train[self.train['illicit'].notna()]
-        self.train_unlab = self.train[self.train['illicit'].isna()]
         self.valid_lab = self.valid[self.valid['illicit'].notna()]
-        self.valid_unlab = self.valid[self.valid['illicit'].isna()]
+        
+        if self.args.semi_supervised == 1:
+            self.train_unlab = self.train[self.train['illicit'].isna()]
+            self.valid_unlab = self.valid[self.valid['illicit'].isna()]
       
         # save labels
         self.train_cls_label = self.train_lab["illicit"].values
@@ -177,7 +125,9 @@ class Import_declarations():
         self.norm_revenue_test = self.norm_revenue_test/global_max
         
         self.train_valid_lab = pd.concat([self.train_lab, self.valid_lab])
-        self.train_valid_unlab = pd.concat([self.train_unlab, self.valid_unlab])
+
+        if self.args.semi_supervised == 1:
+            self.train_valid_unlab = pd.concat([self.train_unlab, self.valid_unlab])
     
 
     @timer_func
@@ -242,6 +192,51 @@ class Import_declarations():
         return df
 
 
+    @timer_func    
+    def preprocess(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        dtype df: dataframe
+        rtype df: dataframe
+        """
+        if len(df) == 0:
+            return df
+        
+        if self.args.data in ['synthetic', 'real-n', 'real-m', 'real-t']:
+            df = df.dropna(subset=['cif.value', 'total.taxes', 'quantity'])
+            df.loc[:, 'Unitprice'] = df['cif.value']/df['quantity']
+            df.loc[:, 'WUnitprice'] = df['cif.value']/df['gross.weight']
+            df.loc[:, 'TaxRatio'] = df['total.taxes'] / df['cif.value']
+            df.loc[:, 'TaxUnitquantity'] = df['total.taxes'] / df['quantity']
+            df.loc[:, 'HS6'] = df['tariff.code'] // 10000
+            df.loc[:, 'HS4'] = df['HS6'] // 100
+            df.loc[:, 'HS2'] = df['HS4'] // 100
+
+        #     candFeaturesCombine = ['office.id','importer.id','country','HS6','declarant.id']
+        #     for subset in combinations(candFeaturesCombine, 2):
+        #         merge_attributes(df, *subset)
+            
+        #     for subset in combinations(candFeaturesCombine, 3):
+        #         merge_attributes(df, *subset)
+                
+            merge_attributes(df, 'office.id','importer.id')
+            merge_attributes(df, 'office.id','HS6')
+            merge_attributes(df, 'office.id','country')
+            merge_attributes(df, 'HS6','country')
+            
+            df['sgd.date'] = df['sgd.date'].apply(lambda x: dt.strptime(x, '%y-%m-%d'))
+            df.loc[:, 'SGD.DayofYear'] = df['sgd.date'].dt.dayofyear
+            df.loc[:, 'SGD.WeekofYear'] = df['sgd.date'].dt.weekofyear
+            df.loc[:, 'SGD.MonthofYear'] = df['sgd.date'].dt.month
+
+        elif self.args.data in ['synthetic-k', 'synthetic-k-partial', 'real-k']:
+            df.loc[:, 'WUnitprice'] = df['과세가격원화금액']/df['신고중량(KG)']
+            df.loc[:, 'HS6'] = df['HS10단위부호'] // 10000
+            df.loc[:, 'HS4'] = df['HS6'] // 100
+            df.loc[:, 'HS2'] = df['HS4'] // 100
+
+        return df
+        
+
     @timer_func
     def featureEngineering(self):
         """ Feature engineering, """
@@ -249,36 +244,46 @@ class Import_declarations():
             self.offset = self.test.index[0]
         except IndexError:
             pass
+        
+        # If sampler requires preprocessing for unlabeled data
+        if self.args.semi_supervised == 1:
+            # Preprocessing
+            
+            self.train_lab = self.preprocess(self.train_lab)
+            self.train_unlab = self.preprocess(self.train_unlab)
+            self.valid_lab = self.preprocess(self.valid_lab)
+            self.valid_unlab = self.preprocess(self.valid_unlab)
+            self.test = self.preprocess(self.test)
+        
+            # Add a few more risky profiles
+            risk_profiles = {}
+            profile_candidates = self.profile_candidates + [col for col in self.train_lab.columns if '&' in col]
 
-        # Run preprocessing
-        if self.args.data in ['synthetic-k', 'synthetic-k-partial', 'real-k']:
-            self.train_lab = preprocess_k(self.train_lab)
-            self.train_unlab = preprocess_k(self.train_unlab)
-            self.valid_lab = preprocess_k(self.valid_lab)
-            self.valid_unlab = preprocess_k(self.valid_unlab)
-            self.test = preprocess_k(self.test)
-        else:
-            self.train_lab = preprocess(self.train_lab)
-            self.train_unlab = preprocess(self.train_unlab)
-            self.valid_lab = preprocess(self.valid_lab)
-            self.valid_unlab = preprocess(self.valid_unlab)
-            self.test = preprocess(self.test)
-        
-        
-        # Add a few more risky profiles
-        risk_profiles = {}
-        profile_candidates = self.profile_candidates + [col for col in self.train_lab.columns if '&' in col]
-        print(profile_candidates)
+            for profile in profile_candidates:
+                option = self.args.risk_profile   # topk or ratio
+                risk_profiles[profile] = self.find_risk_profile(self.train_lab, profile, 0.1, 10, option=option)
+                self.train_lab = self.tag_risky_profiles(self.train_lab, profile, risk_profiles[profile], option=option)
+                self.train_unlab = self.tag_risky_profiles(self.train_unlab, profile, risk_profiles[profile], option=option)
+                self.valid_lab = self.tag_risky_profiles(self.valid_lab, profile, risk_profiles[profile], option=option)
+                self.valid_unlab = self.tag_risky_profiles(self.valid_unlab, profile, risk_profiles[profile], option=option)
+                self.test = self.tag_risky_profiles(self.test, profile, risk_profiles[profile], option=option)
 
-        for profile in profile_candidates:
-            option = self.args.risk_profile   # topk or ratio
-            risk_profiles[profile] = self.find_risk_profile(self.train_lab, profile, 0.1, 10, option=option)
-            self.train_lab = self.tag_risky_profiles(self.train_lab, profile, risk_profiles[profile], option=option)
-            self.train_unlab = self.tag_risky_profiles(self.train_unlab, profile, risk_profiles[profile], option=option)
-            self.valid_lab = self.tag_risky_profiles(self.valid_lab, profile, risk_profiles[profile], option=option)
-            self.valid_unlab = self.tag_risky_profiles(self.valid_unlab, profile, risk_profiles[profile], option=option)
-            self.test = self.tag_risky_profiles(self.test, profile, risk_profiles[profile], option=option)
+        # If sampler does not require preprocessing for unlabeled data
+        elif self.args.semi_supervised == 0:
+            self.train_lab = self.preprocess(self.train_lab)
+            self.valid_lab = self.preprocess(self.valid_lab)
+            self.test = self.preprocess(self.test)
         
+            risk_profiles = {}
+            profile_candidates = self.profile_candidates + [col for col in self.train_lab.columns if '&' in col]
+
+            for profile in profile_candidates:
+                option = self.args.risk_profile   # topk or ratio
+                risk_profiles[profile] = self.find_risk_profile(self.train_lab, profile, 0.1, 10, option=option)
+                self.train_lab = self.tag_risky_profiles(self.train_lab, profile, risk_profiles[profile], option=option)
+                self.valid_lab = self.tag_risky_profiles(self.valid_lab, profile, risk_profiles[profile], option=option)
+                self.test = self.tag_risky_profiles(self.test, profile, risk_profiles[profile], option=option)
+
         # Features to use in a classifier
         numeric_variables = ['cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'TaxUnitquantity', 'tariff.code', 'HS6', 'HS4', 'HS2', 'SGD.DayofYear', 'SGD.WeekofYear', 'SGD.MonthofYear']
         flagged_variables = [col for col in self.train_lab.columns if 'RiskH' in col]
@@ -289,31 +294,39 @@ class Import_declarations():
         self.column_to_use = numeric_variables + flagged_variables
 
         self.X_train_lab = self.train_lab[self.column_to_use].values
-        if not self.train_unlab.empty:
-            self.X_train_unlab = self.train_unlab[self.column_to_use].values
-        else:
-            self.X_train_unlab = np.asarray([])
         if not self.valid_lab.empty:
             self.X_valid_lab = self.valid_lab[self.column_to_use].values
         else:
             self.X_valid_lab = np.asarray([])
-        if not self.valid_unlab.empty:
-            self.X_valid_unlab = self.valid_unlab[self.column_to_use].values
-        else:
-            self.X_valid_unlab = np.asarray([])
         if not self.test.empty:
             self.X_test = self.test[self.column_to_use].values
         else:
             self.X_test = np.asarray([])
-        print("Data size:")
-        print(f'Train labeled: {self.train_lab.shape}, Train unlabeled: {self.train_unlab.shape}, Valid labeled: {self.valid_lab.shape}, Valid unlabeled: {self.valid_unlab.shape}, Test: {self.test.shape}')
+        
+        if self.args.semi_supervised == 1:
+            if not self.train_unlab.empty:
+                self.X_train_unlab = self.train_unlab[self.column_to_use].values
+            else:
+                self.X_train_unlab = np.asarray([])
+            if not self.valid_unlab.empty:
+                self.X_valid_unlab = self.valid_unlab[self.column_to_use].values
+            else:
+                self.X_valid_unlab = np.asarray([])
 
+        print("Data size:")
+
+        if self.args.semi_supervised == 1:
+            print(f'Train labeled: {self.train_lab.shape}, Train unlabeled: {self.train_unlab.shape}, Valid labeled: {self.valid_lab.shape}, Valid unlabeled: {self.valid_unlab.shape}, Test: {self.test.shape}')
+        elif self.args.semi_supervised == 0:
+            print(f'Train labeled: {self.train_lab.shape}, Valid labeled: {self.valid_lab.shape}, Test: {self.test.shape}')
+        
         # impute nan
         self.X_train_lab = np.nan_to_num(self.X_train_lab, 0)
-        self.X_train_unlab = np.nan_to_num(self.X_train_unlab, 0)
         self.X_valid_lab = np.nan_to_num(self.X_valid_lab, 0)
-        self.X_valid_unlab = np.nan_to_num(self.X_valid_unlab, 0)
         self.X_test = np.nan_to_num(self.X_test, 0)
+        if self.args.semi_supervised == 1:
+            self.X_train_unlab = np.nan_to_num(self.X_train_unlab, 0)
+            self.X_valid_unlab = np.nan_to_num(self.X_valid_unlab, 0)
 
         # from collections import Counter
         # print("Checking illicit rate: ")
@@ -329,7 +342,7 @@ class Import_declarations():
         #     print("Testing:", round(cnt[1]/(cnt[0]+cnt[1]), 3))
         # except ZeroDivisionError:
         #     print("No test set")
-        
+            
         self.dftrainx_lab = pd.DataFrame(self.X_train_lab,columns=self.column_to_use)
         try:
             self.dftrainx_unlab = pd.DataFrame(self.X_train_unlab,columns=self.column_to_use)
@@ -348,13 +361,16 @@ class Import_declarations():
         except:
             self.dftestx = pd.DataFrame(columns=self.column_to_use)
     
+    
     @timer_func
     def update(self, inspected_imports, uninspected_imports, test_start_day, test_end_day, valid_start_day):
         """ Update the dataset for next test phase. 
             Newly inspected imports are updated to train-labeled data, newly uninspected imports are updated to train-unlabeled data. """
         
         self.train_valid_lab = pd.concat([self.train_valid_lab, inspected_imports]).sort_index()
-        self.train_valid_unlab = pd.concat([self.train_valid_unlab, uninspected_imports]).sort_index()
+
+        if self.args.semi_supervised == 1:
+            self.train_valid_unlab = pd.concat([self.train_valid_unlab, uninspected_imports]).sort_index()
         
         self.test_start_day = test_start_day.strftime('%y-%m-%d')
         self.test_end_day = test_end_day.strftime('%y-%m-%d')
@@ -362,12 +378,20 @@ class Import_declarations():
              
         self.train_lab = self.train_valid_lab[self.train_valid_lab["sgd.date"] < self.valid_start_day]
         self.valid_lab = self.train_valid_lab[self.train_valid_lab["sgd.date"] >= self.valid_start_day]
-        self.train_unlab = self.train_valid_unlab[self.train_valid_unlab["sgd.date"] < self.valid_start_day]
-        self.valid_unlab = self.train_valid_unlab[self.train_valid_unlab["sgd.date"] >= self.valid_start_day]
+
+        if self.args.semi_supervised == 1:
+            self.train_unlab = self.train_valid_unlab[self.train_valid_unlab["sgd.date"] < self.valid_start_day]
+            self.valid_unlab = self.train_valid_unlab[self.train_valid_unlab["sgd.date"] >= self.valid_start_day]
         
         # From here, just updating relevant items 
-        self.train = pd.concat([self.train_lab, self.train_unlab]).sort_index()
-        self.valid = pd.concat([self.valid_lab, self.valid_unlab]).sort_index()
+
+        if self.args.semi_supervised == 1:
+            self.train = pd.concat([self.train_lab, self.train_unlab]).sort_index()
+            self.valid = pd.concat([self.valid_lab, self.valid_unlab]).sort_index()
+        elif self.args.semi_supervised == 0:
+            self.train = self.train_lab.sort_index()
+            self.valid = self.valid_lab.sort_index()
+
         self.test = self.df[(self.df["sgd.date"] >= self.test_start_day) & (self.df["sgd.date"] < self.test_end_day)]  
         
         self.train_cls_label = self.train_lab["illicit"].values
@@ -383,7 +407,7 @@ class Import_declarations():
         self.norm_revenue_valid = self.norm_revenue_valid/global_max
         self.norm_revenue_test = self.norm_revenue_test/global_max
         
-        
+
 class Syntheticdata(Import_declarations):
     """ Class for synthetic data
     
@@ -404,6 +428,7 @@ class Ndata(Import_declarations):
         self.profile_candidates = ['importer.id', 'declarant.id', 'country', 'tariff.code', 'HS6', 'HS4', 'HS2', 'office.id']
         self.firstCheck()
         
+
 class Mdata(Import_declarations):
     """ Class for Mdata"""
     @timer_func
@@ -412,6 +437,7 @@ class Mdata(Import_declarations):
         self.profile_candidates = ['importer.id', 'exporter.name', 'expcty', 'country', 'declarant.id', 'tariff.code', 'HS6', 'HS4', 'HS2', 'office.id']
         self.firstCheck()
         
+
 class Tdata(Import_declarations):
     """ Class for Tdata"""
     @timer_func
@@ -421,6 +447,7 @@ class Tdata(Import_declarations):
                       'tariff.code', 'quantity', 'HS6', 'HS4', 'HS2', 'office.id']
         self.firstCheck()
         
+
 class Cdata(Import_declarations):
     """ Class for Cdata"""
     @timer_func
@@ -429,6 +456,7 @@ class Cdata(Import_declarations):
 
         self.profile_candidates = ['importer.id', 'declarant.id', 'country', 'tariff.code', 'HS6', 'HS4', 'HS2', 'office.id']
         self.firstCheck()
+
 
 class SyntheticKdata(Import_declarations):
     """ Class for Kdata (Synthetic)"""
@@ -488,7 +516,7 @@ class Kdata(Import_declarations):
         self.df.rename(columns={'최대값':'revenue'}, inplace=True)
 
         self.profile_candidates = ['통관지세관부호',  '신고인부호', '수입자부호', '해외거래처부호', '특송업체부호',
-       '수입통관계획코드', '수입신고구분코드', '수입거래구분코드', '수입종류코드', '징수형태코드', '운송수단유형코드', '반입보세구역부호', 'HS6', '적출국가코드', '원산지국가코드', '검사결과코드']
+       '수입통관계획코드', '수입신고구분코드', '수입거래구분코드', '수입종류코드', '징수형태코드', '운송수단유형코드', '반입보세구역부호', 'HS6', '적출국가코드', '원산지국가코드']
         self.firstCheck()
     
     @timer_func

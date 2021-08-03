@@ -22,6 +22,7 @@ from torch.utils.data import DataLoader
 from utils import find_best_threshold, process_leaf_idx, torch_threshold, metrics
 from model.AttTreeEmbedding import Attention, DATEModel
 from model.utils import FocalLoss
+from utils import timer_func
 
 
 
@@ -176,8 +177,9 @@ class DATESampling(Strategy):
         best_model = self.get_model()
         final_output, _, (hiddens, revs) = best_model.module.eval_on_batch(self.data.test_loader)
         self.y_prob = final_output
+      
         
-        
+    @timer_func
     def query(self, k, model_available = False):
         if not model_available:
             self.train_xgb_model()

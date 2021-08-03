@@ -201,7 +201,7 @@ if __name__ == '__main__':
     parser.add_argument('--valid_length', type=int, default=7, help='Validation period length (e.g., 7)')
     parser.add_argument('--data', type=str, default='synthetic', choices = ['synthetic', 'synthetic-k', 'synthetic-k-partial', 'real-n', 'real-m', 'real-t', 'real-c', 'real-k'], help = 'Dataset')
     parser.add_argument('--numweeks', type=int, default=50, help='number of test weeks (week if test_length = 7)')
-    # parser.add_argument('--semi_supervised', type=int, default=0, help='Additionally using uninspected, unlabeled data (1=semi-supervised, 0=fully-supervised)')
+    parser.add_argument('--semi_supervised', type=int, default=0, help='Does the selection strategy use uninspected imports for training? (1 = Yes, Semi-supervised, 0 = No, fully-supervised)')
     parser.add_argument('--identifier', type=str, default=curr_time, help='identifier for each execution')
     parser.add_argument('--save', type=int, default=0, help='Save intermediary files (1=save, 0=not save)')
 
@@ -243,6 +243,7 @@ if __name__ == '__main__':
     initial_masking = args.initial_masking
     ada_lr = args.ada_lr
     num_arms = args.num_arms
+    semi_supervised = args.semi_supervised
     
     logger.info(args)
     
