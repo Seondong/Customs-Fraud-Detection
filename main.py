@@ -201,7 +201,7 @@ if __name__ == '__main__':
     parser.add_argument('--valid_length', type=int, default=7, help='Validation period length (e.g., 7)')
     parser.add_argument('--data', type=str, default='synthetic', choices = ['synthetic', 'synthetic-k', 'synthetic-k-partial', 'real-n', 'real-m', 'real-t', 'real-c', 'real-k'], help = 'Dataset')
     parser.add_argument('--numweeks', type=int, default=50, help='number of test weeks (week if test_length = 7)')
-    # parser.add_argument('--semi_supervised', type=int, default=0, help='Additionally using uninspected, unlabeled data (1=semi-supervised, 0=fully-supervised)')
+    parser.add_argument('--semi_supervised', type=int, default=0, help='Does the selection strategy use uninspected imports for training? (1 = Yes, Semi-supervised, 0 = No, fully-supervised)')
     parser.add_argument('--identifier', type=str, default=curr_time, help='identifier for each execution')
     parser.add_argument('--save', type=int, default=0, help='Save intermediary files (1=save, 0=not save)')
 
@@ -243,6 +243,7 @@ if __name__ == '__main__':
     initial_masking = args.initial_masking
     ada_lr = args.ada_lr
     num_arms = args.num_arms
+    semi_supervised = args.semi_supervised
     
     logger.info(args)
     
@@ -269,13 +270,13 @@ if __name__ == '__main__':
     elif chosen_data == 'real-c':
         data = dataset.Cdata(path='./data/cdata.csv')  
     
-        
-    # Saving simulation results: Output file will be saved under ./results/performances/ directory
+    hybrid_strategies = ['hybrid', 'adahybrid', 'pot', 'pvalue', 'rada']
+   
     subsamps = args.subsamplings.replace('/','+')
-    if samp not in ['hybrid', 'adahybrid', 'pot', 'pvalue', 'rada']:
+    if samp not in hybrid_strategies:
         subsamps = 'single'
         
-    # Open files:
+    # Saving simulation results: Output file will be saved under ./results/performances/ directory
     output_file =  "./results/performances/" + args.prefix + '-' + args.output + '-' + chosen_data + '-' + samp + '-' + subsamps + '-' + str(final_inspection_rate) + ".csv"
     with open(output_file, 'a') as ff:
         output_metric_name = ['runID', 'data', 'num_train','num_valid','num_test','num_select','num_inspected','num_uninspected','num_test_illicit','test_illicit_rate', 'upper_bound_precision', 'upper_bound_recall','upper_bound_rev', 'sampling', 'concept_drift', 'mixing',  'ada_lr', 'ada_decay', 'ada_epsilon', 'initial_inspection_rate', 'current_inspection_rate', 'final_inspection_rate', 'inspection_rate_option', 'mode', 'subsamplings', 'initial_weights', 'current_weights', 'unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue', 'norm-precision', 'norm-recall', 'norm-revenue', 'save']
@@ -307,7 +308,7 @@ if __name__ == '__main__':
     confirmed_inspection_plan = inspection_plan(initial_inspection_rate, final_inspection_rate, numWeeks, inspection_rate_option)
     logger.info('Inspection rate for testing periods: %s', confirmed_inspection_plan)
        
-    if samp in ['hybrid', 'adahybrid', 'pot', 'pvalue', 'rada']:
+    if samp in hybrid_strategies:
         subsamplings = args.subsamplings
         initial_weights = [float(weight) for weight in args.weights.split("/")]
         final_weights = initial_weights
@@ -339,6 +340,7 @@ if __name__ == '__main__':
     # Customs selection simulation for long term (if test_length = 7 days, simulate for numWeeks)
     for i in range(numWeeks):
         
+        # Terminating condition
         if test_start_day.strftime('%y-%m-%d') > max(data.df["sgd.date"]):
             logger.info('Simulation period is over.')
             logger.info('Terminating ...')
@@ -365,7 +367,7 @@ if __name__ == '__main__':
         num_samples = int(len(data.test)*current_inspection_rate/100)
         
         # Retrieve subsampler weights from the previous week, for hybrid models
-        if samp in ['hybrid', 'adahybrid', 'pot', 'pvalue', 'rada']:
+        if samp in hybrid_strategies:
             try:
                 final_weights = sampler.get_weights()
             except NameError:
@@ -377,7 +379,7 @@ if __name__ == '__main__':
         sampler.set_uncertainty_module(uncertainty_module)
         
         # set previous weeks' weights, for hybrid models
-        if samp in ['hybrid', 'adahybrid', 'pot', 'pvalue', 'rada']:
+        if samp in hybrid_strategies:
             sampler.set_weights(final_weights)
         
         # set data to sampler
@@ -389,7 +391,7 @@ if __name__ == '__main__':
         except:
             import traceback
             traceback.print_exc()
-        
+
         logger.info("--------Evaluating selection results---------")   
         logger.info("# of queried item: %s, # of samples to be queried: %s", len(chosen), num_samples)
         try:
@@ -441,7 +443,7 @@ if __name__ == '__main__':
             norm_recall = active_recalls/upper_bound_recall
             norm_revenue = active_revenues/upper_bound_revenue
             
-            if samp in ['hybrid', 'adahybrid', 'pot', 'pvalue', 'rada']:
+            if samp in hybrid_strategies:
                 initial_weights_str = '/'.join([str(weight) for weight in initial_weights])
                 final_weights_str = '/'.join([str(weight) for weight in final_weights])
 
@@ -486,7 +488,7 @@ if __name__ == '__main__':
             wr.writerow(['Test_start_day', test_start_day])
             wr.writerow(['Test_end_day', test_end_day])
             
-            if samp in ['hybrid', 'adahybrid', 'pot', 'pvalue', 'rada']:
+            if samp in hybrid_strategies:
                 tmpIdx = 0
                 for subsampler, num in zip(args.subsamplings.split('/'), sampler.ks):
                     row = [subsampler]

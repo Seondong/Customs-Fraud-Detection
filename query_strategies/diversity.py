@@ -3,6 +3,7 @@ import sys
 import gc
 from sklearn.cluster import KMeans
 from .DATE import DATESampling
+from utils import timer_func
 
 
 class DiversitySampling(DATESampling):
@@ -48,7 +49,7 @@ class DiversitySampling(DATESampling):
         chosen = [filtered[i] for i in idx]
         return chosen
     
-    
+    @timer_func
     def query(self, k, model_available = False):
         if not model_available:
             self.train_xgb_model()

@@ -4,6 +4,7 @@ from sklearn.metrics import pairwise_distances
 from sklearn.preprocessing import normalize
 from .DATE import DATESampling
 from .badge import init_centers
+from utils import timer_func
 
 
 class gATESampling(DATESampling):
@@ -35,7 +36,8 @@ class gATESampling(DATESampling):
         chosen = init_centers(gradEmbedding, k)
         return chosen
     
-    
+
+    @timer_func
     def query(self, k, model_available = False):
         if not model_available:
             self.train_xgb_model()

@@ -12,10 +12,7 @@ from imblearn.over_sampling import SMOTE
 from sklearn.preprocessing import OneHotEncoder
 
 from torch_optimizer import Ranger
-
 from utils import find_best_threshold, metrics, torch_threshold
-
-
 from xgboost import XGBClassifier
 
 import torch
@@ -27,6 +24,7 @@ from torch.autograd import Variable
 from torch.nn import functional as F
 
 from .strategy import Strategy
+from utils import timer_func
 
 
 class Mish(nn.Module):
@@ -131,7 +129,7 @@ class SSLAutoencoderSampling(Strategy):
     def __init__(self, args):
         self.args = args
         self.identifier = args.identifier
-        super(SSLAutoencoderSampling,self).__init__(data, args)
+        super(SSLAutoencoderSampling,self).__init__(args)
     
     
     def train_xgb_model(self):
@@ -322,8 +320,10 @@ class SSLAutoencoderSampling(Strategy):
 
         self.y_prob = np.ravel(pred_prob)
 
-    
+    @timer_func
     def query(self, k):
+        if self.args.semi_supervised == 0:
+            sys.exit('(ssl_ae is a semi-supervised algorithm, check if the parameter --semi_supervised is set as 1')
         self.train_xgb_model()
         self.prepare_SSL_input()
         self.train_model()

@@ -4,6 +4,7 @@ import sys
 from .strategy import Strategy
 from .DATE import DATESampling
 from main import initialize_sampler
+from utils import timer_func
 
 
 class HybridSampling(Strategy):
@@ -35,7 +36,8 @@ class HybridSampling(Strategy):
         for subsamp in self.subsamps:
             subsamp.uncertainty_module = uncertainty_module
         
-        
+    
+    @timer_func
     def query(self, k):
         self.ks = [round(k*weight) for weight in self.weights[:-1]]
         self.ks.append(k - sum(self.ks))

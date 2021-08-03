@@ -10,6 +10,7 @@ import pandas as pd
 import torch
 from .DATE import DATESampling
 from .drift import DriftSampling
+from utils import timer_func
 
             
 class POTSampling(DriftSampling):
@@ -75,6 +76,7 @@ class POTSampling(DriftSampling):
         return xd.item()
 
 
+    @timer_func
     def query(self, k):
         # Drift sampler should measure the concept drift and update subsampler weights before the query selection is made. 
         self.update_subsampler_weights()

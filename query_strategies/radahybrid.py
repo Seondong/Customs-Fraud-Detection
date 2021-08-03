@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 import torch
+from utils import timer_func
 
         
 class RegulatedAdaHybridSampling(AdaHybridSampling):
@@ -49,6 +50,7 @@ class RegulatedAdaHybridSampling(AdaHybridSampling):
         print(f'Ada arm: {self.weight_sampler.value}')
         print(f'Feedbacks: {self.weight_sampler.data}')        
 
+    @timer_func
     def query(self, k):
         self.drift_detector.update_subsampler_weights()
         super(RegulatedAdaHybridSampling, self).query(k)

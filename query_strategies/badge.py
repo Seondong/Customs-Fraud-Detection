@@ -2,6 +2,7 @@ import numpy as np
 from scipy import stats
 from sklearn.metrics import pairwise_distances
 from .DATE import DATESampling
+from utils import timer_func
 
 
 # kmeans ++ initialization
@@ -55,6 +56,7 @@ class BadgeSampling(DATESampling):
     def __init__(self, args):
         super(BadgeSampling,self).__init__(args)
 
+    @timer_func
     def query(self, k, model_available = False):
         # Train DATE model
         if not model_available:

@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from xgboost import XGBClassifier, XGBRegressor
+from utils import timer_func
 
 class Uncertainty :
 
@@ -18,7 +19,9 @@ class Uncertainty :
         self.importance_classifier = None
         self.test_data = None
         self.path = path
+
     # Initial training with training data
+    @timer_func
     def train(self) :
         for cc in self.categorical_features :
             print('Train for '+cc)
@@ -43,6 +46,7 @@ class Uncertainty :
         self.importance_classifier.save_model(self.path + 'imp' + '.model')
 
     # Measure the uncertainty of given test data from uncertainty module
+    @timer_func
     def measure(self, test_data, option) :
         print('Uncertainty measure')
         unc = pd.DataFrame()
@@ -77,6 +81,7 @@ class Uncertainty :
             return unc.dot(self.importance_classifier.feature_importances_ / sum(self.importance_classifier.feature_importances_))
         
     # Retrain the individual predictors by using queried samples
+    @timer_func
     def retrain(self, queried_samples) :
         for cc in self.categorical_features :
             columns = [col for col in self.column_to_use_unc_measure if col != cc]
