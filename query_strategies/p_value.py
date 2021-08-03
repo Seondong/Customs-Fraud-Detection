@@ -13,6 +13,8 @@ from scipy.stats import anderson_ksamp
 from utils import timer_func
 
 class pvalueSampling(DriftSampling):
+    """ Anderson-Darling test is used to measure the concept drift. 
+        Reference: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.anderson_ksamp.html """
     
     def __init__(self, args):
         super(pvalueSampling, self).__init__(args)

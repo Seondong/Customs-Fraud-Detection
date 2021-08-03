@@ -52,14 +52,21 @@ class deepSADSampling(Strategy):
         """ Prepare input for Dual-Attentive Tree-Aware Embedding model """
                 
         # user & item information 
-        train_raw_importers = self.data.train_lab['importer.id'].values
-        train_raw_items = self.data.train_lab['tariff.code'].values
-        train_raw_unlab_importers = self.data.train_unlab['importer.id'].values
-        train_raw_unlab_items = self.data.train_unlab['tariff.code'].values
-        valid_raw_importers = self.data.valid_lab['importer.id'].values
-        valid_raw_items = self.data.valid_lab['tariff.code'].values
-        test_raw_importers = self.data.test['importer.id']
-        test_raw_items = self.data.test['tariff.code']
+        if self.data.args.data not in ['synthetic-k', 'synthetic-k-partial', 'real-k']:
+            importer_id = 'importer.id'
+            tariff_code = 'tariff.code'
+        else:
+            importer_id = '수입자부호'
+            tariff_code = 'HS10단위부호'
+
+        train_raw_importers = self.data.train_lab[importer_id].values
+        train_raw_items = self.data.train_lab[tariff_code].values
+        train_raw_unlab_importers = self.data.train_unlab[importer_id].values
+        train_raw_unlab_items = self.data.train_unlab[tariff_code].values
+        valid_raw_importers = self.data.valid_lab[importer_id].values
+        valid_raw_items = self.data.valid_lab[tariff_code].values
+        test_raw_importers = self.data.test[importer_id]
+        test_raw_items = self.data.test[tariff_code]
 
         # we need padding for unseen user or item 
         importer_set = set(np.concatenate((train_raw_importers, train_raw_unlab_importers), axis = 0))

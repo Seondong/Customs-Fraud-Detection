@@ -17,9 +17,11 @@ $ pip install -r requirements.txt
 ```
 
 3. Run the codes: Refer to main.py for hyperparameters, .sh files in `./bash` directory will give you some ideas how to run codes effectively. 
+
 ```
-$ export CUDA_VISIBLE_DEVICES=3 && python main.py --data synthetic --batch_size 128 --sampling hybrid --subsamplings xgb/random --weights 0.9/0.1 --mode scratch --train_from 20130101 --test_from 20130701 --test_length 30 --valid_length 30 --initial_inspection_rate 20 --final_inspection_rate 5 --epoch 5 --closs bce --rloss full --save 0 --numweeks 100 --initial_masking direct_decay
+$ python main.py --data synthetic --train_from 20130101 --test_from 20130115 --valid_length 7 --test_length 7 --numweeks 100 --final_inspection_rate 10 --sampling hybrid --subsamplings xgb/random --weights 0.9/0.1  
 ```
+The example command is to simulate the customs targeting system on a synthetic dataset. The initial training period starts from Jan 1, 2013 `(--train_from)`, and spans 14 days. The last seven days of the training set are held out for validation `(--valid_length)`. With the trained model, customs selection begins on Jan 15 `(--test_from)`. The first testing period spans seven days - batch setting `(--test_length)`. After testing, inspected items are labeled and added to the training set. The simulation terminates after 100 testing periods `(--numweeks)`. The target inspection rate is set as 10% `(--final_inspection_rate)`, which means that 10% of the goods are inspected and levied duties. The hybrid selection strategy consisting of xgb and random is used by 9:1 ratio `(--sampling, --subsamplings, --weights)`. In other words, 9% of the total items are selected by XGBoost for inspection, and the remaining 1% of the items are randomly inspected. 
 
 
 ## Data Format
@@ -38,7 +40,15 @@ To run the code with real datasets, please refer to `data/` directory. [[README]
 
 
 ## Available Selection Strategies:
+#### Stand-alone strategies:
+```
+$ python main.py --sampling random --data synthetic --train_from 20130101 --test_from 20130115 --valid_length 7 --test_length 7 --numweeks 100 --final_inspection_rate 10
+$ export CUDA_VISIBLE_DEVICES=0 && python main.py --sampling DATE --data real-t --train_from 20150101 --test_from 20150115 --valid_length 7 --test_length 7 --numweeks 300 --initial_inspection_rate 10 --final_inspection_rate 5 --inspection_plan fast_linear_decay --initial_masking importer
+$ python main.py --sampling ssl_ae --data real-n --train_from 20130101 --test_from 20130131 --valid_length 7 --test_length 14 --numweeks 100 --initial_inspection_rate 10 --final_inspection_rate 5 --semi_supervised 1
+```
+1. Supervised strategies (use labeled data only):
 * [Random](./query_strategies/random.py): Random selection, often used as a sub-strategy to find novel frauds by compensating the weakness of the selection model based on historical data. 
+* [Risky](./query_strategies/risky.py): Simple but effective strategy by using the risky profile indicators (handler's fraud history) to determine the suspiciousness of the trade.
 * [XGBoost](./query_strategies/xgb.py): Baseline exploitation strategy using both risky profiles of categorical variables and numeric variables as inputs. [[Reference]](https://xgboost.readthedocs.io/en/latest/python/python_api.html)
 * [XBGoost + Logistic Regression](./query_strategies/xgb_lr.py): Two-stage strategy, selection is done by logistic regression results, and logistic regression is done by getting XGB leaf indices.
 * [DATE](./query_strategies/DATE.py): Tree-aware dual attentive model for finding the most illicit and valuable imports at the same time; SOTA exploitation strategy. [[Reference]](https://bit.ly/kdd20-date)
@@ -47,23 +57,42 @@ To run the code with real datasets, please refer to `data/` directory. [[README]
 * [BADGE](./query_strategies/badge.py): BADGE model uses the gradient embedding of the base model (DATE) and find the most diverse imports by KMeans++. [[Reference]](https://github.com/JordanAsh/badge)
 * [bATE](./query_strategies/bATE.py): Proposed model for better exploration. By following the BADGE model, we first use the embeddings of the base model, DATE. Our contribution is to amplify the embedding with extra uncertainty score, and predicted revenue. Finally, we find the most diverse imports by KMeans++. [[Reference]](https://arxiv.org/abs/2010.14282)
 * [gATE](./query_strategies/gATE.py): Proposed exploration model, bATE added with gatekeeper. [[Reference]](https://arxiv.org/abs/2010.14282)
+
+2. Semi-supervised strategies (use unlabeled data together, `--semi_supervised 1`):
 * [deepSAD](./query_strategies/deepSAD.py): Deep-SAD model, which does semi-supervised anomaly detection by pulling normal-labeled and unlabeled data into a single point, and pushing anomalies away. [[Reference]](https://github.com/lukasruff/Deep-SAD-PyTorch)
 * [multideepSAD](./query_strategies/multideepSAD.py): deepSAD variant with several cluster points.
 * [SSL-AE](./query_strategies/ssl_ae.py): Semi-supervised learning approach by optimizing reconstruction loss of all imports and binary cross-entropy of labeled imports.
-* [Hybrid](./query_strategies/hybrid.py): Support mixing several strategies. (Adahybrid method can adaptively change the exploration rate)
-* [Adahybrid](./query_strategies/hybrid.py): Adaptively changing exploration ratio of the hybrid strategy. Aim to tackle exploitation-exploration dilemma in smarter way. The description of this strategy is introduced in page 21-22 of the attached report [[PDF]](./literatures/URP_Report_TungDuongMai.pdf).
 
 
-## Brief Introduction of Our Research Directions
+#### Hybrid strategies:
+```
+$ python main.py --sampling hybrid --subsamplings xgb/risky/random --weights 0.7/0.2/0.1 --data synthetic --train_from 20130101 --test_from 20130115 --valid_length 7 --test_length 7 --numweeks 100 --final_inspection_rate 10 
+$ python main.py --sampling adahybrid --subsamplings DATE/random --weights 0.9/0.1 --data synthetic --train_from 20130101 --test_from 20130115 --valid_length 7 --test_length 7 --numweeks 100 --final_inspection_rate 10 
+```
+* [Hybrid](./query_strategies/hybrid.py): Supports multiple strategies together. More than two strategies can be used.
+* [Adahybrid](./query_strategies/hybrid.py): Find the best exploration ratio by using the performance signal. Currently supports two strategies, preferably in the order of exploitation/exploration. The description of this strategy is introduced in page 21-22 of the attached report [[PDF]](./literatures/URP_Report_TungDuongMai.pdf).
+* [Regulated-Adahybrid](./query_strategies/hybrid.py): Find the best exploration ratio by using the performance signal and detected concept drift. Currently supports two strategies.
+* [Drift detectors](./query_strategies/drift.py): Controlling the weights between hybrid subsamplers by measuring the amount of concept drift between the validation and testing set. Currently supports two strategies.
+  * [POT](./query_strategies/pot.py): Earth-mover distance between the validation- and test- embeddings is used to measure the concept drift. We used a POT library [[Reference]](https://pythonot.github.io/all.html?highlight=emd2#ot.emd2)
+  * [P-value](./query_strategies/risky.py): Anderson-Darling test is used to measure the concept drift. [[Reference]](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.anderson_ksamp.html)
+
+
+## Research
 Please find the attached literatures to study. Some of them are uploaded in `./literatures` directory.
 * Machine Learning for Customs Fraud Detection [[Link]](https://github.com/YSCHOI-github/Customs_Fraud_Detection): This repository helps practitioners to get used to machine learning for customs fraud detection. This material is worth to check before catching up the DATE paper.
-* DATE: Dual-Attentive Tree-aware Embedding for Customs Fraud Detection (KDD'2020) [[Github]](https://bit.ly/kdd20-date) [[Paper]](https://dl.acm.org/doi/pdf/10.1145/3394486.3403339) [[Slides]](http://seondong.github.io/assets/papers/2020_KDD_DATE_slides.pdf) [[Presentation (20 min)]](https://youtu.be/S-29rTbvH6c) [[Promotional video]](https://youtu.be/YhfxCHBNM2g): DATE is the Tree-aware dual attentive model for finding the most illicit and valuable imports at the same time. In the 'Take a Chance' paper, we use DATE as a representative of exploitation strategies. We are building algorithms on top of DATE architecture. We can easily reproduce DATE by running [DATE](./query_strategies/DATE.py) on this repository.
+* DATE: Dual-Attentive Tree-aware Embedding for Customs Fraud Detection (KDD'2020) [[Github]](https://bit.ly/kdd20-date): DATE is the Tree-aware dual attentive model for finding the most illicit and valuable imports at the same time. We use DATE as a representative exploitation strategies and its embeddings are used for various strategies. You can test [DATE](./query_strategies/DATE.py) by running `--sampling DATE`.
 * Take a Chance: Managing the Exploitation-Exploration Dilemma in Customs Fraud Detection via Online Active Learning [[Link]](https://arxiv.org/abs/2010.14282): The key point of this study is that in the conflicting situation between short term revenue and long-term model performance, adding a certain amount of exploration strategy will ensure that the customs targeting system operates sustainably. To that end, our research team proposed an exploration scheme called bATE and gATE, and showed that the model's performance is maintained for a long time when these strategies are used together with existing exploitation strategies. We can easily reproduce this hybrid approach by running [Hybrid](./query_strategies/hybrid.py) with exploitation-exploration pair, such as 90% [DATE](./query_strategies/DATE.py) and 10% [gATE](./query_strategies/gATE.py). 
 
 
 ## Citation
 If you find this code useful, please cite the original paper:
 ```LaTeX
+@inproceedings{kimtsai2020date,
+  title={DATE: Dual Attentive Tree-aware Embedding for Customs Fraud Detection},
+  author={Kim, Sundong and Tsai, Yu-Che and Singh, Karandeep and Choi, Yeonsoo and Ibok, Etim and Li, Cheng-Te and Cha, Meeyoung},
+  booktitle={Proceedings of the 26th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining},
+  year={2020}
+}
 @misc{kim2021customs,
   title={Take a Chance: Managing the Exploitation-Exploration Dilemma in Customs Fraud Detection via Online Active Learning},
   author={Sundong Kim and Tung-Duong Mai and Thi Nguyen Duc Khanh and Sungwon Han and Sungwon Park and Karandeep Singh and Meeyoung Cha},
