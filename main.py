@@ -18,6 +18,7 @@ import numpy as np
 import torch
 import torch.utils.data as Data
 import pandas as pd
+from scipy.stats import hmean
 import torch
 from model.AttTreeEmbedding import Attention, DATEModel
 from utils import torch_threshold, metrics, metrics_active
@@ -431,6 +432,49 @@ if __name__ == '__main__':
         illicit_test_notna = data.test_cls_label[~np.isnan(data.test_cls_label)]
         revenue_test_notna = data.test_reg_label[~np.isnan(data.test_reg_label)]
 
+        def evaluate_inspection_multiclass(inspected, test, class_labels):
+            inspection_codes = class_labels['검사결과부호']
+            inspection_codes_broad = sorted(list(set(class_labels['검사결과부호'].apply(lambda x: x[0]))))
+            result = {}
+            
+            def _calculate_metrics(codes):
+                iresults = inspected['검사결과코드']
+                tresults = test['검사결과코드']
+                macro_f1_specific = 0
+                result = dict()
+                result['precision'] = dict()
+                result['recall'] = dict()
+                result['f1'] = dict()
+                result['macrof1'] = 0
+                
+                for code in codes:
+                    precision, recall = 0, 0
+                    precision = sum(np.array([code in ''.join(str(j)) for j in iresults])) / len(iresults)
+                    recall = sum(np.array([code in ''.join(str(j)) for j in iresults])) / sum(np.array([code in ''.join(str(j)) for j in tresults]))
+                    # print(code, precision, recall)
+                    
+                    try:
+                        f1 = hmean([precision, recall])
+                        macro_f1_specific += f1
+                    except ValueError:
+                        f1 = 0
+                    
+                    result['precision'][code] = precision
+                    result['recall'][code] = recall
+                    result['f1'][code] = f1
+
+                macro_f1_specific /= len(inspection_codes)
+                result['macrof1'] = macro_f1_specific
+                return result
+
+            result['specific_result'] = _calculate_metrics(inspection_codes) 
+            result['broad_result'] = _calculate_metrics(inspection_codes_broad) 
+            return result
+
+
+
+
+        evaluate_inspection_multiclass(inspected_imports, data.test, data.class_labels)
         active_precisions, active_recalls, active_f1s, active_revenues = evaluate_inspection(active_rev_notna, active_cls_notna, illicit_test_notna, revenue_test_notna)
         logger.info(f'Performance:\n Pr@{current_inspection_rate}:{round(active_precisions, 4)}, Re@{current_inspection_rate}:{round(active_recalls, 4)} Rev@{current_inspection_rate}:{round(active_revenues, 4)}') 
 

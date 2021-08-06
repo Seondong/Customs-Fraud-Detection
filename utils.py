@@ -142,7 +142,6 @@ def metrics(y_prob,xgb_testy,revenue_test, args, best_thresh=None):
 
 def metrics_active(active_rev,active_cls,xgb_testy,revenue_test):
     """ Evaluate the performance"""
-
     try:
         precision = np.count_nonzero(active_cls == 1) / len(active_cls)
     except:
