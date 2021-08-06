@@ -133,6 +133,9 @@ def initialize_sampler(samp, args):
     elif samp == 'rada':
         from query_strategies import radahybrid;
         sampler = radahybrid.RegulatedAdaHybridSampling(args)
+    elif samp == 'multiclass':
+        from query_strategies import multiclass;
+        sampler = multiclass.MulticlassSampling(args)
     else:
         sampler = None
         print('Make sure the sampling strategy is listed in the argument --sampling')
@@ -185,7 +188,7 @@ if __name__ == '__main__':
     parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
     parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
     parser.add_argument('--output', type=str, default="result"+"-"+curr_time, help="Name of output file")
-    parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'risky', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'upDATE', 'gATE', 'hybrid', 'adahybrid', 'tabnet', 'ssl_ae', 'noupDATE', 'randomupDATE', 'deepSAD', 'multideepSAD', 'pot', 'pvalue', 'rada'], help='Sampling strategy')
+    parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'risky', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'upDATE', 'gATE', 'hybrid', 'adahybrid', 'tabnet', 'ssl_ae', 'noupDATE', 'randomupDATE', 'deepSAD', 'multideepSAD', 'pot', 'pvalue', 'rada', 'multiclass'], help='Sampling strategy')
     parser.add_argument('--initial_inspection_rate', type=float, default=100, help='Initial inspection rate in training data by percentile')
     parser.add_argument('--final_inspection_rate', type=float, default = 5, help='Percentage of test data need to query')
     parser.add_argument('--inspection_plan', type=str, default = 'direct_decay', choices=['direct_decay','linear_decay','fast_linear_decay'], help='Inspection rate decaying option for simulation time')
@@ -432,7 +435,10 @@ if __name__ == '__main__':
         illicit_test_notna = data.test_cls_label[~np.isnan(data.test_cls_label)]
         revenue_test_notna = data.test_reg_label[~np.isnan(data.test_reg_label)]
 
+
         def evaluate_inspection_multiclass(inspected, test, class_labels):
+            # TODO: needs to be optimized, the code is slow.
+
             inspection_codes = class_labels['검사결과부호']
             inspection_codes_broad = sorted(list(set(class_labels['검사결과부호'].apply(lambda x: x[0]))))
             result = {}
@@ -473,8 +479,9 @@ if __name__ == '__main__':
 
 
 
-
-        evaluate_inspection_multiclass(inspected_imports, data.test, data.class_labels)
+        if args.data in ['synthetic-k', 'synthetic-k-partial', 'real-k']:
+            evaluate_inspection_multiclass(inspected_imports, data.test, data.class_labels)
+     
         active_precisions, active_recalls, active_f1s, active_revenues = evaluate_inspection(active_rev_notna, active_cls_notna, illicit_test_notna, revenue_test_notna)
         logger.info(f'Performance:\n Pr@{current_inspection_rate}:{round(active_precisions, 4)}, Re@{current_inspection_rate}:{round(active_recalls, 4)} Rev@{current_inspection_rate}:{round(active_revenues, 4)}') 
 
