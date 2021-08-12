@@ -81,6 +81,30 @@ def initialize_sampler(samp, args):
     elif samp == 'risky':
         from query_strategies import risky;
         sampler = risky.RiskProfileSampling(args)
+    elif samp == 'riskylogistic':
+        from query_strategies import risky; 
+        sampler = risky.RiskProfileLogisticSampling(args)
+    elif samp == 'riskyprod':
+        from query_strategies import risky; 
+        sampler = risky.RiskProfileProdSampling(args)
+    elif samp == 'riskyprec':
+        from query_strategies import risky; 
+        sampler = risky.RiskProfilePrecisionSampling(args)
+    elif samp == 'riskyMAB':
+        from query_strategies import risky; 
+        sampler = risky.RiskProfileMABSampling(args)
+    elif samp == 'riskyMABsum':
+        from query_strategies import risky; 
+        sampler = risky.RiskProfileMABSumSampling(args)
+    elif samp == 'riskyDecayMAB':
+        from query_strategies import risky; 
+        sampler = risky.RiskProfileDiscountMABSampling(args)
+    elif samp == 'riskyDecayMABsum':
+        from query_strategies import risky; 
+        sampler = risky.RiskProfileDiscountMABSumSampling(args)
+    elif samp == 'AttentionAgg':
+        from query_strategies import AttentionAggregate;
+        sampler = AttentionAggregate.AttentionSampling(args)
     elif samp == 'xgb':
         from query_strategies import xgb;
         sampler = xgb.XGBSampling(args)
@@ -184,7 +208,7 @@ if __name__ == '__main__':
     parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
     parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
     parser.add_argument('--output', type=str, default="result"+"-"+curr_time, help="Name of output file")
-    parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'risky', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'upDATE', 'gATE', 'hybrid', 'adahybrid', 'tabnet', 'ssl_ae', 'noupDATE', 'randomupDATE', 'deepSAD', 'multideepSAD', 'pot', 'pvalue', 'rada'], help='Sampling strategy')
+    parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'risky', 'riskylogistic', 'riskyprod', 'riskyprec', 'riskyMAB', 'riskyMABsum', 'riskyDecayMAB', 'riskyDecayMABsum', 'AttentionAgg', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'upDATE', 'gATE', 'hybrid', 'adahybrid', 'tabnet', 'ssl_ae', 'noupDATE', 'randomupDATE', 'deepSAD', 'multideepSAD', 'pot', 'pvalue', 'rada'], help='Sampling strategy')
     parser.add_argument('--initial_inspection_rate', type=float, default=100, help='Initial inspection rate in training data by percentile')
     parser.add_argument('--final_inspection_rate', type=float, default = 5, help='Percentage of test data need to query')
     parser.add_argument('--inspection_plan', type=str, default = 'direct_decay', choices=['direct_decay','linear_decay','fast_linear_decay'], help='Inspection rate decaying option for simulation time')
@@ -250,25 +274,25 @@ if __name__ == '__main__':
     
     # Load datasets 
     if chosen_data == 'synthetic':
-        data = dataset.Syntheticdata(path='./data/synthetic-imports-declarations.csv')
+        data = dataset.Syntheticdata(path='../WCO-project/data/synthetic-imports-declarations.csv')
     elif chosen_data == 'synthetic-k':
-        data = dataset.SyntheticKdata(path='./data/df_syn_ano_0429_merge.csv')  # fully labeled
+        data = dataset.SyntheticKdata(path='../WCO-project/data/df_syn_ano_0429_merge.csv')  # fully labeled
     elif chosen_data == 'synthetic-k-partial':
-        data = dataset.SyntheticKdata(path='./data/df_syn_ano_0429_merge_partially_labeled.csv')   # partially labeled
+        data = dataset.SyntheticKdata(path='../WCO-project/data/df_syn_ano_0429_merge_partially_labeled.csv')   # partially labeled
         args.initial_masking = 'natural'   # since this data is given as partially labeled, it does not need extra label masking.
         initial_masking = 'natural'   
     elif chosen_data == 'real-k':
-        data = dataset.Kdata(path='./data/Anony_0622_merge_total.csv')
+        data = dataset.Kdata(path='../WCO-project/data/Anony_0622_merge_total.csv')
         args.initial_masking = 'natural'
         initial_masking = 'natural'
     elif chosen_data == 'real-n':
-        data = dataset.Ndata(path='./data/ndata.csv')
+        data = dataset.Ndata(path='../WCO-project/data/ndata.csv')
     elif chosen_data == 'real-m':
-        data = dataset.Mdata(path='./data/mdata.csv')
+        data = dataset.Mdata(path='../WCO-project/data/mdata.csv')
     elif chosen_data == 'real-t':
-        data = dataset.Tdata(path='./data/tdata.csv')
+        data = dataset.Tdata(path='../WCO-project/data/tdata.csv')
     elif chosen_data == 'real-c':
-        data = dataset.Cdata(path='./data/cdata.csv')  
+        data = dataset.Cdata(path='../WCO-project/data/cdata.csv')  
     
     hybrid_strategies = ['hybrid', 'adahybrid', 'pot', 'pvalue', 'rada']
    
