@@ -118,8 +118,8 @@ class RiskProfilePrecisionSampling(Strategy):
                     self.W = self.W - lr * ((1-y)*yhat_t * x.t()).sum(dim=1).unsqueeze(1)
                     self.W = self.W + lr * (D_t * ((1-yhat_t)*y * x.t()).sum(dim=1).unsqueeze(1))
 
-            self.data.valid['risk_perceptron'] = torch.matmul(torch.tensor(self.validX.to_numpy()), self.W).detach().numpy()
-            validsorted = self.data.valid[['illicit', 'risk_perceptron']].sort_values('risk_perceptron', ascending=False)
+            self.data.valid_lab['risk_perceptron'] = torch.matmul(torch.tensor(self.validX.to_numpy()), self.W).detach().numpy()
+            validsorted = self.data.valid_lab[['illicit', 'risk_perceptron']].sort_values('risk_perceptron', ascending=False)
             length_valid = len(validsorted)
             for i in [0.01, 0.02, 0.05, 0.1]:
                 validhead = validsorted.head(int(length_valid*i ))
