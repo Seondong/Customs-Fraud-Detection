@@ -8,6 +8,7 @@ import torch
 import copy
 import math
 from tqdm import tqdm
+import pandas as pd
 
 class RiskProfileSampling(Strategy):
     """ Naive Risk Profile Sampling strategy (sum) """
@@ -236,6 +237,7 @@ class RiskProfileDiscountMABSampling(Strategy):
         
     def calculate_beta_parameter(self):
         category_list = self.data.profile_candidates
+        self.data.train_lab['sgd.date'] = pd.to_datetime(self.data.train_lab['sgd.date'], format='%y-%m-%d')
         end_time = self.data.train_lab['sgd.date'].iloc[-1]
         self.data.train_lab['gamma'] = self.data.train_lab['sgd.date'].apply(lambda x: math.pow(self.decay, (end_time - x).days))
         self.data.train_lab['decayed_illicit'] = self.data.train_lab['illicit'] * self.data.train_lab['gamma']
@@ -280,6 +282,7 @@ class RiskProfileDiscountMABSumSampling(Strategy):
         
     def calculate_beta_parameter(self):
         category_list = self.data.profile_candidates
+        self.data.train_lab['sgd.date'] = pd.to_datetime(self.data.train_lab['sgd.date'], format='%y-%m-%d')
         end_time = self.data.train_lab['sgd.date'].iloc[-1]
         self.data.train_lab['gamma'] = self.data.train_lab['sgd.date'].apply(lambda x: math.pow(self.decay, (end_time - x).days))
         self.data.train_lab['decayed_illicit'] = self.data.train_lab['illicit'] * self.data.train_lab['gamma']
