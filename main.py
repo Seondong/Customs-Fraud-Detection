@@ -274,25 +274,25 @@ if __name__ == '__main__':
     
     # Load datasets 
     if chosen_data == 'synthetic':
-        data = dataset.Syntheticdata(path='../WCO-project/data/synthetic-imports-declarations.csv')
+        data = dataset.Syntheticdata(path='./data/synthetic-imports-declarations.csv')
     elif chosen_data == 'synthetic-k':
-        data = dataset.SyntheticKdata(path='../WCO-project/data/df_syn_ano_0429_merge.csv')  # fully labeled
+        data = dataset.SyntheticKdata(path='./data/df_syn_ano_0429_merge.csv')  # fully labeled
     elif chosen_data == 'synthetic-k-partial':
-        data = dataset.SyntheticKdata(path='../WCO-project/data/df_syn_ano_0429_merge_partially_labeled.csv')   # partially labeled
+        data = dataset.SyntheticKdata(path='./data/df_syn_ano_0429_merge_partially_labeled.csv')   # partially labeled
         args.initial_masking = 'natural'   # since this data is given as partially labeled, it does not need extra label masking.
         initial_masking = 'natural'   
     elif chosen_data == 'real-k':
-        data = dataset.Kdata(path='../WCO-project/data/Anony_0622_merge_total.csv')
+        data = dataset.Kdata(path='./data/Anony_0622_merge_total.csv')
         args.initial_masking = 'natural'
         initial_masking = 'natural'
     elif chosen_data == 'real-n':
-        data = dataset.Ndata(path='../WCO-project/data/ndata.csv')
+        data = dataset.Ndata(path='./data/ndata.csv')
     elif chosen_data == 'real-m':
-        data = dataset.Mdata(path='../WCO-project/data/mdata.csv')
+        data = dataset.Mdata(path='./data/mdata.csv')
     elif chosen_data == 'real-t':
-        data = dataset.Tdata(path='../WCO-project/data/tdata.csv')
+        data = dataset.Tdata(path='./data/tdata.csv')
     elif chosen_data == 'real-c':
-        data = dataset.Cdata(path='../WCO-project/data/cdata.csv')  
+        data = dataset.Cdata(path='./data/cdata.csv')  
     
     hybrid_strategies = ['hybrid', 'adahybrid', 'pot', 'pvalue', 'rada']
    
