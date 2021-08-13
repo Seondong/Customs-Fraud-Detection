@@ -4,24 +4,29 @@ Use your collected declarations data, fit the provided models, find the best sel
 This framework supports general import declarations. 
 
 
-## How to Install  
+## How to Use  
 
-1. Setup your Python environment: e.g., Anaconda Python 3.7 [[Guide]](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html)
+1. Setup your Python environment: e.g., Anaconda Python 3.8 [[Guide]](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html)
 ```
-$ source activate py37 
+$ conda activate py38 
 ```
 
-2. Install requirements 
+2. Clone the repository:
+```
+$ git clone https://github.com/Seondong/Customs-Fraud-Detection.git
+```
+
+3. Install requirements 
 ```
 $ pip install -r requirements.txt
 ```
 
-3. Run the codes: Refer to main.py for hyperparameters, .sh files in `./bash` directory will give you some ideas how to run codes effectively. 
-
+4. Run the codes: Refer to main.py for hyperparameters, .sh files in `./bash` directory will give you some ideas how to run codes effectively. 
 ```
 $ python main.py --data synthetic --train_from 20130101 --test_from 20130115 --valid_length 7 --test_length 7 --numweeks 100 --final_inspection_rate 10 --sampling hybrid --subsamplings xgb/random --weights 0.9/0.1  
 ```
 The example command is to simulate the customs targeting system on a synthetic dataset. The initial training period starts from Jan 1, 2013 `(--train_from)`, and spans 14 days. The last seven days of the training set are held out for validation `(--valid_length)`. With the trained model, customs selection begins on Jan 15 `(--test_from)`. The first testing period spans seven days - batch setting `(--test_length)`. After testing, inspected items are labeled and added to the training set. The simulation terminates after 100 testing periods `(--numweeks)`. The target inspection rate is set as 10% `(--final_inspection_rate)`, which means that 10% of the goods are inspected and levied duties. The hybrid selection strategy consisting of xgb and random is used by 9:1 ratio `(--sampling, --subsamplings, --weights)`. In other words, 9% of the total items are selected by XGBoost for inspection, and the remaining 1% of the items are randomly inspected. 
+
 
 
 ## Data Format
@@ -40,13 +45,13 @@ To run the code with real datasets, please refer to `data/` directory. [[README]
 
 
 ## Available Selection Strategies:
-#### Stand-alone strategies:
+### Stand-alone strategies:
 ```
 $ python main.py --sampling random --data synthetic --train_from 20130101 --test_from 20130115 --valid_length 7 --test_length 7 --numweeks 100 --final_inspection_rate 10
-$ export CUDA_VISIBLE_DEVICES=0 && python main.py --sampling DATE --data real-t --train_from 20150101 --test_from 20150115 --valid_length 7 --test_length 7 --numweeks 300 --initial_inspection_rate 10 --final_inspection_rate 5 --inspection_plan fast_linear_decay --initial_masking importer
+$ python main.py --sampling DATE --data real-t --train_from 20150101 --test_from 20150115 --valid_length 7 --test_length 7 --numweeks 300 --initial_inspection_rate 10 --final_inspection_rate 5 --inspection_plan fast_linear_decay --initial_masking importer
 $ python main.py --sampling ssl_ae --data real-n --train_from 20130101 --test_from 20130131 --valid_length 7 --test_length 14 --numweeks 100 --initial_inspection_rate 10 --final_inspection_rate 5 --semi_supervised 1
 ```
-1. Supervised strategies (use labeled data only):
+#### Supervised strategies (use labeled data only):
 * [Random](./query_strategies/random.py): Random selection, often used as a sub-strategy to find novel frauds by compensating the weakness of the selection model based on historical data. 
 * [Risky](./query_strategies/risky.py): Simple but effective strategy by using the risky profile indicators (handler's fraud history) to determine the suspiciousness of the trade.
 * [XGBoost](./query_strategies/xgb.py): Baseline exploitation strategy using both risky profiles of categorical variables and numeric variables as inputs. [[Reference]](https://xgboost.readthedocs.io/en/latest/python/python_api.html)
@@ -58,13 +63,13 @@ $ python main.py --sampling ssl_ae --data real-n --train_from 20130101 --test_fr
 * [bATE](./query_strategies/bATE.py): Proposed model for better exploration. By following the BADGE model, we first use the embeddings of the base model, DATE. Our contribution is to amplify the embedding with extra uncertainty score, and predicted revenue. Finally, we find the most diverse imports by KMeans++. [[Reference]](https://arxiv.org/abs/2010.14282)
 * [gATE](./query_strategies/gATE.py): Proposed exploration model, bATE added with gatekeeper. [[Reference]](https://arxiv.org/abs/2010.14282)
 
-2. Semi-supervised strategies (use unlabeled data together, `--semi_supervised 1`):
+#### Semi-supervised strategies (use unlabeled data together, `--semi_supervised 1`):
 * [deepSAD](./query_strategies/deepSAD.py): Deep-SAD model, which does semi-supervised anomaly detection by pulling normal-labeled and unlabeled data into a single point, and pushing anomalies away. [[Reference]](https://github.com/lukasruff/Deep-SAD-PyTorch)
 * [multideepSAD](./query_strategies/multideepSAD.py): deepSAD variant with several cluster points.
 * [SSL-AE](./query_strategies/ssl_ae.py): Semi-supervised learning approach by optimizing reconstruction loss of all imports and binary cross-entropy of labeled imports.
 
 
-#### Hybrid strategies:
+### Hybrid strategies:
 ```
 $ python main.py --sampling hybrid --subsamplings xgb/risky/random --weights 0.7/0.2/0.1 --data synthetic --train_from 20130101 --test_from 20130115 --valid_length 7 --test_length 7 --numweeks 100 --final_inspection_rate 10 
 $ python main.py --sampling adahybrid --subsamplings DATE/random --weights 0.9/0.1 --data synthetic --train_from 20130101 --test_from 20130115 --valid_length 7 --test_length 7 --numweeks 100 --final_inspection_rate 10 
@@ -93,6 +98,7 @@ If you find this code useful, please cite the original paper:
   booktitle={Proceedings of the 26th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining},
   year={2020}
 }
+
 @misc{kim2021customs,
   title={Take a Chance: Managing the Exploitation-Exploration Dilemma in Customs Fraud Detection via Online Active Learning},
   author={Sundong Kim and Tung-Duong Mai and Thi Nguyen Duc Khanh and Sungwon Han and Sungwon Park and Karandeep Singh and Meeyoung Cha},

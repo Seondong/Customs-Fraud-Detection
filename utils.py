@@ -14,7 +14,7 @@ def timer_func(func):
         t1 = time()
         result = func(*args, **kwargs)
         t2 = time()
-        # print(f'Function {func.__name__!r} executed in {(t2-t1):.4f}s')   # You can turn it on/off for debugging.
+        print(f'Function {func.__name__!r} executed in {(t2-t1):.4f}s')   # You can turn it on/off for debugging.
         return result
     return wrap_func
 
@@ -142,7 +142,6 @@ def metrics(y_prob,xgb_testy,revenue_test, args, best_thresh=None):
 
 def metrics_active(active_rev,active_cls,xgb_testy,revenue_test):
     """ Evaluate the performance"""
-
     try:
         precision = np.count_nonzero(active_cls == 1) / len(active_cls)
     except:

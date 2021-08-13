@@ -18,9 +18,10 @@ import numpy as np
 import torch
 import torch.utils.data as Data
 import pandas as pd
+from scipy.stats import hmean
 import torch
 from model.AttTreeEmbedding import Attention, DATEModel
-from utils import torch_threshold, metrics, metrics_active
+from utils import timer_func, torch_threshold, metrics, metrics_active
 from query_strategies import uncertainty, random
 warnings.filterwarnings("ignore")
 
@@ -156,6 +157,9 @@ def initialize_sampler(samp, args):
     elif samp == 'rada':
         from query_strategies import radahybrid;
         sampler = radahybrid.RegulatedAdaHybridSampling(args)
+    elif samp == 'multiclass':
+        from query_strategies import multiclass;
+        sampler = multiclass.MulticlassSampling(args)
     else:
         sampler = None
         print('Make sure the sampling strategy is listed in the argument --sampling')
@@ -455,6 +459,44 @@ if __name__ == '__main__':
         illicit_test_notna = data.test_cls_label[~np.isnan(data.test_cls_label)]
         revenue_test_notna = data.test_reg_label[~np.isnan(data.test_reg_label)]
 
+
+        def evaluate_inspection_multiclass(inspected, test, class_labels):
+            from sklearn.preprocessing import MultiLabelBinarizer
+            
+            inspection_codes = class_labels['검사결과부호']
+            inspection_codes_broad = sorted(list(set(class_labels['검사결과부호'].apply(lambda x: x[0]))))
+            result = {}
+
+            @timer_func
+            def _calculate_metrics(codes, label):
+                mlb = MultiLabelBinarizer(classes = list(range(len(codes))))
+                iresults = inspected[label]
+                tresults = test[label]
+                iresults_mtx = np.array(mlb.fit_transform(iresults)) # change into matrix..
+                tresults_mtx = np.array(mlb.fit_transform(tresults))
+
+                precisions = np.true_divide(iresults_mtx.sum(axis = 0), np.shape(iresults_mtx)[0]) # array of precisions
+                recalls = np.divide(iresults_mtx.sum(axis = 0), tresults_mtx.sum(axis = 0), out = np.zeros(len(codes)), where = tresults_mtx.sum(axis = 0)!=0) # array of recalls
+                f1 = hmean([precisions, recalls], axis = 0)
+                macro_f1 = np.mean(np.array(f1))
+                result['precision'] = dict(zip(codes, precisions))
+                result['recall'] = dict(zip(codes, recalls))
+                result['f1'] = dict(zip(codes, f1))
+                result['macrof1'] = macro_f1
+
+                return result
+
+            result['specific_result'] = _calculate_metrics(inspection_codes, '검사결과코드') 
+            result['broad_result'] = _calculate_metrics(inspection_codes_broad, '검사결과코드-대분류') 
+            return result
+
+
+
+        if args.data in ['synthetic-k', 'synthetic-k-partial', 'real-k']:
+            metric_dict = evaluate_inspection_multiclass(inspected_imports, data.test, data.class_labels)
+            logger.info(f'Performance:\n specific: MacroF1@{current_inspection_rate}:{round(metric_dict["specific_result"]["macrof1"], 4)}\n broad: MacroF1@{current_inspection_rate}:{round(metric_dict["broad_result"]["macrof1"], 4)}')
+
+     
         active_precisions, active_recalls, active_f1s, active_revenues = evaluate_inspection(active_rev_notna, active_cls_notna, illicit_test_notna, revenue_test_notna)
         logger.info(f'Performance:\n Pr@{current_inspection_rate}:{round(active_precisions, 4)}, Re@{current_inspection_rate}:{round(active_recalls, 4)} Rev@{current_inspection_rate}:{round(active_revenues, 4)}') 
 

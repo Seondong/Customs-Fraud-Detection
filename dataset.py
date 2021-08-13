@@ -470,7 +470,7 @@ class SyntheticKdata(Import_declarations):
         
         import itertools
         from collections import defaultdict
-        w = pd.read_csv("./data/inspection-result-code.csv", encoding = 'CP949')
+        self.class_labels = pd.read_csv("./data/inspection-result-code.csv", encoding = 'CP949')
 
         def _findweight(x, code_weight):
             rslt = []
@@ -478,18 +478,29 @@ class SyntheticKdata(Import_declarations):
                 rslt.append(code_weight[y])
             return rslt
 
-        weight_dict = defaultdict(int, w['검사결과부호'])
+        weight_dict = defaultdict(int, self.class_labels['검사결과부호'])
         weight_dict = {y:x for x,y in weight_dict.items()}
+
+        # list of 대분류 inspection codes
+        inspection_codes_broad = sorted(list(set(self.class_labels['검사결과부호'].apply(lambda x: x[0]))))
 
         def _measure_(x):
             y = x.split('_')
             list(map(weight_dict.get, y))
 
-        label_indices = self.df['검사결과코드'].apply(lambda x: x.split('_') if pd.notnull(x) else [x]).apply(lambda y: list(map(weight_dict.get, y)))
-        code_weight = dict(w[['검사결과부호', '가중치']].values)
+        def _parse_label_code(y_code):
+                return y_code.apply(lambda x: x.split('_'))
+
+        # label_indices = self.df['검사결과코드'].apply(lambda x: x.split('_') if pd.notnull(x) else [x]).apply(lambda y: list(map(weight_dict.get, y)))
+        
+        code_weight = dict(self.class_labels[['검사결과부호', '가중치']].values)
         code_weight[np.nan] = np.nan
 
-        self.df['가중치최대치'] = self.df['검사결과코드'].apply(lambda x: x.split('_') if pd.notnull(x) else [x]).apply(lambda x: _findweight(x, code_weight)).apply(max)
+        self.df['검사결과코드-대분류'] = self.df['검사결과코드'].apply(lambda x: [i for i, s in enumerate(inspection_codes_broad) if pd.notnull(x) and s in x])
+        self.df['검사결과코드'] = self.df['검사결과코드'].apply(lambda x: x.split('_') if pd.notnull(x) else [x]) 
+        self.df['가중치최대치'] = self.df['검사결과코드'].apply(lambda x: _findweight(x, code_weight)).apply(max)
+        self.df['검사결과코드'] = self.df['검사결과코드'].apply(lambda y: list(map(weight_dict.get, y)))
+        
         self.df.rename(columns={'가중치최대치':'revenue'}, inplace=True)
 
         self.profile_candidates = ['통관지세관부호',  '신고인부호', '수입자부호', '해외거래처부호', '특송업체부호',

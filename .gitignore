@@ -14,6 +14,9 @@ data/NTMdata.csv
 data/df_syn_ano_0429_merge.csv
 data/df_syn_ano_0429_merge_partially_labeled.csv
 data/inspection-result-code.csv
+data/kdata.csv
+analysis/EDA-k.ipynb
+analysis/EDA-k-small.ipynb
 nohup.out
 .ipynb_checkpoints/
 logs/
