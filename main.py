@@ -59,7 +59,7 @@ class Simulator():
         parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
         parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
         parser.add_argument('--output', type=str, default="result"+"-"+self.sim_start_time, help="Name of output file")
-        parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'risky', 'riskylogistic', 'riskyprod', 'riskyprec', 'riskyMAB', 'riskyMABsum', 'riskyDecayMAB', 'riskyDecayMABsum', 'AttentionAgg', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'upDATE', 'gATE', 'hybrid', 'adahybrid', 'tabnet', 'ssl_ae', 'deepSAD', 'multideepSAD', 'pot', 'pvalue', 'rada'], help='Sampling strategy')
+        parser.add_argument('--sampling', type=str, default = 'xgb', choices=['random', 'risky', 'riskylogistic', 'riskyprod', 'riskyprec', 'riskyMAB', 'riskyMABsum', 'riskyDecayMAB', 'riskyDecayMABsum', 'AttentionAgg', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'upDATE', 'gATE', 'hybrid', 'adahybrid', 'tabnet', 'ssl_ae', 'deepSAD', 'multideepSAD', 'pot', 'pvalue', 'csi', 'rada'], help='Sampling strategy')
         parser.add_argument('--initial_inspection_rate', type=float, default=100, help='Initial inspection rate in training data by percentile')
         parser.add_argument('--final_inspection_rate', type=float, default = 5, help='Percentage of test data need to query')
         parser.add_argument('--inspection_plan', type=str, default = 'direct_decay', choices=['direct_decay','linear_decay','fast_linear_decay'], help='Inspection rate decaying option for simulation time')
@@ -87,7 +87,7 @@ class Simulator():
         parser.add_argument('--num_arms', type=int, default=21, help="number of arms for adahybrid")
 
         # Hyperparameters for radahybrid.py:
-        parser.add_argument('--drift', type=str, default='pot', choices = ['pot', 'pvalue'], help="algorithms for measuring concept drift")
+        parser.add_argument('--drift', type=str, default='pot', choices = ['pot', 'pvalue', 'csi'], help="algorithms for measuring concept drift")
         parser.add_argument('--mixing', type=str, default='multiply', choices = ['multiply', 'reinit'], help="method of mixing concept drift with regulated adahybrid")
 
         # Arguments
@@ -95,7 +95,7 @@ class Simulator():
         self.args = args        
         self.logger.info(self.args)
 
-        self.hybrid_strategies = ['hybrid', 'adahybrid', 'pot', 'pvalue', 'rada']
+        self.hybrid_strategies = ['hybrid', 'adahybrid', 'pot', 'pvalue', 'csi', 'rada']
         self.uncertainty_module = None 
         
         # Initial dataset split
@@ -330,7 +330,7 @@ class Simulator():
             
             # Initialize uncertainty module for some cases
             if self.args.uncertainty == 'self-supervised':
-                if samp in ['bATE', 'diversity', 'hybrid', 'upDATE', 'gATE', 'adahybrid', 'pot', 'pvalue', 'rada']:
+                if samp in ['bATE', 'diversity', 'hybrid', 'upDATE', 'gATE', 'adahybrid', 'pot', 'pvalue', 'csi', 'rada']:
                     if self.uncertainty_module is None :
                         self.uncertainty_module = uncertainty.Uncertainty(self.data.train_lab, './uncertainty_models/')
                         self.uncertainty_module.train()
@@ -386,7 +386,7 @@ class Simulator():
             self.logger.debug(self.inspected_imports[:5])
             
             # tune the uncertainty
-            if self.args.uncertainty == 'self-supervised' and samp in ['bATE', 'diversity', 'hybrid', 'upDATE', 'gATE', 'adahybrid', 'pot', 'pvalue', 'rada']:
+            if self.args.uncertainty == 'self-supervised' and samp in ['bATE', 'diversity', 'hybrid', 'gATE', 'adahybrid', 'pot', 'pvalue', 'csi', 'rada']:
                 self.uncertainty_module.retrain(self.data.test.iloc[self.inspected_indices - self.data.offset])
             
             # Evaluate the inspected results
@@ -501,7 +501,7 @@ def initialize_sampler(samp, args):
     elif samp == 'badge':
         from query_strategies import badge;
         sampler = badge.BadgeSampling(args)
-    elif samp in ['DATE']:
+    elif samp == 'DATE':
         from query_strategies import DATE;
         sampler = DATE.DATESampling(args)
     elif samp == 'diversity':
@@ -534,6 +534,9 @@ def initialize_sampler(samp, args):
     elif samp == 'pot':
         from query_strategies import pot;
         sampler = pot.POTSampling(args)
+    elif samp == 'csi':
+        from query_strategies import csi;
+        sampler = csi.CSISampling(args)        
     elif samp == 'adahybrid':
         from query_strategies import adahybrid;
         sampler = adahybrid.AdaHybridSampling(args)

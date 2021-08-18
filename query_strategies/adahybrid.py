@@ -45,7 +45,7 @@ class ExpWeights(object):
         
     def sample(self):
         if np.random.uniform() >= self.epsilon:
-            self.p = [np.exp(x) for x in self.l.values()]
+            self.p = np.array([np.exp(x) for x in self.l.values()]).clip(0.0001, 10000)
             self.p /= np.sum(self.p) # normalize to make it a distribution
 #             print(f'p = {self.p}')
             self.arm = np.random.choice(range(0,len(self.p)), p=self.p)
@@ -75,7 +75,7 @@ class ExpWeights(object):
         
         # Thus, the probability of pulling the arm is reduced.
         self.l[self.arm] *= self.decay
-        self.l[self.arm] -= self.lr * feedback/max(self.p[self.arm], 1e-16)
+        self.l[self.arm] -= self.lr * feedback/self.p[self.arm]
         
         self.feedbacks.append(feedback)
         
@@ -125,15 +125,15 @@ class AdaHybridSampling(HybridSampling):
         # Update weights for next week
         self.weight_sampler.set_data(self.data)
         self.weight = self.weight_sampler.sample()
-        self.weights = [self.weight, 1 - self.weight]
+        self.weights = [1 - self.weight, self.weight]
         print(f'weight_sampler.p = {self.weight_sampler.p}')
         
         # Update underlying distribution for each arm using predicted results
         self.weight_sampler.update_dists(1-performance)
         # self.weight_sampler.update_dists_advanced(self.each_chosen, 1-performance)
-        print(f'Ada distribution: {self.weight_sampler.p}')
         print(f'Ada arm: {self.weight_sampler.value}')
-        print(f'Feedbacks: {self.weight_sampler.data}')        
+        print(f'Ada (pre-exponential) distribution: {self.weight_sampler.l}')
+        print(f'Feedbacks (error rate): {1-performance}')        
 #         logger.info(f'Ada distribution: {self.weight_sampler.p}')
 #         logger.info(f'Ada arm: {self.weight_sampler.value}')
 #         logger.info(f'Feedbacks: {self.weight_sampler.data}')
