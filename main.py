@@ -148,6 +148,9 @@ def initialize_sampler(samp, args):
     elif samp == 'pot':
         from query_strategies import pot;
         sampler = pot.POTSampling(args)
+    elif samp == 'csi':
+        from query_strategies import csi;
+        sampler = csi.CSISampling(args)        
     elif samp == 'adahybrid':
         from query_strategies import adahybrid;
         sampler = adahybrid.AdaHybridSampling(args)
@@ -212,7 +215,7 @@ if __name__ == '__main__':
     parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
     parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
     parser.add_argument('--output', type=str, default="result"+"-"+curr_time, help="Name of output file")
-    parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'risky', 'riskylogistic', 'riskyprod', 'riskyprec', 'riskyMAB', 'riskyMABsum', 'riskyDecayMAB', 'riskyDecayMABsum', 'AttentionAgg', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'upDATE', 'gATE', 'hybrid', 'adahybrid', 'tabnet', 'ssl_ae', 'noupDATE', 'randomupDATE', 'deepSAD', 'multideepSAD', 'pot', 'pvalue', 'rada'], help='Sampling strategy')
+    parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'risky', 'riskylogistic', 'riskyprod', 'riskyprec', 'riskyMAB', 'riskyMABsum', 'riskyDecayMAB', 'riskyDecayMABsum', 'AttentionAgg', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'upDATE', 'gATE', 'hybrid', 'adahybrid', 'tabnet', 'ssl_ae', 'noupDATE', 'randomupDATE', 'deepSAD', 'multideepSAD', 'pot', 'pvalue', 'csi', 'rada'], help='Sampling strategy')
     parser.add_argument('--initial_inspection_rate', type=float, default=100, help='Initial inspection rate in training data by percentile')
     parser.add_argument('--final_inspection_rate', type=float, default = 5, help='Percentage of test data need to query')
     parser.add_argument('--inspection_plan', type=str, default = 'direct_decay', choices=['direct_decay','linear_decay','fast_linear_decay'], help='Inspection rate decaying option for simulation time')
@@ -240,7 +243,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_arms', type=int, default=21, help="number of arms for adahybrid")
 
     # Hyperparameters for radahybrid.py:
-    parser.add_argument('--drift', type=str, default='pot', choices = ['pot', 'pvalue'], help="algorithms for measuring concept drift")
+    parser.add_argument('--drift', type=str, default='pot', choices = ['pot', 'pvalue', 'csi'], help="algorithms for measuring concept drift")
     parser.add_argument('--mixing', type=str, default='multiply', choices = ['multiply', 'reinit'], help="method of mixing concept drift with regulated adahybrid")
 
     # Arguments
@@ -298,7 +301,7 @@ if __name__ == '__main__':
     elif chosen_data == 'real-c':
         data = dataset.Cdata(path='./data/cdata.csv')  
     
-    hybrid_strategies = ['hybrid', 'adahybrid', 'pot', 'pvalue', 'rada']
+    hybrid_strategies = ['hybrid', 'adahybrid', 'pot', 'pvalue', 'csi', 'rada']
    
     subsamps = args.subsamplings.replace('/','+')
     if samp not in hybrid_strategies:
@@ -386,7 +389,7 @@ if __name__ == '__main__':
         
         # Initialize uncertainty module for some cases
         if unc_mode == 'self-supervised':
-            if samp in ['bATE', 'diversity', 'hybrid', 'upDATE', 'gATE', 'adahybrid', 'pot', 'pvalue', 'rada']:
+            if samp in ['bATE', 'diversity', 'hybrid', 'upDATE', 'gATE', 'adahybrid', 'pot', 'pvalue', 'csi', 'rada']:
                 if uncertainty_module is None :
                     uncertainty_module = uncertainty.Uncertainty(data.train_lab, './uncertainty_models/')
                     uncertainty_module.train()
@@ -443,7 +446,7 @@ if __name__ == '__main__':
         logger.debug(inspected_imports[:5])
         
         # tune the uncertainty
-        if unc_mode == 'self-supervised' and samp in ['bATE', 'diversity', 'hybrid', 'upDATE', 'gATE', 'adahybrid', 'pot', 'pvalue', 'rada']:
+        if unc_mode == 'self-supervised' and samp in ['bATE', 'diversity', 'hybrid', 'upDATE', 'gATE', 'adahybrid', 'pot', 'pvalue', 'csi', 'rada']:
             uncertainty_module.retrain(data.test.iloc[indices - data.offset])
         
         # Evaluation
