@@ -313,12 +313,10 @@ class Import_declarations():
             else:
                 self.X_valid_unlab = np.asarray([])
 
-        print("Data size:")
-
         if self.args.semi_supervised == 1:
-            print(f'Train labeled: {self.train_lab.shape}, Train unlabeled: {self.train_unlab.shape}, Valid labeled: {self.valid_lab.shape}, Valid unlabeled: {self.valid_unlab.shape}, Test: {self.test.shape}')
+            print(f'Data size - Train labeled: {self.train_lab.shape}, Train unlabeled: {self.train_unlab.shape}, Valid labeled: {self.valid_lab.shape}, Valid unlabeled: {self.valid_unlab.shape}, Test: {self.test.shape}')
         elif self.args.semi_supervised == 0:
-            print(f'Train labeled: {self.train_lab.shape}, Valid labeled: {self.valid_lab.shape}, Test: {self.test.shape}')
+            print(f'Data size - Train labeled: {self.train_lab.shape}, Valid labeled: {self.valid_lab.shape}, Test: {self.test.shape}')
         
         # impute nan
         self.X_train_lab = np.nan_to_num(self.X_train_lab, 0)
@@ -521,10 +519,20 @@ class Kdata(Import_declarations):
     def __init__(self, path):
         super(Kdata, self).__init__(path)
         self.df = pd.read_csv(self.path)
-
         self.df['신고일자'] = self.df['신고일자'].apply(lambda x: x[2:])
+        self.df['가중치최대치'] = self.df['최대값']
         self.df.rename(columns={'우범여부':'illicit', '신고일자':'sgd.date'}, inplace=True)
         self.df.rename(columns={'최대값':'revenue'}, inplace=True)
+
+        self.class_labels = pd.read_csv("./data/inspection-result-code.csv", encoding = 'CP949')
+        weight_dict = defaultdict(int, self.class_labels['검사결과부호'])
+        weight_dict = {y:x for x,y in weight_dict.items()}
+
+        # list of 대분류 inspection codes
+        inspection_codes_broad = sorted(list(set(self.class_labels['검사결과부호'].apply(lambda x: x[0]))))
+        self.df['검사결과코드-대분류'] = self.df['검사결과코드'].apply(lambda x: [i for i, s in enumerate(inspection_codes_broad) if pd.notnull(x) and s in x])
+        self.df['검사결과코드'] = self.df['검사결과코드'].apply(lambda x: x.split('_') if pd.notnull(x) else [x]) 
+        self.df['검사결과코드'] = self.df['검사결과코드'].apply(lambda y: list(map(weight_dict.get, y)))
 
         self.profile_candidates = ['통관지세관부호',  '신고인부호', '수입자부호', '해외거래처부호', '특송업체부호',
        '수입통관계획코드', '수입신고구분코드', '수입거래구분코드', '수입종류코드', '징수형태코드', '운송수단유형코드', '반입보세구역부호', 'HS6', '적출국가코드', '원산지국가코드']
