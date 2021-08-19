@@ -178,6 +178,7 @@ def evaluate_inspection_multiclass(inspected, test, class_labels):
         tresults = test[label]
         iresults_mtx = np.array(mlb.fit_transform(iresults)) # change into matrix..
         tresults_mtx = np.array(mlb.fit_transform(tresults))
+        _result = dict()
 
         precisions = np.true_divide(iresults_mtx.sum(axis = 0), np.shape(iresults_mtx)[0]) # array of precisions
         recalls = np.divide(iresults_mtx.sum(axis = 0), tresults_mtx.sum(axis = 0), out = np.zeros(len(codes)), where = tresults_mtx.sum(axis = 0)!=0) # array of recalls
@@ -186,11 +187,11 @@ def evaluate_inspection_multiclass(inspected, test, class_labels):
         except ValueError:
             f1 = np.zeros(len(precisions))
         macro_f1 = np.mean(np.array(f1))
-        result['precision'] = dict(zip(codes, precisions))
-        result['recall'] = dict(zip(codes, recalls))
-        result['f1'] = dict(zip(codes, f1))
-        result['macrof1'] = macro_f1
-        return result
+        _result['precision'] = dict(zip(codes, precisions))
+        _result['recall'] = dict(zip(codes, recalls))
+        _result['f1'] = dict(zip(codes, f1))
+        _result['macrof1'] = macro_f1
+        return _result
 
     result['specific_result'] = _calculate_metrics(inspection_codes, '검사결과코드') 
     result['broad_result'] = _calculate_metrics(inspection_codes_broad, '검사결과코드-대분류') 
