@@ -40,7 +40,10 @@ class RiskProfileProdSampling(Strategy):
 
     def predict_frauds(self):
         """ Prediction for new dataset (test_model) """
-        self.y_totalrisk = self.data.dftestx[[col for col in self.data.dftestx.columns if ('RiskH' in col and '&' not in col)]].prod(axis=1)
+        test_risk = self.data.dftestx[[col for col in self.data.dftestx.columns if ('RiskH' in col and '&' not in col)]]
+        masked_df = test_risk.mask(test_risk == 0)
+        test_risk_revised = masked_df.fillna(masked_df.min())
+        self.y_totalrisk = test_risk_revised.prod(axis=1)
         
     @timer_func
     def query(self, k):

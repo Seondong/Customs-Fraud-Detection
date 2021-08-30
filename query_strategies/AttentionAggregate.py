@@ -41,7 +41,7 @@ class AttentionSampling(Strategy):
 
         
     def generate_metagraph(self):
-        self.xgb = XGBClassifier(n_estimators=5, max_depth=7, n_jobs=-1, eval_metric='logloss', verbosity = 0)
+        self.xgb = XGBClassifier(n_estimators=4, max_depth=7, n_jobs=-1, eval_metric='logloss', verbosity = 0)
         self.xgb.fit(self.data.dftrainx_lab.to_numpy(), self.data.train_cls_label) 
         
         X_train_leaves = self.xgb.apply(self.data.dftrainx_lab.to_numpy())
@@ -49,11 +49,11 @@ class AttentionSampling(Strategy):
         X_valid_leaves = self.xgb.apply(self.data.dfvalidx_lab.to_numpy())
         X_test_leaves = self.xgb.apply(self.data.dftestx.to_numpy())
         
-        self.data.train_lab[[f'tree{i}' for i in range(5)]] = X_train_leaves
-        self.data.train_unlab[[f'tree{i}' for i in range(5)]] = X_train_unlab_leaves
-        self.data.valid_lab[[f'tree{i}' for i in range(5)]] = X_valid_leaves
-        self.data.test[[f'tree{i}' for i in range(5)]] = X_test_leaves 
-        self.category = [f'tree{i}' for i in range(5)]
+        self.data.train_lab[[f'tree{i}' for i in range(4)]] = X_train_leaves
+        self.data.train_unlab[[f'tree{i}' for i in range(4)]] = X_train_unlab_leaves
+        self.data.valid_lab[[f'tree{i}' for i in range(4)]] = X_valid_leaves
+        self.data.test[[f'tree{i}' for i in range(4)]] = X_test_leaves 
+        self.category = [f'tree{i}' for i in range(4)]
         
         
     def prepare_dataloader(self):
@@ -140,6 +140,147 @@ class AttentionSampling(Strategy):
         self.predict_frauds()
         chosen = np.argpartition(self.y_prob[self.available_indices], -k)[-k:]
         return self.available_indices[chosen].tolist()
+    
+    
+class AttentionPlusRiskSampling(Strategy):
+    """ Attention + Discounted RiskMAB model """
+    
+    def __init__(self, args):
+        super(AttentionPlusRiskSampling,self).__init__(args)
+        self.neighbor_k = 50
+        self.hidden_size = 32
+        self.batch_size = args.batch_size
+        self.epoch = args.epoch
+        self.decay = math.pow(0.9, (1/365))
+
+        
+    def generate_metagraph(self):
+        self.xgb = XGBClassifier(n_estimators=4, max_depth=7, n_jobs=-1, eval_metric='logloss', verbosity = 0)
+        self.xgb.fit(self.data.dftrainx_lab.to_numpy(), self.data.train_cls_label) 
+        
+        X_train_leaves = self.xgb.apply(self.data.dftrainx_lab.to_numpy())
+        X_train_unlab_leaves = self.xgb.apply(self.data.dftrainx_unlab.to_numpy())
+        X_valid_leaves = self.xgb.apply(self.data.dfvalidx_lab.to_numpy())
+        X_test_leaves = self.xgb.apply(self.data.dftestx.to_numpy())
+        
+        self.data.train_lab[[f'tree{i}' for i in range(4)]] = X_train_leaves
+        self.data.train_unlab[[f'tree{i}' for i in range(4)]] = X_train_unlab_leaves
+        self.data.valid_lab[[f'tree{i}' for i in range(4)]] = X_valid_leaves
+        self.data.test[[f'tree{i}' for i in range(4)]] = X_test_leaves 
+        self.category = [f'tree{i}' for i in range(4)]
+        
+        
+    def prepare_dataloader(self):
+        self.train_ds = AttDataset(self.data, self.data.train_lab, self.data.train_unlab, self.data.train_lab, self.neighbor_k, self.category)
+        self.valid_ds = AttDataset(self.data, self.data.train_lab, self.data.train_unlab, self.data.valid_lab, self.neighbor_k, self.category)
+        train_valid_all_df = pd.concat([self.data.train_lab, self.data.valid_lab])
+        self.test_ds = AttDataset(self.data, train_valid_all_df, self.data.train_unlab, self.data.test, self.neighbor_k, self.category)
+        
+        self.train_loader = torch.utils.data.DataLoader(self.train_ds, batch_size=self.batch_size, num_workers=8, shuffle=True, drop_last=True)
+        self.valid_loader = torch.utils.data.DataLoader(self.valid_ds, batch_size=self.batch_size, num_workers=8, shuffle=False, drop_last=False)
+        self.test_loader = torch.utils.data.DataLoader(self.test_ds, batch_size=self.batch_size, num_workers=8, shuffle=False, drop_last=False)
+        
+        
+    def train_model(self):
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.input_dim = len(self.data.column_to_use)+1
+        self.model = AttDetect(self.input_dim, self.hidden_size, self.category)
+        self.model.to(device)
+        
+        optimizer = RangerLars(self.model.parameters(), lr=0.01, weight_decay=0.0001)
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer,gamma=0.8)
+        
+        best_f1_top = 0
+        for epoch in range(self.epoch):
+            print("epoch: ", epoch)
+            self.model.train()
+            loss_avg = 0
+            for i, batch in enumerate(tqdm(self.train_loader)):
+                row_feature, neighbor_stack, row_target = batch
+                row_feature = row_feature.to(device)
+                neighbor_stack = neighbor_stack.to(device)
+                row_target = row_target.to(device)
+                loss, logits = self.model(row_feature, neighbor_stack, row_target)
+                loss_avg += loss.item()
+                
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+                scheduler.step()
+                
+            print('train_loss: ', loss_avg / len(self.train_loader))
+                
+            # validation eval
+            self.model.eval()
+            with torch.no_grad():
+                logit_list = []
+                for i, batch in enumerate(tqdm(self.valid_loader)):
+                    row_feature, neighbor_stack, row_target = batch
+                    row_feature = row_feature.to(device)
+                    neighbor_stack = neighbor_stack.to(device)
+                    row_target = row_target.to(device)     
+                    loss, logits = self.model(row_feature, neighbor_stack, row_target)
+                    logit_list.append(logits.reshape(-1, 1))
+                
+                outputs = torch.cat(logit_list).detach().cpu().numpy().ravel()
+                f, pr, re = torch_metrics(np.array(outputs), self.valid_ds.target_Y.astype(int).to_numpy())
+                f1_top = np.mean(f)
+                
+            if f1_top > best_f1_top:
+                self.best_model = self.model
+                best_f1_top = f1_top
+                
+                
+    def calculate_beta_parameter(self):
+        category_list = self.data.profile_candidates
+        self.data.train_lab['sgd.date'] = pd.to_datetime(self.data.train_lab['sgd.date'], format='%y-%m-%d')
+        end_time = self.data.train_lab['sgd.date'].iloc[-1]
+        self.data.train_lab['gamma'] = self.data.train_lab['sgd.date'].apply(lambda x: math.pow(self.decay, (end_time - x).days))
+        self.data.train_lab['decayed_illicit'] = self.data.train_lab['illicit'] * self.data.train_lab['gamma']
+        self.data.train_lab['decayed_nonillicit'] = (1 - self.data.train_lab['illicit']) * self.data.train_lab['gamma']
+        
+        self.cat_dict_dict = {}
+        for category in category_list:
+            cat_df = self.data.train_lab.groupby(category)[['decayed_illicit', 'decayed_nonillicit']].sum()
+            cat_df['alpha'] = cat_df['decayed_illicit'] + 1
+            cat_df['beta'] = cat_df['decayed_nonillicit'] + 1
+            cat_dict = cat_df[['alpha', 'beta']].to_dict()
+            self.cat_dict_dict[category] = cat_dict
+
+    
+    def predict_frauds(self):
+        """ Prediction for new dataset (test_model) """
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.best_model.eval()
+        logit_list = []
+        with torch.no_grad():
+            for i, batch in enumerate(tqdm(self.test_loader)):
+                row_feature, neighbor_stack, _ = batch
+                row_feature = row_feature.to(device)
+                neighbor_stack = neighbor_stack.to(device)
+                logits = self.model(row_feature, neighbor_stack)
+                logit_list.append(logits.reshape(-1, 1))        
+        self.y_anomaly = torch.cat(logit_list).detach().cpu().numpy().ravel() 
+        
+        test_df = self.data.test[self.data.profile_candidates]
+        for profile in tqdm(self.data.profile_candidates):
+            current_dict = self.cat_dict_dict[profile]
+            test_df[profile +'-sample'] = test_df[profile].apply(lambda x: random.betavariate(current_dict['alpha'].get(x, 1),
+                                                                                              current_dict['beta'].get(x, 1)))
+        self.y_totalrisk = test_df[[col for col in test_df.columns if '-sample' in col]].prod(axis=1).to_numpy().squeeze()
+        self.y_prob = self.y_anomaly * self.y_totalrisk
+                                                                                              
+                                                                                              
+    @timer_func
+    def query(self, k):
+        self.generate_metagraph()
+        self.prepare_dataloader()
+        self.train_model()
+        self.calculate_beta_parameter()
+        self.predict_frauds()
+        chosen = np.argpartition(self.y_prob[self.available_indices], -k)[-k:]
+        return self.available_indices[chosen].tolist()
+    
     
 
 def torch_metrics(y_prob, xgb_testy, display=True):
