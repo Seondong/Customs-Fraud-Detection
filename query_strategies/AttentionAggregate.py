@@ -27,6 +27,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from typing import Tuple, Optional
 from utils import timer_func
+from torchtools.nn import Mish
 
 
 class AttentionSampling(Strategy):
@@ -41,13 +42,25 @@ class AttentionSampling(Strategy):
 
         
     def generate_metagraph(self):
-        self.xgb = XGBClassifier(n_estimators=4, max_depth=7, n_jobs=-1, eval_metric='logloss', verbosity = 0)
-        self.xgb.fit(self.data.dftrainx_lab.to_numpy(), self.data.train_cls_label) 
+        column_for_feature = ['cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'TaxUnitquantity', 'SGD.DayofYear', 'SGD.WeekofYear', 'SGD.MonthofYear'] + [col for col in self.data.train_lab.columns if 'RiskH' in col] 
         
-        X_train_leaves = self.xgb.apply(self.data.dftrainx_lab.to_numpy())
-        X_train_unlab_leaves = self.xgb.apply(self.data.dftrainx_unlab.to_numpy())
-        X_valid_leaves = self.xgb.apply(self.data.dfvalidx_lab.to_numpy())
-        X_test_leaves = self.xgb.apply(self.data.dftestx.to_numpy())
+        self.data.column_for_feature = column_for_feature
+        self.data.train_lab[self.data.column_for_feature] = self.data.train_lab[self.data.column_for_feature].fillna(0)
+        self.data.train_unlab['illicit'] = 0.5
+        self.data.train_unlab[self.data.column_for_feature] = self.data.train_unlab[self.data.column_for_feature].fillna(0)
+        self.data.valid_lab[self.data.column_for_feature] = self.data.valid_lab[self.data.column_for_feature].fillna(0)
+        self.data.test[self.data.column_for_feature] = self.data.test[self.data.column_for_feature].fillna(0)
+        
+        self.xgb = XGBClassifier(booster='gbtree', scale_pos_weight=1,
+                                 learning_rate=0.3, colsample_bytree=0.4,
+                                 subsample=0.6, objective='binary:logistic', 
+                                 n_estimators=4, max_depth=10, gamma=10)
+        self.xgb.fit(self.data.train_lab[column_for_feature], self.data.train_cls_label) 
+        
+        X_train_leaves = self.xgb.apply(self.data.train_lab[column_for_feature])
+        X_train_unlab_leaves = self.xgb.apply(self.data.train_unlab[column_for_feature])
+        X_valid_leaves = self.xgb.apply(self.data.valid_lab[column_for_feature])
+        X_test_leaves = self.xgb.apply(self.data.test[column_for_feature])
         
         self.data.train_lab[[f'tree{i}' for i in range(4)]] = X_train_leaves
         self.data.train_unlab[[f'tree{i}' for i in range(4)]] = X_train_unlab_leaves
@@ -92,8 +105,8 @@ class AttentionSampling(Strategy):
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-                scheduler.step()
                 
+            scheduler.step()
             print('train_loss: ', loss_avg / len(self.train_loader))
                 
             # validation eval
@@ -155,13 +168,29 @@ class AttentionPlusRiskSampling(Strategy):
 
         
     def generate_metagraph(self):
-        self.xgb = XGBClassifier(n_estimators=4, max_depth=7, n_jobs=-1, eval_metric='logloss', verbosity = 0)
-        self.xgb.fit(self.data.dftrainx_lab.to_numpy(), self.data.train_cls_label) 
+        column_for_feature = ['cif.value', 'total.taxes', 'gross.weight', 'quantity', 'Unitprice', 'WUnitprice', 'TaxRatio', 'TaxUnitquantity', 'SGD.DayofYear', 'SGD.WeekofYear', 'SGD.MonthofYear'] + [col for col in self.data.train_lab.columns if 'RiskH' in col] 
         
-        X_train_leaves = self.xgb.apply(self.data.dftrainx_lab.to_numpy())
-        X_train_unlab_leaves = self.xgb.apply(self.data.dftrainx_unlab.to_numpy())
-        X_valid_leaves = self.xgb.apply(self.data.dfvalidx_lab.to_numpy())
-        X_test_leaves = self.xgb.apply(self.data.dftestx.to_numpy())
+        self.data.column_for_feature = column_for_feature
+        self.data.train_lab[self.data.column_for_feature] = self.data.train_lab[self.data.column_for_feature].fillna(0)
+        self.data.train_unlab['illicit'] = 0.5
+        self.data.train_unlab[self.data.column_for_feature] = self.data.train_unlab[self.data.column_for_feature].fillna(0)
+        self.data.valid_lab[self.data.column_for_feature] = self.data.valid_lab[self.data.column_for_feature].fillna(0)
+        self.data.test[self.data.column_for_feature] = self.data.test[self.data.column_for_feature].fillna(0)
+        
+        self.data.train_lab = self.data.train_lab[~self.data.train_lab.isin([np.nan, np.inf, -np.inf]).any(1)]
+        self.data.train_unlab = self.data.train_unlab[~self.data.train_unlab.isin([np.nan, np.inf, -np.inf]).any(1)]
+        self.data.valid_lab = self.data.valid_lab[~self.data.valid_lab.isin([np.nan, np.inf, -np.inf]).any(1)]
+        
+        self.xgb = XGBClassifier(booster='gbtree', scale_pos_weight=1,
+                                 learning_rate=0.3, colsample_bytree=0.4,
+                                 subsample=0.6, objective='binary:logistic', 
+                                 n_estimators=4, max_depth=10, gamma=10)
+        self.xgb.fit(self.data.train_lab[column_for_feature], self.data.train_cls_label) 
+        
+        X_train_leaves = self.xgb.apply(self.data.train_lab[column_for_feature])
+        X_train_unlab_leaves = self.xgb.apply(self.data.train_unlab[column_for_feature])
+        X_valid_leaves = self.xgb.apply(self.data.valid_lab[column_for_feature])
+        X_test_leaves = self.xgb.apply(self.data.test[column_for_feature])
         
         self.data.train_lab[[f'tree{i}' for i in range(4)]] = X_train_leaves
         self.data.train_unlab[[f'tree{i}' for i in range(4)]] = X_train_unlab_leaves
@@ -179,7 +208,7 @@ class AttentionPlusRiskSampling(Strategy):
         self.train_loader = torch.utils.data.DataLoader(self.train_ds, batch_size=self.batch_size, num_workers=8, shuffle=True, drop_last=True)
         self.valid_loader = torch.utils.data.DataLoader(self.valid_ds, batch_size=self.batch_size, num_workers=8, shuffle=False, drop_last=False)
         self.test_loader = torch.utils.data.DataLoader(self.test_ds, batch_size=self.batch_size, num_workers=8, shuffle=False, drop_last=False)
-        
+              
         
     def train_model(self):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -200,13 +229,14 @@ class AttentionPlusRiskSampling(Strategy):
                 row_feature = row_feature.to(device)
                 neighbor_stack = neighbor_stack.to(device)
                 row_target = row_target.to(device)
+
                 loss, logits = self.model(row_feature, neighbor_stack, row_target)
                 loss_avg += loss.item()
                 
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-                scheduler.step()
+            scheduler.step()
                 
             print('train_loss: ', loss_avg / len(self.train_loader))
                 
@@ -219,7 +249,7 @@ class AttentionPlusRiskSampling(Strategy):
                     row_feature = row_feature.to(device)
                     neighbor_stack = neighbor_stack.to(device)
                     row_target = row_target.to(device)     
-                    loss, logits = self.model(row_feature, neighbor_stack, row_target)
+                    loss, logits = self.model(row_feature, neighbor_stack, row_target)                   
                     logit_list.append(logits.reshape(-1, 1))
                 
                 outputs = torch.cat(logit_list).detach().cpu().numpy().ravel()
@@ -268,16 +298,19 @@ class AttentionPlusRiskSampling(Strategy):
             test_df[profile +'-sample'] = test_df[profile].apply(lambda x: random.betavariate(current_dict['alpha'].get(x, 1),
                                                                                               current_dict['beta'].get(x, 1)))
         self.y_totalrisk = test_df[[col for col in test_df.columns if '-sample' in col]].prod(axis=1).to_numpy().squeeze()
+        
+        self.y_anomaly = (self.y_anomaly - self.y_anomaly.min()) / (self.y_anomaly.max() - self.y_anomaly.min())
+        self.y_totalrisk = (self.y_totalrisk - self.y_totalrisk.min()) / (self.y_totalrisk.max() - self.y_totalrisk.min())
         self.y_prob = self.y_anomaly * self.y_totalrisk
                                                                                               
                                                                                               
     @timer_func
-    def query(self, k):
+    def query(self, k):       
         self.generate_metagraph()
         self.prepare_dataloader()
         self.train_model()
         self.calculate_beta_parameter()
-        self.predict_frauds()
+        self.predict_frauds()       
         chosen = np.argpartition(self.y_prob[self.available_indices], -k)[-k:]
         return self.available_indices[chosen].tolist()
     
@@ -303,20 +336,28 @@ def torch_metrics(y_prob, xgb_testy, display=True):
     
     
     
-class MLP(nn.Module):
-    def __init__(self, input_dim=2048, hidden_size=4096, output_dim=128):
-        super().__init__()
-        self.output_dim = output_dim
-        self.input_dim = input_dim
-        self.model = nn.Sequential(
-            nn.Linear(input_dim, hidden_size, bias=False),
-            nn.BatchNorm1d(hidden_size),
-            nn.ReLU(inplace=True),
-            nn.Linear(hidden_size, output_dim, bias=True))
+class Dense(nn.Module):
+    def __init__(self, inchannel, outchannel):
+        super(Dense, self).__init__()
+        self.bn = nn.BatchNorm1d(outchannel)
+        self.act = Mish()
+        self.layer = nn.Linear(inchannel,outchannel)
+        
+    def forward(self,x):
+        x = self.act(self.bn(self.layer(x)))
+        return x
 
-    def forward(self, x):
-        x = self.model(x)
-        return x    
+class MLP(nn.Module):
+    def __init__(self, inchannel, outchannel, Numlayer = 2):
+        super(MLP, self).__init__()
+        self.layers = nn.ModuleList([Dense(inchannel,outchannel)])
+        for _ in range(Numlayer-1):
+            self.layers.append(Dense(outchannel, outchannel))
+        
+    def forward(self,x):
+        for l in self.layers:
+            x = l(x)
+        return x 
    
     
 class AttDataset(torch.utils.data.Dataset):
@@ -404,7 +445,7 @@ class AttDetect(nn.Module):
         self.nhead = nhead
         self.category = category
         
-        self.initEmbedding = MLP(self.input_dim, self.dim, self.dim)
+        self.initEmbedding = MLP(self.input_dim, self.dim, Numlayer=2)
         self.selfmha_list = nn.ModuleList()
         self.mha_list = nn.ModuleList()
         for cat in category:
