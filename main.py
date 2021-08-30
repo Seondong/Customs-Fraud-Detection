@@ -18,11 +18,405 @@ import numpy as np
 import torch
 import torch.utils.data as Data
 import pandas as pd
+from scipy.stats import hmean
 import torch
 from model.AttTreeEmbedding import Attention, DATEModel
-from utils import torch_threshold, metrics, metrics_active
+from utils import timer_func, evaluate_inspection, evaluate_inspection_multiclass
 from query_strategies import uncertainty, random
 warnings.filterwarnings("ignore")
+
+
+class Simulator():
+    """ Simulator class """
+
+    def __init__(self):
+        self.sim_start_time = str(round(time.time(),3))
+        print('Experiment starts: ', self.sim_start_time)
+        
+        self.generate_paths()
+        self.logger = make_logger(self.sim_start_time)
+        
+        # Parse argument
+        parser = argparse.ArgumentParser()
+        
+        # Hyperparameters related to DATE
+        parser.add_argument('--epoch', type=int, default=20, help="Number of epochs for DATE-related models")
+        parser.add_argument('--batch_size', type=int, default=10000, help="Batch size for DATE-related models")
+        parser.add_argument('--dim', type=int, default=16, help="Hidden layer dimension")
+        parser.add_argument('--lr', type=float, default=0.005, help="learning rate")
+        parser.add_argument('--l2', type=float, default=0.01, help="l2 reg")
+        parser.add_argument('--alpha', type=float, default=10, help="Regression loss weight")
+        parser.add_argument('--head_num', type=int, default=4, help="Number of heads for self attention")
+        parser.add_argument('--use_self', type=int, default=1, help="Whether to use self attention")
+        parser.add_argument('--fusion', type=str, choices=["concat","attention"], default="concat", help="Fusion method for final embedding")
+        parser.add_argument('--agg', type=str, choices=["sum","max","mean"], default="sum", help="Aggreate type for leaf embedding")
+        parser.add_argument('--act', type=str, choices=["mish","relu"], default="relu", help="Activation function")
+        parser.add_argument('--risk_profile', type=str, choices=["topk","ratio"], default="topk", help="Risk profile criteria")
+        
+        # Hyperparameters related to customs selection
+        parser.add_argument('--prefix', type=str, default='results', help="experiment name used as prefix for results file")
+        parser.add_argument('--initial_masking', type=str, default="random", choices = ['random', 'importer', 'natural'], help="Masking some initial training data for simulating partially labeled scenario (for synthetic and m, n, t dataset)")
+        parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
+        parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
+        parser.add_argument('--output', type=str, default="result"+"-"+self.sim_start_time, help="Name of output file")
+        parser.add_argument('--sampling', type=str, default = 'xgb', choices=['random', 'risky', 'riskylogistic', 'riskyprod', 'riskyprec', 'riskyMAB', 'riskyMABsum', 'riskyDecayMAB', 'riskyDecayMABsum', 'AttentionAgg', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'upDATE', 'gATE', 'hybrid', 'adahybrid', 'tabnet', 'ssl_ae', 'deepSAD', 'multideepSAD', 'pot', 'pvalue', 'csi', 'rada'], help='Sampling strategy')
+        parser.add_argument('--initial_inspection_rate', type=float, default=100, help='Initial inspection rate in training data by percentile')
+        parser.add_argument('--final_inspection_rate', type=float, default = 5, help='Percentage of test data need to query')
+        parser.add_argument('--inspection_plan', type=str, default = 'direct_decay', choices=['direct_decay','linear_decay','fast_linear_decay'], help='Inspection rate decaying option for simulation time')
+        parser.add_argument('--mode', type=str, default = 'finetune', choices = ['finetune', 'scratch'], help = 'finetune last model or train from scratch')
+        parser.add_argument('--subsamplings', type=str, default = 'xgb/random', help = 'available for hybrid sampling, the list of sub-sampling techniques seperated by /')
+        parser.add_argument('--weights', type=str, default = '0.9/0.1', help = 'available for hybrid sampling, the list of weights for sub-sampling techniques seperated by /')
+        parser.add_argument('--uncertainty', type=str, default = 'naive', choices = ['naive', 'self-supervised'], help = 'Uncertainty principle : ambiguity of illicitness or self-supervised manner prediction')
+        parser.add_argument('--rev_func', type=str, default = 'log', choices = ['log'], help = 'Uncertainty principle : ambiguity of illicitness or self-supervised manner prediction')
+        parser.add_argument('--closs', type=str, default = 'bce', choices = ['bce', 'focal'], help = 'Classification loss function')
+        parser.add_argument('--rloss', type=str, default = 'full', choices = ['full', 'masked'], help = 'Regression loss function')
+        parser.add_argument('--train_from', type=str, default = '20130101', help = 'Training period start from (YYYYMMDD)')
+        parser.add_argument('--test_from', type=str, default = '20130201', help = 'Testing period start from (YYYYMMDD)')
+        parser.add_argument('--test_length', type=int, default=7, help='Single testing period length (e.g., 7)')
+        parser.add_argument('--valid_length', type=int, default=7, help='Validation period length (e.g., 7)')
+        parser.add_argument('--data', type=str, default='synthetic', choices = ['synthetic', 'synthetic-k', 'synthetic-k-partial', 'real-n', 'real-m', 'real-t', 'real-c', 'real-k'], help = 'Dataset')
+        parser.add_argument('--numweeks', type=int, default=50, help='number of test weeks (week if test_length = 7)')
+        parser.add_argument('--semi_supervised', type=int, default=0, help='Does the selection strategy use uninspected imports for training? (1 = Yes, Semi-supervised, 0 = No, fully-supervised)')
+        parser.add_argument('--identifier', type=str, default=self.sim_start_time, help='identifier for each execution')
+        parser.add_argument('--save', type=int, default=0, help='Save intermediary files (1=save, 0=not save)')
+
+        # Hyperparameters for adahybrid.py and its childs:
+        parser.add_argument('--ada_lr', type=float, default=0.8, help="learning rate for adahybrid")
+        parser.add_argument('--ada_decay', type=float, default=1, help="decay factor for adahybrid, 1 for no decay")
+        parser.add_argument('--ada_epsilon', type=float, default=0, help="degree of randomness for adahybrid")
+        parser.add_argument('--num_arms', type=int, default=21, help="number of arms for adahybrid")
+
+        # Hyperparameters for radahybrid.py:
+        parser.add_argument('--drift', type=str, default='pot', choices = ['pot', 'pvalue', 'csi'], help="algorithms for measuring concept drift")
+        parser.add_argument('--mixing', type=str, default='multiply', choices = ['multiply', 'reinit'], help="method of mixing concept drift with regulated adahybrid")
+
+        # Arguments
+        args = parser.parse_args()
+        self.args = args        
+        self.logger.info(self.args)
+
+        self.hybrid_strategies = ['hybrid', 'adahybrid', 'pot', 'pvalue', 'csi', 'rada']
+        self.uncertainty_module = None 
+        
+        # Initial dataset split
+        self.train_start_day = datetime.date(int(args.train_from[:4]), int(args.train_from[4:6]), int(args.train_from[6:8]))
+        self.test_start_day = datetime.date(int(args.test_from[:4]), int(args.test_from[4:6]), int(args.test_from[6:8]))
+        self.test_length = timedelta(days=args.test_length)    
+        self.test_end_day = self.test_start_day + self.test_length
+        self.valid_length = timedelta(days=args.valid_length)
+        self.valid_start_day = self.test_start_day - self.valid_length
+
+        self.confirmed_inspection_plan = inspection_plan(args.initial_inspection_rate, args.final_inspection_rate, args.numweeks, args.inspection_plan)
+        self.logger.info('Inspection rate for testing periods: %s', self.confirmed_inspection_plan)
+
+
+    def generate_paths(self):
+        """ Generate required directories """
+        pathlib.Path('./results').mkdir(parents=True, exist_ok=True) 
+        pathlib.Path('./results/performances').mkdir(parents=True, exist_ok=True)
+        pathlib.Path('./results/ratios').mkdir(parents=True, exist_ok=True)    
+        pathlib.Path('./results/query_indices').mkdir(parents=True, exist_ok=True)
+        pathlib.Path('./intermediary').mkdir(parents=True, exist_ok=True)
+        pathlib.Path('./intermediary/saved_models').mkdir(parents=True, exist_ok=True)
+        pathlib.Path('./intermediary/logs').mkdir(parents=True, exist_ok=True)
+        pathlib.Path('./intermediary/xgb_models').mkdir(parents=True, exist_ok=True)
+        pathlib.Path('./intermediary/tn_models').mkdir(parents=True, exist_ok=True)
+        pathlib.Path('./intermediary/torch_data').mkdir(parents=True, exist_ok=True)
+        pathlib.Path('./intermediary/leaf_indices').mkdir(parents=True, exist_ok=True)
+        pathlib.Path('./intermediary/embeddings').mkdir(parents=True, exist_ok=True)
+        pathlib.Path('./uncertainty_models').mkdir(parents=True, exist_ok=True)
+        pathlib.Path('./temp').mkdir(parents=True, exist_ok=True)
+
+
+    def prepare_data(self):
+        """ Prepare data to simulate """
+
+        # Load datasets 
+        if self.args.data == 'synthetic':
+            self.data = dataset.Syntheticdata(path='./data/synthetic-imports-declarations.csv')
+        elif self.args.data == 'synthetic-k':
+            self.data = dataset.SyntheticKdata(path='./data/df_syn_ano_0429_merge.csv')  # fully labeled
+        elif self.args.data == 'synthetic-k-partial':
+            self.data = dataset.SyntheticKdata(path='./data/df_syn_ano_0429_merge_partially_labeled.csv')   # partially labeled
+            self.args.initial_masking = 'natural'   # since this data is given as partially labeled, it does not need extra label masking.
+            initial_masking = 'natural'   
+        elif self.args.data == 'real-k':
+            self.data = dataset.Kdata(path='./data/kdata.csv')
+            self.args.initial_masking = 'natural'
+            initial_masking = 'natural'
+        elif self.args.data == 'real-n':
+            self.data = dataset.Ndata(path='./data/ndata.csv')
+        elif self.args.data == 'real-m':
+            self.data = dataset.Mdata(path='./data/mdata.csv')
+        elif self.args.data == 'real-t':
+            self.data = dataset.Tdata(path='./data/tdata.csv')
+        elif self.args.data == 'real-c':
+            self.data = dataset.Cdata(path='./data/cdata.csv')
+        
+        self.data.split(self.train_start_day, self.valid_start_day, self.test_start_day, self.test_end_day, self.valid_length, self.test_length, self.args)
+        
+
+    def prepare_output_files(self):
+        """ Prepare output files """
+
+        samp = self.args.sampling
+        subsamps = self.args.subsamplings.replace('/','+')
+        if self.args.sampling not in self.hybrid_strategies:
+            subsamps = 'single'
+
+        # Saving simulation results: Output file will be saved under ./results/performances/ directory
+        self.output_file =  "./results/performances/" + self.args.prefix + '-' + self.args.output + '-' + self.args.data + '-' + samp + '-' + subsamps + '-' + str(self.args.final_inspection_rate) + ".csv"
+        with open(self.output_file, 'a') as ff:
+            output_metric_name = ['runID', 'data', 'num_train','num_valid','num_test','num_select','num_inspected','num_uninspected','num_test_illicit','test_illicit_rate', 'upper_bound_precision', 'upper_bound_recall','upper_bound_rev', 'sampling', 'concept_drift', 'mixing',  'ada_lr', 'ada_decay', 'ada_epsilon', 'initial_inspection_rate', 'current_inspection_rate', 'final_inspection_rate', 'inspection_plan', 'mode', 'subsamplings', 'initial_weights', 'current_weights', 'unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue', 'avg_revenue', 'norm-precision', 'norm-recall', 'norm-revenue']
+            print(",".join(output_metric_name),file=ff)
+        
+        # Additional output files for adaptive strategies
+        if samp == 'adahybrid':
+            self.weight_file =  "./results/ratios/" + self.args.prefix + '-' + self.args.output + '-' + samp + '-' + subsamps + '-' + str(self.args.final_inspection_rate) + ".csv"
+            with open(self.weight_file, 'a') as ff:
+                output_weight_name = ['runID', 'data', 'sampling', 'subsamplings', 'numWeek', 'norm-precision', 'norm-recall', 'norm-revenue', 'lr'] + [f'{i/(self.args.num_arms-1)} explore rate' for i in range(self.args.num_arms)] + ['chosen_rate', 'chosen_arm']
+                print(",".join(output_weight_name), file=ff)
+
+        # Additional output files for adaptive strategies
+        if samp == 'rada':
+            self.weight_file =  "./results/ratios/" + self.args.prefix + '-' + self.args.output + '-' + samp + '-' + subsamps + '-' + str(self.args.final_inspection_rate) + ".csv"
+            with open(self.weight_file, 'a') as ff:
+                output_weight_name = ['runID', 'data', 'sampling', 'subsamplings', 'numWeek', 'norm-precision', 'norm-recall', 'norm-revenue', 'lr', 'drift', 'mixing', 'drift_weight'] + [f'{i/(self.args.num_arms-1)} explore rate' for i in range(self.args.num_arms)] + ['chosen_rate', 'chosen_arm']
+                print(",".join(output_weight_name), file=ff)
+
+
+    def evaluate_results(self):
+        """ Evaluation - calculate necessary metrics """
+
+        # Evaluation
+        rev = self.inspected_imports['revenue']
+        rev = rev.transpose().to_numpy()
+
+        cls = self.inspected_imports['illicit']
+        cls = cls.transpose().to_numpy()
+
+        # Added to handle semi-supervised inputs
+        cls_notna = cls[~np.isnan(cls)]
+        rev_notna = rev[~np.isnan(rev)]
+        illicit_test_notna = self.data.test_cls_label[~np.isnan(self.data.test_cls_label)]
+        revenue_test_notna = self.data.test_reg_label[~np.isnan(self.data.test_reg_label)]
+
+        if self.args.data in ['synthetic-k', 'synthetic-k-partial', 'real-k']:
+            metric_dict = evaluate_inspection_multiclass(self.inspected_imports, self.data.test, self.data.class_labels)
+            self.logger.info(f'Performance:\n specific: MacroF1@{self.current_inspection_rate}:{round(metric_dict["specific_result"]["macrof1"], 4)}\n broad: MacroF1@{self.current_inspection_rate}:{round(metric_dict["broad_result"]["macrof1"], 4)}')
+
+        self.precision, self.recall, self.f1, self.revenue_avg, self.revenue_recall = evaluate_inspection(rev_notna, cls_notna, illicit_test_notna, revenue_test_notna)
+        self.logger.info(f'Performance:\n Pr@{self.current_inspection_rate}:{round(self.precision, 4)}, Re@{self.current_inspection_rate}:{round(self.recall, 4)} Rev@{self.current_inspection_rate}:{round(self.revenue_recall, 4)}') 
+
+        self.upper_bound_precision = min(np.sum(illicit_test_notna)/len(self.inspected_indices), 1)
+        self.upper_bound_recall = min(len(self.chosen)/np.sum(illicit_test_notna), 1)
+        self.upper_bound_revenue = min(sum(sorted(revenue_test_notna, reverse=True)[:len(self.chosen)]) / np.sum(revenue_test_notna), 1)
+        
+        self.norm_precision = self.precision/self.upper_bound_precision
+        self.norm_recall = self.recall/self.upper_bound_recall
+        self.norm_revenue = self.revenue_recall/self.upper_bound_revenue
+
+        # import pdb
+        # pdb.set_trace()
+
+
+    def save_results(self):
+        """ Save evaluation results"""
+        samp = self.args.sampling
+
+        if samp in self.hybrid_strategies:
+            subsamplings = self.args.subsamplings
+            initial_weights = [float(weight) for weight in self.args.weights.split("/")]
+            final_weights = initial_weights
+        else:
+            subsamplings = '-'
+            initial_weights = '-'
+            final_weights = '-'
+
+        if samp == 'rada':
+            drift = self.args.drift
+            mixing = self.args.mixing
+        else:
+            drift = '-'
+            mixing = '-'
+        
+        if samp in ['adahybrid', 'rada']:
+            ada_decay = self.args.ada_decay
+            ada_epsilon = self.args.ada_epsilon
+            ada_lr = self.args.ada_lr
+        else:
+            ada_decay = '-'
+            ada_epsilon = '-'
+            ada_lr = '-'
+
+        with open(self.output_file, 'a') as ff:
+            if samp in self.hybrid_strategies:
+                initial_weights_str = '/'.join([str(weight) for weight in initial_weights])
+                final_weights_str = '/'.join([str(weight) for weight in final_weights])
+
+            else:
+                initial_weights_str = '-'
+                final_weights_str = '-'
+            
+            output_metric = [self.sim_start_time, self.args.data, len(self.data.train_lab), len(self.data.valid_lab), len(self.data.test), len(self.chosen), len(self.inspected_imports), len(self.uninspected_imports), np.sum(self.data.test_cls_label), np.mean(self.data.test_cls_label), self.upper_bound_precision, self.upper_bound_recall, self.upper_bound_revenue, samp, drift, mixing, ada_lr, ada_decay, ada_epsilon, self.args.initial_inspection_rate, self.current_inspection_rate, self.args.final_inspection_rate, self.args.inspection_plan, self.args.mode, subsamplings, initial_weights_str, final_weights_str, self.args.uncertainty, self.train_start_day.strftime('%y-%m-%d'), self.valid_start_day.strftime('%y-%m-%d'), self.test_start_day.strftime('%y-%m-%d'), self.test_end_day.strftime('%y-%m-%d'), self.data.episode+1, round(self.precision,4), round(self.recall,4), round(self.revenue_recall,4), round(self.revenue_avg,4), round(self.norm_precision,4), round(self.norm_recall,4), round(self.norm_revenue,4)]
+                
+            output_metric = list(map(str,output_metric))
+            self.logger.debug(output_metric)
+            print(",".join(output_metric),file=ff)
+
+        if samp in ['adahybrid', 'rada']:
+            with open(self.weight_file, 'a') as ff:
+                subsamplings = self.args.subsamplings
+                weights = '/'.join([str(weight) for weight in final_weights])
+                
+                output_metric = [self.sim_start_time, self.args.data, samp, subsamplings, self.data.episode+1, round(self.norm_precision,4), round(self.norm_recall,4), round(self.norm_revenue,4), ada_lr] + list(self.sampler.weight_sampler.p) + [self.sampler.weight_sampler.value, self.sampler.weight_sampler.arm]
+                if samp == 'rada':
+                    output_metric += [drift, mixing, self.sampler.drift_detector.dms_weight]
+                    
+                output_metric = list(map(str,output_metric))
+                self.logger.debug(output_metric)
+                print(",".join(output_metric),file=ff)
+        
+        if self.args.save == 1:
+            self.output_file_indices =  "./results/query_indices/" + self.sim_start_time + '-' + samp + '-' + subsamplings.replace('/','+') + '-' + str(self.current_inspection_rate) + '-' + self.args.mode + "-week-" + str(self.data.episode) + ".csv"
+                
+            with open(self.output_file_indices, "w", newline='') as queryFiles:
+                wr = csv.writer(queryFiles, delimiter = ",")
+                wr.writerow(['Experiment ID', self.sim_start_time])
+                wr.writerow(['Dataset', self.args.data])
+                wr.writerow(['Episode', self.data.episode])
+                wr.writerow(['Test_start_day', self.test_start_day])
+                wr.writerow(['Test_end_day', self.test_end_day])
+                
+                if samp in self.hybrid_strategies:
+                    tmpIdx = 0
+                    for subsampler, num in zip(self.args.subsamplings.split('/'), self.sampler.ks):
+                        row = [subsampler]
+                        row.extend(self.inspected_indices[tmpIdx:tmpIdx+num])
+                        wr.writerow(row)
+                        tmpIdx += num
+                else:
+                    row = [samp]
+                    row.extend(self.inspected_indices)
+                    wr.writerow(row)
+
+
+    def simulate(self):
+        """ Main custom selection simulation part """
+
+        # Initialize a sampler (We put it outside the week loop since we do not change sampler every week)
+        # NOTE: If you put this inside the week loop, new sampler will be initialized every week, which means that parameters in the sampler are also initialized)    
+        self.sampler = initialize_sampler(self.args.sampling, self.args)
+        samp = self.args.sampling      
+            
+        # Customs selection simulation for long term (if test_length = 7 days, simulate for numweeks)
+        for i in range(self.args.numweeks):
+            
+            # Terminating condition
+            if self.test_start_day.strftime('%y-%m-%d') > max(self.data.df["sgd.date"]):
+                self.logger.info('Simulation period is over.')
+                self.logger.info('Terminating ...')
+                sys.exit()
+
+            # Feature engineering for train, valid, test data
+            self.data.episode = i
+            self.current_inspection_rate = self.confirmed_inspection_plan[i]  
+            self.logger.info(f'Test episode: #{i}, Current inspection rate: {self.current_inspection_rate}')
+            
+            if samp not in ['random']: 
+                self.data.featureEngineering()
+            else:
+                self.data.offset = self.data.test.index[0]
+            
+            # Initialize uncertainty module for some cases
+            if self.args.uncertainty == 'self-supervised':
+                if samp in ['bATE', 'diversity', 'hybrid', 'upDATE', 'gATE', 'adahybrid', 'pot', 'pvalue', 'csi', 'rada']:
+                    if self.uncertainty_module is None :
+                        self.uncertainty_module = uncertainty.Uncertainty(self.data.train_lab, './uncertainty_models/')
+                        self.uncertainty_module.train()
+                    self.uncertainty_module.test_data = self.data.test 
+            
+            # Number of items to inspect for this episode
+            num_samples = int(len(self.data.test)*self.current_inspection_rate/100)
+            
+            # Retrieve subsampler weights from the previous week, for hybrid models
+            if samp in self.hybrid_strategies:
+                try:
+                    final_weights = self.sampler.get_weights()
+                except NameError:
+                    pass  # use the previously defined final_weights (= initial_weights)
+            
+            # set uncertainty module
+            self.sampler.set_uncertainty_module(self.uncertainty_module)
+            
+            # set previous weeks' weights, for hybrid models
+            if samp in self.hybrid_strategies:
+                self.sampler.set_weights(final_weights)
+            
+            # set data to sampler
+            self.sampler.set_data(self.data)
+            
+            # query selection
+            try:
+                self.chosen = self.sampler.query(num_samples)  
+            except:
+                import traceback
+                traceback.print_exc()
+
+            self.logger.info("--------Evaluating selection results---------")   
+            self.logger.info("# of queried item: %s, # of samples to be queried: %s", len(self.chosen), num_samples)
+            try:
+                assert len(set(self.chosen)) == num_samples
+            except AssertionError:
+                import traceback
+                traceback.print_exc()        
+    
+            # Indices of sampled imports (Considered as high-risky by model) -> This will be inspected thus annotated.    
+            self.inspected_indices = [point + self.data.offset for point in self.chosen]
+            
+            # Originally, chosen trade should be annotated.
+            # Compatible with simulating on synthetic-k-partial dataset. We need this procedure to evaluate the selection strategy on given partially-labeled datasets. 
+            self.inspected_indices = self.data.df['illicit'][self.inspected_indices].notnull().loc[lambda x: x==True].index.values
+            
+            self.inspected_imports = self.data.df.iloc[self.inspected_indices]
+            self.uninspected_imports = self.data.df.loc[set(self.data.test.index)-set(self.inspected_imports.index)]
+            self.uninspected_imports['illicit'] = float('nan')
+            self.uninspected_imports['revenue'] = float('nan')
+        
+            self.logger.debug(self.inspected_imports[:5])
+            
+            # tune the uncertainty
+            if self.args.uncertainty == 'self-supervised' and samp in ['bATE', 'diversity', 'hybrid', 'gATE', 'adahybrid', 'pot', 'pvalue', 'csi', 'rada']:
+                self.uncertainty_module.retrain(self.data.test.iloc[self.inspected_indices - self.data.offset])
+            
+            # Evaluate the inspected results
+            self.evaluate_results()
+
+            # Save the evaluation results into csv files
+            self.save_results()
+
+            # Review needed: Check if the weights are updated as desired.
+            if samp in ['adahybrid', 'rada']:
+                self.sampler.update_subsampler_weights(self.norm_precision)
+
+            # Renew valid & test period & dataset
+            if i == self.args.numweeks - 1:
+                self.logger.info('Simulation period is over.')
+                self.logger.info('Terminating ...')
+                sys.exit()
+                
+            self.test_start_day = self.test_end_day
+            self.test_end_day = self.test_start_day + self.test_length
+            self.valid_start_day = self.test_start_day - self.valid_length
+            
+            self.data.update(self.inspected_imports, self.uninspected_imports, self.test_start_day, self.test_end_day, self.valid_start_day)
+            
+            
+            del self.inspected_imports
+            del self.uninspected_imports
+            
+            print("===========================================================================================")
+            print()
 
 
 def make_logger(curr_time, name=None):
@@ -51,24 +445,17 @@ def make_logger(curr_time, name=None):
     return logger
 
 
-def evaluate_inspection(chosen_rev,chosen_cls,xgb_testy,revenue_test):
-    """ Evaluate the model """
-    precisions, recalls, f1s, revenues = metrics_active(chosen_rev,chosen_cls,xgb_testy,revenue_test)
-    best_score = f1s
-    return precisions, recalls, f1s, revenues
-
-
-def inspection_plan(rate_init, rate_final, numWeeks, option):
-    """ Inspection plan for next n weeks """
+def inspection_plan(rate_init, rate_final, numweeks, option):
+    """ Inspection plan for next n weeks, add reasonable decaying strategy if necessary """
     if option == 'direct_decay':
-        return np.linspace(rate_final, rate_final, numWeeks)
+        return np.linspace(rate_final, rate_final, numweeks)
     
     if option == 'linear_decay':
-        return np.linspace(rate_init, rate_final, numWeeks)
+        return np.linspace(rate_init, rate_final, numweeks)
     
     if option == 'fast_linear_decay':
         first_half = np.linspace(rate_init, rate_final, 10)
-        second_half = np.linspace(rate_final, rate_final, numWeeks - len(first_half))
+        second_half = np.linspace(rate_final, rate_final, numweeks - len(first_half))
         return np.concatenate((first_half, second_half))
 
 
@@ -117,7 +504,7 @@ def initialize_sampler(samp, args):
     elif samp == 'badge':
         from query_strategies import badge;
         sampler = badge.BadgeSampling(args)
-    elif samp in ['DATE', 'noupDATE', 'randomupDATE']:
+    elif samp == 'DATE':
         from query_strategies import DATE;
         sampler = DATE.DATESampling(args)
     elif samp == 'diversity':
@@ -150,6 +537,9 @@ def initialize_sampler(samp, args):
     elif samp == 'pot':
         from query_strategies import pot;
         sampler = pot.POTSampling(args)
+    elif samp == 'csi':
+        from query_strategies import csi;
+        sampler = csi.CSISampling(args)        
     elif samp == 'adahybrid':
         from query_strategies import adahybrid;
         sampler = adahybrid.AdaHybridSampling(args)
@@ -159,408 +549,23 @@ def initialize_sampler(samp, args):
     elif samp == 'rada':
         from query_strategies import radahybrid;
         sampler = radahybrid.RegulatedAdaHybridSampling(args)
+    elif samp == 'multiclass':
+        from query_strategies import multiclass;
+        sampler = multiclass.MulticlassSampling(args)
     else:
         sampler = None
         print('Make sure the sampling strategy is listed in the argument --sampling')
     return sampler
 
+def main():
+    sim = Simulator()
+    sim.prepare_data()
+    sim.prepare_output_files()
+    sim.simulate()
+
 
 if __name__ == '__main__':
+    main()
     
-    curr_time = str(round(time.time(),3))
-    print('Experiment starts: ', curr_time)
+
     
-    # Initiate directories
-    pathlib.Path('./results').mkdir(parents=True, exist_ok=True) 
-    pathlib.Path('./results/performances').mkdir(parents=True, exist_ok=True)
-    pathlib.Path('./results/ratios').mkdir(parents=True, exist_ok=True)    
-    pathlib.Path('./results/query_indices').mkdir(parents=True, exist_ok=True)
-    pathlib.Path('./intermediary').mkdir(parents=True, exist_ok=True)
-    pathlib.Path('./intermediary/saved_models').mkdir(parents=True, exist_ok=True)
-    pathlib.Path('./intermediary/logs').mkdir(parents=True, exist_ok=True)
-    pathlib.Path('./intermediary/xgb_models').mkdir(parents=True, exist_ok=True)
-    pathlib.Path('./intermediary/tn_models').mkdir(parents=True, exist_ok=True)
-    pathlib.Path('./intermediary/torch_data').mkdir(parents=True, exist_ok=True)
-    pathlib.Path('./intermediary/leaf_indices').mkdir(parents=True, exist_ok=True)
-    pathlib.Path('./intermediary/embeddings').mkdir(parents=True, exist_ok=True)
-    pathlib.Path('./uncertainty_models').mkdir(parents=True, exist_ok=True)
-    pathlib.Path('./temp').mkdir(parents=True, exist_ok=True)
-    
-    logger = make_logger(curr_time)
-    
-    # Parse argument
-    parser = argparse.ArgumentParser()
-    
-    # Hyperparameters related to DATE
-    parser.add_argument('--epoch', type=int, default=20, help="Number of epochs for DATE-related models")
-    parser.add_argument('--batch_size', type=int, default=10000, help="Batch size for DATE-related models")
-    parser.add_argument('--dim', type=int, default=16, help="Hidden layer dimension")
-    parser.add_argument('--lr', type=float, default=0.005, help="learning rate")
-    parser.add_argument('--l2', type=float, default=0.01, help="l2 reg")
-    parser.add_argument('--alpha', type=float, default=10, help="Regression loss weight")
-    parser.add_argument('--head_num', type=int, default=4, help="Number of heads for self attention")
-    parser.add_argument('--use_self', type=int, default=1, help="Whether to use self attention")
-    parser.add_argument('--fusion', type=str, choices=["concat","attention"], default="concat", help="Fusion method for final embedding")
-    parser.add_argument('--agg', type=str, choices=["sum","max","mean"], default="sum", help="Aggreate type for leaf embedding")
-    parser.add_argument('--act', type=str, choices=["mish","relu"], default="relu", help="Activation function")
-    parser.add_argument('--risk_profile', type=str, choices=["topk","ratio"], default="topk", help="Risk profile criteria")
-    
-    # Hyperparameters related to customs selection
-    parser.add_argument('--prefix', type=str, default='results', help="experiment name used as prefix for results file")
-    parser.add_argument('--initial_masking', type=str, default="random", choices = ['random', 'importer', 'natural'], help="Masking some initial training data for simulating partially labeled scenario (for synthetic and m, n, t dataset)")
-    parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
-    parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
-    parser.add_argument('--output', type=str, default="result"+"-"+curr_time, help="Name of output file")
-    parser.add_argument('--sampling', type=str, default = 'bATE', choices=['random', 'risky', 'riskylogistic', 'riskyprod', 'riskyprec', 'riskyMAB', 'riskyMABsum', 'riskyDecayMAB', 'riskyDecayMABsum', 'AttentionAgg', 'AttentionAggRisky', 'xgb', 'xgb_lr', 'DATE', 'diversity', 'badge', 'bATE', 'upDATE', 'gATE', 'hybrid', 'adahybrid', 'tabnet', 'ssl_ae', 'noupDATE', 'randomupDATE', 'deepSAD', 'multideepSAD', 'pot', 'pvalue', 'rada'], help='Sampling strategy')
-    parser.add_argument('--initial_inspection_rate', type=float, default=100, help='Initial inspection rate in training data by percentile')
-    parser.add_argument('--final_inspection_rate', type=float, default = 5, help='Percentage of test data need to query')
-    parser.add_argument('--inspection_plan', type=str, default = 'direct_decay', choices=['direct_decay','linear_decay','fast_linear_decay'], help='Inspection rate decaying option for simulation time')
-    parser.add_argument('--mode', type=str, default = 'finetune', choices = ['finetune', 'scratch'], help = 'finetune last model or train from scratch')
-    parser.add_argument('--subsamplings', type=str, default = 'xgb/random', help = 'available for hybrid sampling, the list of sub-sampling techniques seperated by /')
-    parser.add_argument('--weights', type=str, default = '0.9/0.1', help = 'available for hybrid sampling, the list of weights for sub-sampling techniques seperated by /')
-    parser.add_argument('--uncertainty', type=str, default = 'naive', choices = ['naive', 'self-supervised'], help = 'Uncertainty principle : ambiguity of illicitness or self-supervised manner prediction')
-    parser.add_argument('--rev_func', type=str, default = 'log', choices = ['log'], help = 'Uncertainty principle : ambiguity of illicitness or self-supervised manner prediction')
-    parser.add_argument('--closs', type=str, default = 'bce', choices = ['bce', 'focal'], help = 'Classification loss function')
-    parser.add_argument('--rloss', type=str, default = 'full', choices = ['full', 'masked'], help = 'Regression loss function')
-    parser.add_argument('--train_from', type=str, default = '20130101', help = 'Training period start from (YYYYMMDD)')
-    parser.add_argument('--test_from', type=str, default = '20130201', help = 'Testing period start from (YYYYMMDD)')
-    parser.add_argument('--test_length', type=int, default=7, help='Single testing period length (e.g., 7)')
-    parser.add_argument('--valid_length', type=int, default=7, help='Validation period length (e.g., 7)')
-    parser.add_argument('--data', type=str, default='synthetic', choices = ['synthetic', 'synthetic-k', 'synthetic-k-partial', 'real-n', 'real-m', 'real-t', 'real-c', 'real-k'], help = 'Dataset')
-    parser.add_argument('--numweeks', type=int, default=50, help='number of test weeks (week if test_length = 7)')
-    parser.add_argument('--semi_supervised', type=int, default=0, help='Does the selection strategy use uninspected imports for training? (1 = Yes, Semi-supervised, 0 = No, fully-supervised)')
-    parser.add_argument('--identifier', type=str, default=curr_time, help='identifier for each execution')
-    parser.add_argument('--save', type=int, default=0, help='Save intermediary files (1=save, 0=not save)')
-
-    # Hyperparameters for adahybrid.py and its childs:
-    parser.add_argument('--ada_lr', type=float, default=0.8, help="learning rate for adahybrid")
-    parser.add_argument('--ada_decay', type=float, default=1, help="decay factor for adahybrid, 1 for no decay")
-    parser.add_argument('--ada_epsilon', type=float, default=0, help="degree of randomness for adahybrid")
-    parser.add_argument('--num_arms', type=int, default=21, help="number of arms for adahybrid")
-
-    # Hyperparameters for radahybrid.py:
-    parser.add_argument('--drift', type=str, default='pot', choices = ['pot', 'pvalue'], help="algorithms for measuring concept drift")
-    parser.add_argument('--mixing', type=str, default='multiply', choices = ['multiply', 'reinit'], help="method of mixing concept drift with regulated adahybrid")
-
-    # Arguments
-    args = parser.parse_args()
-    epochs = args.epoch
-    dim = args.dim
-    lr = args.lr
-    weight_decay = args.l2
-    head_num = args.head_num
-    act = args.act
-    fusion = args.fusion
-    alpha = args.alpha
-    use_self = args.use_self
-    agg = args.agg
-    samp = args.sampling
-    initial_inspection_rate = args.initial_inspection_rate
-    final_inspection_rate = args.final_inspection_rate
-    inspection_rate_option = args.inspection_plan
-    mode = args.mode
-    unc_mode = args.uncertainty
-    train_begin = args.train_from 
-    test_begin = args.test_from
-    test_length = args.test_length
-    valid_length = args.valid_length
-    chosen_data = args.data
-    numWeeks = args.numweeks
-    save = args.save
-    initial_masking = args.initial_masking
-    ada_lr = args.ada_lr
-    num_arms = args.num_arms
-    semi_supervised = args.semi_supervised
-    
-    logger.info(args)
-    
-    
-    # Load datasets 
-    if chosen_data == 'synthetic':
-        data = dataset.Syntheticdata(path='./data/synthetic-imports-declarations.csv')
-    elif chosen_data == 'synthetic-k':
-        data = dataset.SyntheticKdata(path='./data/df_syn_ano_0429_merge.csv')  # fully labeled
-    elif chosen_data == 'synthetic-k-partial':
-        data = dataset.SyntheticKdata(path='./data/df_syn_ano_0429_merge_partially_labeled.csv')   # partially labeled
-        args.initial_masking = 'natural'   # since this data is given as partially labeled, it does not need extra label masking.
-        initial_masking = 'natural'   
-    elif chosen_data == 'real-k':
-        data = dataset.Kdata(path='./data/Anony_0622_merge_total.csv')
-        args.initial_masking = 'natural'
-        initial_masking = 'natural'
-    elif chosen_data == 'real-n':
-        data = dataset.Ndata(path='./data/ndata.csv')
-    elif chosen_data == 'real-m':
-        data = dataset.Mdata(path='./data/mdata.csv')
-    elif chosen_data == 'real-t':
-        data = dataset.Tdata(path='./data/tdata.csv')
-    elif chosen_data == 'real-c':
-        data = dataset.Cdata(path='./data/cdata.csv')  
-    
-    hybrid_strategies = ['hybrid', 'adahybrid', 'pot', 'pvalue', 'rada']
-   
-    subsamps = args.subsamplings.replace('/','+')
-    if samp not in hybrid_strategies:
-        subsamps = 'single'
-        
-    # Saving simulation results: Output file will be saved under ./results/performances/ directory
-    output_file =  "./results/performances/" + args.prefix + '-' + args.output + '-' + chosen_data + '-' + samp + '-' + subsamps + '-' + str(final_inspection_rate) + ".csv"
-    with open(output_file, 'a') as ff:
-        output_metric_name = ['runID', 'data', 'num_train','num_valid','num_test','num_select','num_inspected','num_uninspected','num_test_illicit','test_illicit_rate', 'upper_bound_precision', 'upper_bound_recall','upper_bound_rev', 'sampling', 'concept_drift', 'mixing',  'ada_lr', 'ada_decay', 'ada_epsilon', 'initial_inspection_rate', 'current_inspection_rate', 'final_inspection_rate', 'inspection_rate_option', 'mode', 'subsamplings', 'initial_weights', 'current_weights', 'unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue', 'norm-precision', 'norm-recall', 'norm-revenue', 'save']
-        print(",".join(output_metric_name),file=ff)
-    
-    if samp == 'adahybrid':
-        weight_file =  "./results/ratios/" + args.prefix + '-' + args.output + '-' + samp + '-' + subsamps + '-' + str(final_inspection_rate) + ".csv"
-        with open(weight_file, 'a') as ff:
-            output_weight_name = ['runID', 'data', 'sampling', 'subsamplings', 'numWeek', 'norm-precision', 'norm-recall', 'norm-revenue', 'lr'] + [f'{i/(num_arms-1)} explore rate' for i in range(num_arms)] + ['chosen_rate', 'chosen_arm']
-            print(",".join(output_weight_name), file=ff)
-
-    if samp == 'rada':
-        weight_file =  "./results/ratios/" + args.prefix + '-' + args.output + '-' + samp + '-' + subsamps + '-' + str(final_inspection_rate) + ".csv"
-        with open(weight_file, 'a') as ff:
-            output_weight_name = ['runID', 'data', 'sampling', 'subsamplings', 'numWeek', 'norm-precision', 'norm-recall', 'norm-revenue', 'lr', 'drift', 'mixing', 'drift_weight'] + [f'{i/(num_arms-1)} explore rate' for i in range(num_arms)] + ['chosen_rate', 'chosen_arm']
-            print(",".join(output_weight_name), file=ff)
-
-    path = None
-    uncertainty_module = None
-    
-    # Initial dataset split
-    train_start_day = datetime.date(int(train_begin[:4]), int(train_begin[4:6]), int(train_begin[6:8]))
-    test_start_day = datetime.date(int(test_begin[:4]), int(test_begin[4:6]), int(test_begin[6:8]))
-    test_length = timedelta(days=test_length)    
-    test_end_day = test_start_day + test_length
-    valid_length = timedelta(days=valid_length)
-    valid_start_day = test_start_day - valid_length
-    data.split(train_start_day, valid_start_day, test_start_day, test_end_day, valid_length, test_length, args)
-    confirmed_inspection_plan = inspection_plan(initial_inspection_rate, final_inspection_rate, numWeeks, inspection_rate_option)
-    logger.info('Inspection rate for testing periods: %s', confirmed_inspection_plan)
-       
-    if samp in hybrid_strategies:
-        subsamplings = args.subsamplings
-        initial_weights = [float(weight) for weight in args.weights.split("/")]
-        final_weights = initial_weights
-    else:
-        subsamplings = '-'
-        initial_weights = '-'
-        final_weights = '-'
-
-    if samp == 'rada':
-        drift = args.drift
-        mixing = args.mixing
-    else:
-        drift = '-'
-        mixing = '-'
-    
-    if samp in ['adahybrid', 'rada']:
-        ada_decay = args.ada_decay
-        ada_epsilon = args.ada_epsilon
-        ada_lr = args.ada_lr
-    else:
-        ada_decay = '-'
-        ada_epsilon = '-'
-        ada_lr = '-'
-
-    # Initialize a sampler (We put it outside the week loop since we do not change sampler every week)
-    # NOTE: If you put this inside the week loop, new sampler is initialized every week, which means that parameters in sampler are also initialized)    
-    sampler = initialize_sampler(samp, args)      
-        
-    # Customs selection simulation for long term (if test_length = 7 days, simulate for numWeeks)
-    for i in range(numWeeks):
-        
-        # Terminating condition
-        if test_start_day.strftime('%y-%m-%d') > max(data.df["sgd.date"]):
-            logger.info('Simulation period is over.')
-            logger.info('Terminating ...')
-            sys.exit()
-
-        # Feature engineering for train, valid, test data
-        data.episode = i
-        current_inspection_rate = confirmed_inspection_plan[i]  # ToDo: Add multiple decaying strategy
-        logger.info(f'Test episode: #{i}, Current inspection rate: {current_inspection_rate}')
-
-        if samp not in ['random']: 
-            data.featureEngineering()
-        else:
-            data.offset = data.test.index[0]
-        
-        # Initialize uncertainty module for some cases
-        if unc_mode == 'self-supervised':
-            if samp in ['bATE', 'diversity', 'hybrid', 'upDATE', 'gATE', 'adahybrid', 'pot', 'pvalue', 'rada']:
-                if uncertainty_module is None :
-                    uncertainty_module = uncertainty.Uncertainty(data.train_lab, './uncertainty_models/')
-                    uncertainty_module.train()
-                uncertainty_module.test_data = data.test 
-        
-        num_samples = int(len(data.test)*current_inspection_rate/100)
-        
-        # Retrieve subsampler weights from the previous week, for hybrid models
-        if samp in hybrid_strategies:
-            try:
-                final_weights = sampler.get_weights()
-            except NameError:
-                pass  # use the previously defined final_weights (= initial_weights)
-  
-        # If we need to update sampler every week, you can initialize the sampler here.
-        
-        # set uncertainty module
-        sampler.set_uncertainty_module(uncertainty_module)
-        
-        # set previous weeks' weights, for hybrid models
-        if samp in hybrid_strategies:
-            sampler.set_weights(final_weights)
-        
-        # set data to sampler
-        sampler.set_data(data)
-        
-        # query selection
-        try:
-            chosen = sampler.query(num_samples)  
-        except:
-            import traceback
-            traceback.print_exc()
-
-        logger.info("--------Evaluating selection results---------")   
-        logger.info("# of queried item: %s, # of samples to be queried: %s", len(chosen), num_samples)
-        try:
-            assert len(set(chosen)) == num_samples
-        except AssertionError:
-            import traceback
-            traceback.print_exc()        
- 
-        # Indices of sampled imports (Considered as fraud by model) -> This will be inspected thus annotated.    
-        indices = [point + data.offset for point in chosen]
-        
-        # Originally, chosen trade should be annotated.
-        # Compatible with simulating on synthetic-k-partial dataset. We need this procedure to evaluate the selection strategy on given partially-labeled datasets. 
-        indices = data.df['illicit'][indices].notnull().loc[lambda x: x==True].index.values
-        
-        inspected_imports = data.df.iloc[indices]
-        uninspected_imports = data.df.loc[set(data.test.index)-set(inspected_imports.index)]
-        uninspected_imports['illicit'] = float('nan')
-        uninspected_imports['revenue'] = float('nan')
-      
-        logger.debug(inspected_imports[:5])
-        
-        # tune the uncertainty
-        if unc_mode == 'self-supervised' and samp in ['bATE', 'diversity', 'hybrid', 'upDATE', 'gATE', 'adahybrid', 'pot', 'pvalue', 'rada']:
-            uncertainty_module.retrain(data.test.iloc[indices - data.offset])
-        
-        # Evaluation
-        active_rev = inspected_imports['revenue']
-        active_rev = active_rev.transpose().to_numpy()
-
-        active_cls = inspected_imports['illicit']
-        active_cls = active_cls.transpose().to_numpy()
-
-        # Added to handle semi-supervised inputs
-        active_cls_notna = active_cls[~np.isnan(active_cls)]
-        active_rev_notna = active_rev[~np.isnan(active_rev)]
-        illicit_test_notna = data.test_cls_label[~np.isnan(data.test_cls_label)]
-        revenue_test_notna = data.test_reg_label[~np.isnan(data.test_reg_label)]
-
-        active_precisions, active_recalls, active_f1s, active_revenues = evaluate_inspection(active_rev_notna, active_cls_notna, illicit_test_notna, revenue_test_notna)
-        logger.info(f'Performance:\n Pr@{current_inspection_rate}:{round(active_precisions, 4)}, Re@{current_inspection_rate}:{round(active_recalls, 4)} Rev@{current_inspection_rate}:{round(active_revenues, 4)}') 
-
-        with open(output_file, 'a') as ff:
-            upper_bound_precision = min(np.sum(illicit_test_notna)/len(indices), 1)
-            upper_bound_recall = min(len(chosen)/np.sum(illicit_test_notna), 1)
-            upper_bound_revenue = min(sum(sorted(revenue_test_notna, reverse=True)[:len(chosen)]) / np.sum(revenue_test_notna), 1)
-            
-            norm_precision = active_precisions/upper_bound_precision
-            norm_recall = active_recalls/upper_bound_recall
-            norm_revenue = active_revenues/upper_bound_revenue
-            
-            if samp in hybrid_strategies:
-                initial_weights_str = '/'.join([str(weight) for weight in initial_weights])
-                final_weights_str = '/'.join([str(weight) for weight in final_weights])
-
-            else:
-                initial_weights_str = '-'
-                final_weights_str = '-'
-            
-            output_metric = [curr_time, chosen_data, len(data.train_lab), len(data.valid_lab), len(data.test), len(chosen), len(inspected_imports), len(uninspected_imports), np.sum(data.test_cls_label), np.mean(data.test_cls_label), upper_bound_precision, upper_bound_recall, upper_bound_revenue, samp, drift, mixing, ada_lr, ada_decay, ada_epsilon, initial_inspection_rate, current_inspection_rate, final_inspection_rate, inspection_rate_option, mode, subsamplings, initial_weights_str, final_weights_str, unc_mode, train_start_day.strftime('%y-%m-%d'), valid_start_day.strftime('%y-%m-%d'), test_start_day.strftime('%y-%m-%d'), test_end_day.strftime('%y-%m-%d'), i+1, round(active_precisions,4), round(active_recalls,4), round(active_revenues,4), round(norm_precision,4), round(norm_recall,4), round(norm_revenue,4), save]
-                
-            output_metric = list(map(str,output_metric))
-            logger.debug(output_metric)
-            print(",".join(output_metric),file=ff)
-
-        if samp in ['adahybrid', 'rada']:
-            with open(weight_file, 'a') as ff:
-                subsamplings = args.subsamplings
-                weights = '/'.join([str(weight) for weight in final_weights])
-                    
-                upper_bound_precision = min(np.sum(illicit_test_notna)/len(chosen), 1)
-                upper_bound_recall = min(len(chosen)/np.sum(illicit_test_notna), 1)
-                upper_bound_revenue = min(sum(sorted(revenue_test_notna, reverse=True)[:len(chosen)]) / np.sum(revenue_test_notna), 1)
-
-                norm_precision = active_precisions/upper_bound_precision
-                norm_recall = active_recalls/upper_bound_recall
-                norm_revenue = active_revenues/upper_bound_revenue
-                
-                output_metric = [curr_time, chosen_data, samp, subsamplings, i+1, round(norm_precision,4), round(norm_recall,4), round(norm_revenue,4), ada_lr] + list(sampler.weight_sampler.p) + [sampler.weight_sampler.value, sampler.weight_sampler.arm]
-                if samp == 'rada':
-                    output_metric += [drift, mixing, sampler.drift_detector.dms_weight]
-                       
-                output_metric = list(map(str,output_metric))
-                logger.debug(output_metric)
-                print(",".join(output_metric),file=ff)
-        
-        output_file_indices =  "./results/query_indices/" + curr_time + '-' + samp + '-' + subsamplings.replace('/','+') + '-' + str(current_inspection_rate) + '-' + mode + "-week-" + str(i) + ".csv"
-            
-        with open(output_file_indices, "w", newline='') as queryFiles:
-            wr = csv.writer(queryFiles, delimiter = ",")
-            wr.writerow(['Experiment ID', curr_time])
-            wr.writerow(['Dataset', chosen_data])
-            wr.writerow(['Episode', i])
-            wr.writerow(['Test_start_day', test_start_day])
-            wr.writerow(['Test_end_day', test_end_day])
-            
-            if samp in hybrid_strategies:
-                tmpIdx = 0
-                for subsampler, num in zip(args.subsamplings.split('/'), sampler.ks):
-                    row = [subsampler]
-                    row.extend(indices[tmpIdx:tmpIdx+num])
-                    wr.writerow(row)
-                    tmpIdx += num
-            else:
-                row = [samp]
-                row.extend(indices)
-                wr.writerow(row)
-        
-        # Review needed: Check if the weights are updated as desired.
-        if samp in ['adahybrid', 'rada']:
-            sampler.update_subsampler_weights(norm_precision)
-
-        # Renew valid & test period & dataset
-        if i == numWeeks - 1:
-            logger.info('Simulation period is over.')
-            logger.info('Terminating ...')
-            sys.exit()
-            
-        test_start_day = test_end_day
-        test_end_day = test_start_day + test_length
-        valid_start_day = test_start_day - valid_length
-        
-        
-        """ Variation of the DATE model - only for research purposes (Measure the effect of smarter batch selection)
-        # randomupDATE: Performance evaluation is done by DATE strategy, but newly added instances are random - not realistic)
-        # noupDATE: DATE model does not accept new train data. (But the model anyway needs to be retrained with test data owing to the design choice of our XGB model) 
-        These two strategies will be removed for software release. """
-        
-        if samp == 'noupDATE':
-            data.update(data.df.loc[[]], data.df.loc[set(data.test.index)], test_start_day, test_end_day, valid_start_day)
-        elif samp == 'randomupDATE':
-            chosen = random.RandomSampling(data, args).query(num_samples)
-            indices = [point + data.offset for point in chosen]         
-            inspected_imports = data.df.loc[indices]
-            uninspected_imports = data.df.loc[set(data.test.index)-set(inspected_imports.index)]            
-            data.update(inspected_imports, uninspected_imports, test_start_day, test_end_day, valid_start_day)          
-        else:
-            data.update(inspected_imports, uninspected_imports, test_start_day, test_end_day, valid_start_day)
-        
-        
-        del inspected_imports
-        del uninspected_imports
-        
-        print("===========================================================================================")
-        print()

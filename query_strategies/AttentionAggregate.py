@@ -67,7 +67,7 @@ class AttentionSampling(Strategy):
         self.data.valid_lab[[f'tree{i}' for i in range(4)]] = X_valid_leaves
         self.data.test[[f'tree{i}' for i in range(4)]] = X_test_leaves 
         self.category = [f'tree{i}' for i in range(4)]
-        
+       
         
     def prepare_dataloader(self):
         self.train_ds = AttDataset(self.data, self.data.train_lab, self.data.train_unlab, self.data.train_lab, self.neighbor_k, self.category)
@@ -104,9 +104,9 @@ class AttentionSampling(Strategy):
                 
                 optimizer.zero_grad()
                 loss.backward()
-                optimizer.step()
-                
+                optimizer.step()         
             scheduler.step()
+
             print('train_loss: ', loss_avg / len(self.train_loader))
                 
             # validation eval
@@ -313,8 +313,7 @@ class AttentionPlusRiskSampling(Strategy):
         self.predict_frauds()       
         chosen = np.argpartition(self.y_prob[self.available_indices], -k)[-k:]
         return self.available_indices[chosen].tolist()
-    
-    
+
 
 def torch_metrics(y_prob, xgb_testy, display=True):
     """ Evaluate the performance"""
@@ -336,6 +335,7 @@ def torch_metrics(y_prob, xgb_testy, display=True):
     
     
     
+
 class Dense(nn.Module):
     def __init__(self, inchannel, outchannel):
         super(Dense, self).__init__()
@@ -358,8 +358,8 @@ class MLP(nn.Module):
         for l in self.layers:
             x = l(x)
         return x 
-   
-    
+
+      
 class AttDataset(torch.utils.data.Dataset):
     def __init__(self, data, labeled_search_df, unlabeled_search_df, target_df, neighbor_k, category):
         self.neighbor_k = neighbor_k

@@ -44,6 +44,7 @@ class RiskProfileProdSampling(Strategy):
         masked_df = test_risk.mask(test_risk == 0)
         test_risk_revised = masked_df.fillna(masked_df.min())
         self.y_totalrisk = test_risk_revised.prod(axis=1)
+
         
     @timer_func
     def query(self, k):
