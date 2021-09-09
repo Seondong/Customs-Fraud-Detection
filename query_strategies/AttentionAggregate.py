@@ -123,7 +123,7 @@ class AttentionSampling(Strategy):
                 
                 outputs = torch.cat(logit_list).detach().cpu().numpy().ravel()
                 f, pr, re = torch_metrics(np.array(outputs), self.valid_ds.target_Y.astype(int).to_numpy())
-                f1_top = np.mean(f)
+                f1_top = np.mean(np.nan_to_num(f, nan = 0.0))
                 
             if f1_top > best_f1_top:
                 self.best_model = self.model
@@ -176,10 +176,6 @@ class AttentionPlusRiskSampling(Strategy):
         self.data.train_unlab[self.data.column_for_feature] = self.data.train_unlab[self.data.column_for_feature].fillna(0)
         self.data.valid_lab[self.data.column_for_feature] = self.data.valid_lab[self.data.column_for_feature].fillna(0)
         self.data.test[self.data.column_for_feature] = self.data.test[self.data.column_for_feature].fillna(0)
-        
-        self.data.train_lab = self.data.train_lab[~self.data.train_lab.isin([np.nan, np.inf, -np.inf]).any(1)]
-        self.data.train_unlab = self.data.train_unlab[~self.data.train_unlab.isin([np.nan, np.inf, -np.inf]).any(1)]
-        self.data.valid_lab = self.data.valid_lab[~self.data.valid_lab.isin([np.nan, np.inf, -np.inf]).any(1)]
         
         self.xgb = XGBClassifier(booster='gbtree', scale_pos_weight=1,
                                  learning_rate=0.3, colsample_bytree=0.4,
@@ -254,7 +250,7 @@ class AttentionPlusRiskSampling(Strategy):
                 
                 outputs = torch.cat(logit_list).detach().cpu().numpy().ravel()
                 f, pr, re = torch_metrics(np.array(outputs), self.valid_ds.target_Y.astype(int).to_numpy())
-                f1_top = np.mean(f)
+                f1_top = np.mean(np.nan_to_num(f, nan = 0.0))
                 
             if f1_top > best_f1_top:
                 self.best_model = self.model
