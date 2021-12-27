@@ -1,8 +1,12 @@
-# Simulation Framework for Customs Selection 
+# Simulation Framework for Customs Trade Selection 
 
-Use your collected declarations data, fit the provided models, find the best selection strategy for your customs. 
+Use your collected declarations data, fit the provided models, find the best trade selection strategy for customs. 
 This framework supports general import declarations. 
 
+Implementation of:
+- DATE: Dual Attentive Tree-aware Embedding for Customs Fraud Detection [[Link]](https://dl.acm.org/doi/10.1145/3394486.3403339)
+- Take a Chance: Managing the Exploitation-Exploration Dilemma in Customs Fraud Detection via Online Active Learning [[Link]](https://arxiv.org/abs/2010.14282)
+- Customs Fraud Detection in the Presence of Concept Drift [[Link]](https://arxiv.org/abs/2109.14155)
 
 ## How to Use  
 
