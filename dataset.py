@@ -36,6 +36,7 @@ class Import_declarations():
     def firstCheck(self):
         """ Sorting and indexing necessary for data preparation """
         self.df = self.df.dropna(subset=["illicit"])
+        self.df = self.df[~self.df.isin({'quantity': [0], 'gross.weight': [0], 'cif.value': [0]}).any(1)]
         self.df = self.df.sort_values("sgd.date")
         self.df = self.df.reset_index(drop=True)
         
@@ -99,7 +100,7 @@ class Import_declarations():
 
         # Intentionally masking datasets to simulate partially labeled scenario, note that our dataset is 100% inspected.
         # If your dataset is partially labeled already, does not need this procedure.
-        if args.data in ['synthetic', 'synthetic-k', 'real-n', 'real-m', 'real-t']:
+        if args.data in ['synthetic', 'synthetic-k', 'real-n', 'real-m', 'real-t', 'real-c']:
             self.train = self.mask_labels(self.train, args.initial_inspection_rate, args.initial_masking)
 
         self.train_lab = self.train[self.train['illicit'].notna()]
@@ -204,6 +205,8 @@ class Import_declarations():
         
         if self.args.data in ['synthetic', 'real-n', 'real-m', 'real-t', 'real-c']:
             df = df.dropna(subset=['cif.value', 'total.taxes', 'quantity'])
+            df.loc[:, ['cif.value', 'total.taxes', 'quantity', 'gross.weight']] = np.log(df.loc[:, ['cif.value', 'total.taxes', 'quantity', 'gross.weight']] + 1)
+            
             df.loc[:, 'Unitprice'] = df['cif.value']/df['quantity']
             df.loc[:, 'WUnitprice'] = df['cif.value']/df['gross.weight']
             df.loc[:, 'TaxRatio'] = df['total.taxes'] / df['cif.value']
