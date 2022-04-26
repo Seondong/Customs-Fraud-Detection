@@ -40,7 +40,7 @@ class Simulator():
         parser = argparse.ArgumentParser()
         
         # Hyperparameters related to DATE
-        parser.add_argument('--epoch', type=int, default=20, help="Number of epochs for DATE-related models")
+        parser.add_argument('--epoch', type=int, default=5, help="Number of epochs for DATE-related models")
         parser.add_argument('--batch_size', type=int, default=10000, help="Batch size for DATE-related models")
         parser.add_argument('--dim', type=int, default=16, help="Hidden layer dimension")
         parser.add_argument('--lr', type=float, default=0.005, help="learning rate")
@@ -54,7 +54,7 @@ class Simulator():
         parser.add_argument('--risk_profile', type=str, choices=["topk","ratio"], default="topk", help="Risk profile criteria")
         
         # Hyperparameters related to customs selection
-        parser.add_argument('--prefix', type=str, default='results', help="experiment name used as prefix for results file")
+        parser.add_argument('--prefix', type=str, default='tkde-check', help="experiment name used as prefix for results file")
         parser.add_argument('--initial_masking', type=str, default="random", choices = ['random', 'importer', 'natural'], help="Masking some initial training data for simulating partially labeled scenario (for synthetic and m, n, t dataset)")
         parser.add_argument('--devices', type=str, default=['0','1','2','3'], help="list of gpu available")
         parser.add_argument('--device', type=str, default='0', help='select which device to run, choose gpu number in your devices or cpu') 
@@ -81,6 +81,8 @@ class Simulator():
         parser.add_argument('--save', type=int, default=0, help='Save intermediary files (1=save, 0=not save)')
 
         # Hyperparameters for adahybrid.py and its childs:
+        parser.add_argument('--ada_algo', type=str, choices = ['ucb', 'exp3', 'exp3s'], default='-', help="algorithm for adahybrid")
+        parser.add_argument('--ada_discount', type=str, choices = ['window', 'decay'], default='-', help="algorithm for adahybrid")
         parser.add_argument('--ada_lr', type=float, default=0.8, help="learning rate for adahybrid")
         parser.add_argument('--ada_decay', type=float, default=1, help="decay factor for adahybrid, 1 for no decay")
         parser.add_argument('--ada_epsilon', type=float, default=0, help="degree of randomness for adahybrid")
@@ -88,7 +90,7 @@ class Simulator():
 
         # Hyperparameters for radahybrid.py:
         parser.add_argument('--drift', type=str, default='pot', choices = ['pot', 'pvalue', 'csi'], help="algorithms for measuring concept drift")
-        parser.add_argument('--mixing', type=str, default='multiply', choices = ['multiply', 'reinit'], help="method of mixing concept drift with regulated adahybrid")
+        parser.add_argument('--mixing', type=str, default='multiply', choices = ['multiply', 'reinit', 'balance'], help="method of mixing concept drift with regulated adahybrid")
 
         # Arguments
         args = parser.parse_args()
@@ -165,7 +167,8 @@ class Simulator():
             subsamps = 'single'
 
         # Saving simulation results: Output file will be saved under ./results/performances/ directory
-        self.output_file =  "./results/performances/" + self.args.prefix + '-' + self.args.output + '-' + self.args.data + '-' + samp + '-' + subsamps + '-' + str(self.args.final_inspection_rate) + ".csv"
+        self.output_file_desc = self.args.prefix + '-' + self.args.output + '-' + self.args.data + '-' + samp + '-' + subsamps + '-' + str(self.args.final_inspection_rate) 
+        self.output_file = "./results/performances/" + self.output_file_desc + ".csv"
         with open(self.output_file, 'a') as ff:
             output_metric_name = ['runID', 'data', 'num_train','num_valid','num_test','num_select','num_inspected','num_uninspected','num_test_illicit','test_illicit_rate', 'upper_bound_precision', 'upper_bound_recall','upper_bound_rev', 'sampling', 'concept_drift', 'mixing',  'ada_lr', 'ada_decay', 'ada_epsilon', 'initial_inspection_rate', 'current_inspection_rate', 'final_inspection_rate', 'inspection_plan', 'mode', 'subsamplings', 'initial_weights', 'current_weights', 'unc_mode', 'train_start', 'valid_start', 'test_start', 'test_end', 'numWeek', 'precision', 'recall', 'revenue', 'avg_revenue', 'norm-precision', 'norm-recall', 'norm-revenue']
             print(",".join(output_metric_name),file=ff)
@@ -275,7 +278,10 @@ class Simulator():
                 print(",".join(output_metric),file=ff)
         
         if self.args.save == 1:
-            self.output_file_indices =  "./results/query_indices/" + self.sim_start_time + '-' + samp + '-' + subsamplings.replace('/','+') + '-' + str(self.current_inspection_rate) + '-' + self.args.mode + "-week-" + str(self.data.episode) + ".csv"
+            # generate a folder
+            self.output_indices_folder =  "./results/query_indices/" + self.output_file_desc+"/"
+            pathlib.Path(self.output_indices_folder).mkdir(parents=True, exist_ok=True)
+            self.output_file_indices = self.output_indices_folder+"results-ep"+str(self.data.episode)+"-"+str(self.test_start_day)+'-'+str(self.test_end_day)+".csv"                
                 
             with open(self.output_file_indices, "w", newline='') as queryFiles:
                 wr = csv.writer(queryFiles, delimiter = ",")
@@ -355,6 +361,8 @@ class Simulator():
             
             # query selection
             try:
+                # import pdb
+                # pdb.set_trace()
                 self.chosen = self.sampler.query(num_samples)  
             except:
                 import traceback
