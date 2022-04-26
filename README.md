@@ -118,14 +118,6 @@ If you find this code useful, please cite the original paper:
   year={2021},
   pages = {370--379},
 }
-
-@inproceedings{mai2021drift,
-  title={{Customs fraud detection in the presence of concept drift}},
-  author={Tung-Duong Mai and Kien Hoang and Aitolkyn Baigutanova and Gaukhartas Alina and Sundong Kim},
-  booktitle={Proc. of the International Conference on Data Mining Workshops},
-  year={2021},
-  pages = {370--379},
-}
 ```
 
 
