@@ -161,6 +161,7 @@ def evaluate_inspection(chosen_rev,chosen_cls,y_cls,y_rev):
         revenue_recall = sum(chosen_rev) / sum(y_rev)
     except ZeroDivisionError:
         revenue_recall = np.float("nan")
+        
     return precision, recall, f1, revenue_avg, revenue_recall
 
 

@@ -104,6 +104,7 @@ class Import_declarations():
 
         self.train_lab = self.train[self.train['illicit'].notna()]
         self.valid_lab = self.valid[self.valid['illicit'].notna()]
+        self.test = self.test[self.test['illicit'].notna()]
         
         if self.args.semi_supervised == 1:
             self.train_unlab = self.train[self.train['illicit'].isna()]

@@ -94,7 +94,7 @@ class AttentionSampling(Strategy):
                 optimizer.step()
                 scheduler.step()
                 
-            print('train_loss: ', loss_avg / len(self.train_loader))
+            print('train_loss: ', loss_avg / len(self.train_loader.dataset))
                 
             # validation eval
             self.model.eval()
@@ -134,6 +134,8 @@ class AttentionSampling(Strategy):
         
     @timer_func
     def query(self, k):
+        if self.args.semi_supervised == 0:
+            sys.exit('(AttentionAgg is a semi-supervised algorithm, check if the parameter --semi_supervised is set as 1')
         self.generate_metagraph()
         self.prepare_dataloader()
         self.train_model()
@@ -148,8 +150,8 @@ def torch_metrics(y_prob, xgb_testy, display=True):
     # For validatation, we measure the performance on 5% (previously, 1%, 2%, 5%, and 10%)
     for i in [99,98,95,90]: 
         threshold = np.percentile(y_prob, i)
-        precision = xgb_testy[y_prob > threshold].mean()
-        recall = sum(xgb_testy[y_prob > threshold])/ sum(xgb_testy)
+        precision = xgb_testy[y_prob >= threshold].mean()    # y_prob이 1인 경우가 많아서 > 를 >=로 바꿈. 아니면 nan이 나와서 f1-top계산이 안됨.
+        recall = sum(xgb_testy[y_prob >= threshold])/ sum(xgb_testy)
         f1 = 2 * (precision * recall) / (precision + recall)
         if display:
             print(f'Checking top {100-i}% suspicious transactions: {len(y_prob[y_prob > threshold])}')
