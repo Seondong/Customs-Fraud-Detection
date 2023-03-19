@@ -122,5 +122,5 @@ If you find this code useful, please cite the original paper:
 
 
 ## Contribution
-We welcome you to contribute to designing new selection strategies, automating feature engineering adaptive to different feature sets, donating anonymized import declarations dataset, and packaging software (PyPI). To collaborate with us, please contact Sundong Kim (sundong@ibs.re.kr). 
+We welcome you to contribute to designing new selection strategies, automating feature engineering adaptive to different feature sets, donating anonymized import declarations dataset, and packaging software (PyPI). To collaborate with us, please contact Sundong Kim (sundong@gist.ac.kr). 
 
