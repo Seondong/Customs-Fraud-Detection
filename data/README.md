@@ -13,6 +13,7 @@ To run this code with your data, please make your [preprocessor](./preprocessors
 | real-t      | 4.17M    | 8.16%      | 100% | Jan 15 – Dec 19  |[Confidential](https://drive.google.com/drive/folders/1Ty8rTRycNABn-BtphrnVxjFAQ5hTDrTP?usp=sharing)   |
 
 ## Request proprietary data
-To run this code with real datasets (real-n, real-m, real-t, real-c) and refined synthetic datasets (synthetic-k, synthetic-k-partial), please contact Sundong Kim (sundong@ibs.re.kr). We will ask you to sign the [Confidentiality Statement](./Confidentiality_Statement.docx). After getting permission from the data providers, we will allow your access to the datasets. 
+To run this code with the refined synthetic datasets (synthetic-k, synthetic-k-partial), please contact Sundong Kim (sundong@gist.ac.kr) with the [Confidentiality Statement](./Confidentiality_Statement.docx). If you want to work on real datasets (real-n, real-m, real-t, real-c) and please directly consult with the data providers (Sungsig Kim, sungsig.kim@wcoomd.org, World Customs Organization)
+
 
 
